@@ -122,7 +122,7 @@ class DatabaseConnectionManager:
                     connection_pool.putconn(test_conn)
                 
                 # Create database analyzer with connection manager
-                from db_analyzer import DatabaseAnalyzer
+                from src.core.database.analyzer import DatabaseAnalyzer
                 db_analyzer = DatabaseAnalyzer(
                     db_config['db_name'],
                     db_config['username'],

@@ -2,7 +2,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 from bson import ObjectId
 
-from models import (
+from src.models.schemas import (
     UserCreate, UserInDB, User, UserRole, UserSettings, UserSettingsUpdate,
     UserSearchResult, PromoteUserRequest,
     WorkspaceCreate, WorkspaceInDB, Workspace,
@@ -10,8 +10,8 @@ from models import (
     MessageCreate, MessageInDB, Message,
     users_collection, workspaces_collection, sessions_collection, messages_collection
 )
-from auth import get_password_hash
-from vector_store import vector_store_manager
+from src.auth.handlers import get_password_hash
+from src.vector_store.manager import vector_store_manager
 
 
 class UserService:

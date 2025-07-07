@@ -9,7 +9,7 @@ import os
 from dotenv import load_dotenv
 from bson import ObjectId
 
-from models import User, UserInDB, TokenData, UserRole, users_collection
+from src.models.schemas import User, UserInDB, TokenData, UserRole, users_collection
 
 # Load environment variables
 load_dotenv()

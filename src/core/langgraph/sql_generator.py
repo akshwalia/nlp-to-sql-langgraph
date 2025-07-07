@@ -22,8 +22,8 @@ from typing_extensions import TypedDict
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
-from db_analyzer import DatabaseAnalyzer
-from langfuse_config import (
+from src.core.database.analyzer import DatabaseAnalyzer
+from src.observability.langfuse_config import (
     langfuse_manager, 
     create_langfuse_trace, 
     observe_function
@@ -1429,6 +1429,58 @@ Provide a helpful response to the user's question. If the question is about the 
             print(f"Error cleaning text for template: {e}")
             # Return a very safe fallback
             return "Results formatted but contain special characters that cannot be displayed."
+    
+    def _clean_data_for_template(self, data: Any) -> str:
+        """Clean data for safe template formatting by converting to safe string representation"""
+        try:
+            if not data:
+                return "No data available"
+            
+            print(f"Cleaning data for template. Data type: {type(data)}, length: {len(data) if hasattr(data, '__len__') else 'N/A'}")
+            
+            if isinstance(data, list):
+                cleaned_items = []
+                for i, item in enumerate(data[:5]):  # Limit to first 5 items
+                    if isinstance(item, dict):
+                        # Clean each dictionary item
+                        cleaned_dict = {}
+                        for key, value in item.items():
+                            # Clean the key and value
+                            clean_key = str(key).replace("'", "").replace('"', "").replace("{", "").replace("}", "")
+                            clean_value = str(value).replace("'", "").replace('"', "").replace("{", "").replace("}", "")
+                            cleaned_dict[clean_key] = clean_value
+                        cleaned_items.append(cleaned_dict)
+                    else:
+                        # Convert to string and clean
+                        clean_item = str(item).replace("'", "").replace('"', "").replace("{", "").replace("}", "")
+                        cleaned_items.append(clean_item)
+                
+                # Convert to a safe string representation
+                result = "[\n"
+                for item in cleaned_items:
+                    if isinstance(item, dict):
+                        dict_parts = []
+                        for k, v in item.items():
+                            dict_parts.append(f"  {k}: {v}")
+                        result += "{\n" + ",\n".join(dict_parts) + "\n},\n"
+                    else:
+                        result += f"  {item},\n"
+                result += "]"
+                
+                print(f"Data cleaned successfully. Result length: {len(result)}")
+                return result
+                
+            else:
+                # Convert non-list data to safe string
+                safe_str = str(data).replace("'", "").replace('"', "").replace("{", "").replace("}", "")
+                print(f"Non-list data cleaned: {safe_str[:100]}...")
+                return safe_str
+                
+        except Exception as e:
+            print(f"Error cleaning data for template: {e}")
+            print(f"Data that caused error: {str(data)[:200]}...")
+            # Return a very safe fallback
+            return "Data cleaning failed - using fallback representation"
     
     def _create_safe_results_summary(self, results) -> str:
         """Create a completely safe summary of results for template usage"""
@@ -3473,7 +3525,9 @@ Respond with ONLY one of these two words:
         Returns:
             Dictionary with visualization recommendations
         """
+        
         if not results or len(results) == 0:
+            print("No results available for chart recommendations")
             return {
                 "is_visualizable": False,
                 "reason": "No data returned from query",
@@ -3483,6 +3537,7 @@ Respond with ONLY one of these two words:
             }
         
         try:
+            # print(f"Analyzing data characteristics for {len(results)} results...")
             # Analyze data characteristics
             data_characteristics = self._analyze_data_characteristics(results)
             print(f"Chart recommendations - data characteristics: {data_characteristics}")
@@ -3500,24 +3555,39 @@ Respond with ONLY one of these two words:
             # Prepare prompt for LLM
             chart_recommendation_prompt = self._create_chart_recommendation_prompt()
             
-            # Create context for the LLM
+            # print("Preparing context data for LLM...")
+            # Clean the data sample for safe template formatting
+            cleaned_data_sample = self._clean_data_for_template(results[:5] if len(results) > 5 else results)
+            
+            # Create context for the LLM - clean all data first
             context = {
-                "question": question,
-                "sql": sql,
-                "data_sample": results[:5] if len(results) > 5 else results,  # First 5 rows
+                "question": self._clean_for_template(question),
+                "sql": self._clean_for_template(sql),
+                "data_sample": cleaned_data_sample,
                 "total_rows": len(results),
                 "columns": list(results[0].keys()) if results else [],
-                "data_characteristics": data_characteristics,
+                "data_characteristics": self._clean_for_template(str(data_characteristics)),
                 "database_type": database_type or "general"
             }
             
-            # Generate recommendations using LLM
-            chain = chart_recommendation_prompt | self.llm
-            response = chain.invoke(context)
+            # print(f"Context prepared. Data sample type: {type(context['data_sample'])}")
+            # print(f"Context keys: {list(context.keys())}")
+            
+            try:
+                print("Invoking LLM for chart recommendations...")
+                # Generate recommendations using LLM
+                chain = chart_recommendation_prompt | self.llm
+                response = chain.invoke(context)
+                print("LLM invocation successful")
+            except Exception as llm_error:
+                print(f"Error in LLM invocation: {llm_error}")
+                print(f"Error type: {type(llm_error)}")
+                print("Using fallback recommendations due to LLM error")
+                return self._create_fallback_recommendations(data_characteristics, results)
             
             # Parse the LLM response
             response_text = self._extract_response_content(response)
-            print(f"ions: {response_text[:500]}...")  # Debug log
+            # print(f"ions: {response_text[:500]}...")  # Debug log
             
             # Parse JSON response from LLM
             import json

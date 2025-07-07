@@ -12,16 +12,16 @@ from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field
 
-from smart_sql import SmartSQLGenerator
-from db_analyzer import DatabaseAnalyzer
+from src.core.langgraph.sql_generator import SmartSQLGenerator
+from src.core.database.analyzer import DatabaseAnalyzer
 import psycopg2
 from psycopg2 import OperationalError
-from langfuse_config import (
+from src.observability.langfuse_config import (
     langfuse_manager, 
     create_langfuse_trace, 
     cleanup_langfuse
 )
-from models import (
+from src.models.schemas import (
     UserCreate, User, Token, UserRole, UserSettingsUpdate,
     UserSearchRequest, PromoteUserRequest, UserSearchResult,
     WorkspaceCreate, Workspace, DatabaseConnection,
@@ -30,19 +30,19 @@ from models import (
     EditQueryRequest, EditQueryResponse, ExecuteEditRequest, ExecuteSQLRequest,
     SavedQueryCreate, SavedQuery, SavedChart
 )
-from auth import (
+from src.auth.handlers import (
     authenticate_user, create_access_token,
     get_current_active_user, get_current_user,
     get_current_admin_user, get_current_admin_user_with_edit_mode,
     check_edit_permission, check_admin_permission,
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
-from db_service import (
+from src.services.db_service import (
     UserService, WorkspaceService,
     SessionService, MessageService
 )
-from vector_store import vector_store_manager
-from db_connection_manager import db_connection_manager, cleanup_db_connections
+from src.vector_store.manager import vector_store_manager
+from src.core.database.connection_manager import db_connection_manager, cleanup_db_connections
 
 
 app = FastAPI(
