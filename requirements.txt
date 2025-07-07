@@ -1,0 +1,35 @@
+# Core dependencies
+fastapi>=0.104.1
+uvicorn>=0.23.2
+pydantic>=2.8.0
+python-dotenv>=1.0.0
+
+# Database
+psycopg2-binary>=2.9.9
+pymongo>=4.5.0
+motor>=3.3.1
+
+# Authentication
+pyjwt>=2.8.0
+python-multipart>=0.0.6
+bcrypt>=3.2.2
+passlib[bcrypt]>=1.7.4
+email-validator>=2.1.0
+
+# AI and vector database
+openai>=1.12.0
+langchain>=0.0.335
+langchain-openai>=0.0.5
+langchain-community>=0.0.10
+langchain-google-genai>=1.0.0
+chromadb
+langchain-chroma>=0.1.0
+langgraph>=0.2.0
+
+# Observability and Monitoring
+langfuse>=2.7.0
+
+# Utilities
+pandas
+numpy
+fuzzywuzzy
