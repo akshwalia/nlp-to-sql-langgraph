@@ -22,7 +22,7 @@ from typing_extensions import TypedDict
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
-from src.core.database.analyzer import DatabaseAnalyzer
+from src.core.database import DatabaseAnalyzer
 from src.observability.langfuse_config import (
     langfuse_manager, 
     create_langfuse_trace, 

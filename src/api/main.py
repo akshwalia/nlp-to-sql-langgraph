@@ -13,7 +13,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field
 
 from src.core.langgraph.sql_generator import SmartSQLGenerator
-from src.core.database.analyzer import DatabaseAnalyzer
+from src.core.database import DatabaseAnalyzer
 import psycopg2
 from psycopg2 import OperationalError
 from src.observability.langfuse_config import (
@@ -42,7 +42,7 @@ from src.services.db_service import (
     SessionService, MessageService
 )
 from src.vector_store.manager import vector_store_manager
-from src.core.database.connection_manager import db_connection_manager, cleanup_db_connections
+from src.core.database.connection import db_connection_manager, cleanup_db_connections
 
 
 app = FastAPI(
@@ -818,7 +818,12 @@ async def query_with_session(
     # Initialize or get the SQL generator for this session
     if session_id not in active_generators:
         # Try to get database analyzer from connection manager first
-        db_analyzer = db_connection_manager.get_database_analyzer(session.workspace_id)
+        db_analyzer = None
+        try:
+            db_analyzer = db_connection_manager.get_database_analyzer(session.workspace_id)
+        except Exception:
+            # Workspace not found in connection manager, will handle below
+            db_analyzer = None
         
         # Ensure schema is analyzed if we have a database analyzer
         if db_analyzer:
@@ -830,7 +835,10 @@ async def query_with_session(
             
             if pool_status:
                 # This shouldn't happen, but handle it gracefully
-                db_analyzer = db_connection_manager.get_database_analyzer(session.workspace_id)
+                try:
+                    db_analyzer = db_connection_manager.get_database_analyzer(session.workspace_id)
+                except Exception:
+                    db_analyzer = None
             elif session.workspace_id in active_workspaces:
                 # Use the existing database analyzer from active workspace (fallback)
                 db_analyzer = active_workspaces[session.workspace_id]["db_analyzer"]
@@ -849,8 +857,13 @@ async def query_with_session(
                 
                 if pool_created:
                     # Get the analyzer from the connection manager
-                    db_analyzer = db_connection_manager.get_database_analyzer(session.workspace_id)
-                else:
+                    try:
+                        db_analyzer = db_connection_manager.get_database_analyzer(session.workspace_id)
+                    except Exception:
+                        db_analyzer = None
+                
+                # If we still don't have an analyzer, fallback to direct connection
+                if not db_analyzer:
                     # Fallback to direct connection
                     db_analyzer = DatabaseAnalyzer(
                         db_conn.db_name,
