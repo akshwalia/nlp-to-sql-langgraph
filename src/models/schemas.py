@@ -139,13 +139,13 @@ class WorkspaceInDB(Workspace):
     pass
 
 
-# Chart recommendation models (defined before QueryResult)
+# Chart recommendation models
 class ChartRecommendation(BaseModel):
     chart_type: str  # 'bar', 'line', 'pie', etc.
     title: str
     description: str
-    x_axis: str
-    y_axis: str
+    x_axis: Optional[str] = None  # Fixed: Allow None for pie charts
+    y_axis: Optional[str] = None  # Fixed: Allow None for pie charts
     secondary_y_axis: Optional[str] = None
     chart_config: Optional[Dict[str, Any]] = None  # Additional chart configuration
     confidence_score: float = 0.0  # LLM confidence in this recommendation
@@ -163,8 +163,8 @@ class SavedChart(BaseModel):
     chart_id: str = Field(default_factory=lambda: str(ObjectId()))
     chart_type: str
     title: str
-    x_axis: str
-    y_axis: str
+    x_axis: Optional[str] = None  # Fixed: Allow None for pie charts
+    y_axis: Optional[str] = None  # Fixed: Allow None for pie charts
     secondary_y_axis: Optional[str] = None
     chart_config: Optional[Dict[str, Any]] = None
     created_by: str = "user"  # "user" or "llm"

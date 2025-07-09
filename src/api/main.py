@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field
 
-from src.core.langgraph.sql_generator import SmartSQLGenerator
+from src.core.langgraph import SmartSQLGenerator
 from src.core.database import DatabaseAnalyzer
 import psycopg2
 from psycopg2 import OperationalError
@@ -935,9 +935,11 @@ async def query_with_session(
         )
         
         # Create the assistant message with complete query result
+        message_content = converted_result.get("text", "I couldn't generate a response.")
+        
         assistant_message = await MessageService.create_message(
             MessageCreate(
-                content=converted_result.get("text", "I couldn't generate a response."),
+                content=message_content,
                 role="assistant",
                 session_id=session_id,
                 query_result=query_result
@@ -947,6 +949,7 @@ async def query_with_session(
         
         # Format the response
         response = format_query_result(converted_result)
+        
         response["user_message"] = user_message
         response["assistant_message"] = assistant_message
         
