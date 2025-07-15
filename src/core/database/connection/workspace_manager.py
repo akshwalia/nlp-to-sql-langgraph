@@ -35,12 +35,20 @@ class WorkspaceManager:
         Returns:
             bool: True if workspace created successfully, False otherwise
         """
+        logger.info(f"Creating workspace: {workspace_id}")
+        logger.debug(f"Database config: {db_config['db_name']}@{db_config['host']}:{db_config['port']}")
+        
         try:
             # Create connection pool
+            logger.info(f"Creating connection pool for workspace: {workspace_id}")
             if not self.pool_manager.create_pool(workspace_id, db_config):
+                logger.error(f"Failed to create connection pool for workspace: {workspace_id}")
                 return False
             
+            logger.debug(f"Connection pool created successfully for workspace: {workspace_id}")
+            
             # Create database analyzer
+            logger.info(f"Initializing database analyzer for workspace: {workspace_id}")
             from src.core.database.analysis import DatabaseAnalyzer
             db_analyzer = DatabaseAnalyzer(
                 db_config['db_name'],
@@ -48,34 +56,39 @@ class WorkspaceManager:
                 db_config['password'],
                 db_config['host'],
                 db_config['port'],
-                connection_manager=self.pool_manager,
-                workspace_id=workspace_id
+                db_config.get('db_type', 'postgresql')
             )
             
-            # Store workspace metadata
+            # Initialize workspace metadata
             self.workspace_metadata[workspace_id] = {
                 'db_analyzer': db_analyzer,
                 'schema_analyzed': False,
-                'schema_info': None
+                'schema_info': None,
+                'created_at': time.time(),
+                'db_config': db_config
             }
+            
+            logger.debug(f"Database analyzer initialized for workspace: {workspace_id}")
             
             # Analyze schema if requested
             if analyze_schema:
-                try:
-                    logger.info(f"Analyzing database schema for workspace {workspace_id}")
-                    schema_info = db_analyzer.analyze_schema()
-                    self.workspace_metadata[workspace_id]['schema_analyzed'] = True
-                    self.workspace_metadata[workspace_id]['schema_info'] = schema_info
-                    logger.info(f"Schema analysis completed for workspace {workspace_id}")
-                except Exception as e:
-                    logger.error(f"Error analyzing schema for workspace {workspace_id}: {e}")
-                    # Don't fail the workspace creation if schema analysis fails
+                logger.info(f"Starting schema analysis for workspace: {workspace_id}")
+                if self.ensure_schema_analyzed(workspace_id):
+                    logger.info(f"Schema analysis completed for workspace: {workspace_id}")
+                else:
+                    logger.warning(f"Schema analysis failed for workspace: {workspace_id}")
+            else:
+                logger.info(f"Schema analysis skipped for workspace: {workspace_id}")
             
-            logger.info(f"Created workspace {workspace_id}")
+            logger.info(f"Workspace created successfully: {workspace_id}")
             return True
             
         except Exception as e:
-            logger.error(f"Failed to create workspace {workspace_id}: {e}")
+            logger.error(f"Error creating workspace {workspace_id}: {e}")
+            # Clean up on failure
+            if workspace_id in self.workspace_metadata:
+                del self.workspace_metadata[workspace_id]
+            self.pool_manager.close_pool(workspace_id)
             return False
     
     def get_database_analyzer(self, workspace_id: str):
@@ -113,30 +126,42 @@ class WorkspaceManager:
     
     def ensure_schema_analyzed(self, workspace_id: str) -> bool:
         """
-        Ensure that schema is analyzed for a workspace
+        Ensure the database schema is analyzed for a workspace
         
         Args:
-            workspace_id: Unique identifier for the workspace
+            workspace_id: Workspace ID
             
         Returns:
-            bool: True if schema is analyzed or analysis successful, False otherwise
+            bool: True if schema is analyzed, False otherwise
         """
+        logger.info(f"Ensuring schema analysis for workspace: {workspace_id}")
+        
         if workspace_id not in self.workspace_metadata:
-            logger.error(f"Workspace {workspace_id} not found")
+            logger.error(f"Workspace {workspace_id} not found for schema analysis")
             return False
         
-        if self.workspace_metadata[workspace_id]['schema_analyzed']:
+        metadata = self.workspace_metadata[workspace_id]
+        
+        # Check if already analyzed
+        if metadata['schema_analyzed']:
+            logger.debug(f"Schema already analyzed for workspace: {workspace_id}")
             return True
         
         try:
-            logger.info(f"Analyzing schema for workspace {workspace_id}")
-            db_analyzer = self.workspace_metadata[workspace_id]['db_analyzer']
+            logger.info(f"Starting schema analysis for workspace: {workspace_id}")
+            db_analyzer = metadata['db_analyzer']
+            
+            # Perform schema analysis
             schema_info = db_analyzer.analyze_schema()
             
-            self.workspace_metadata[workspace_id]['schema_analyzed'] = True
-            self.workspace_metadata[workspace_id]['schema_info'] = schema_info
+            # Update metadata
+            metadata['schema_analyzed'] = True
+            metadata['schema_info'] = schema_info
+            metadata['schema_analyzed_at'] = time.time()
             
-            logger.info(f"Schema analysis completed for workspace {workspace_id}")
+            logger.info(f"Schema analysis completed successfully for workspace: {workspace_id}")
+            logger.debug(f"Schema contains {len(schema_info.get('tables', {}))} tables")
+            
             return True
             
         except Exception as e:
@@ -145,39 +170,44 @@ class WorkspaceManager:
     
     def get_workspace_status(self, workspace_id: str) -> Optional[Dict[str, Any]]:
         """
-        Get comprehensive status information for a workspace
+        Get the status of a workspace
         
         Args:
-            workspace_id: Unique identifier for the workspace
+            workspace_id: Workspace ID
             
         Returns:
-            Optional[Dict[str, Any]]: Status information or None if workspace doesn't exist
+            Dictionary with workspace status or None if not found
         """
-        if workspace_id not in self.workspace_metadata:
-            return None
+        logger.debug(f"Getting status for workspace: {workspace_id}")
         
-        # Get pool info
-        pool_info = self.pool_manager.get_pool_info(workspace_id)
-        if not pool_info:
+        if workspace_id not in self.workspace_metadata:
+            logger.warning(f"Workspace {workspace_id} not found")
             return None
         
         metadata = self.workspace_metadata[workspace_id]
         
+        # Check connection pool status
+        pool_status = self.pool_manager.get_pool_status(workspace_id)
+        
         status = {
             'workspace_id': workspace_id,
-            'connection_active': True,
-            'last_used': pool_info['last_used'],
-            'db_config': {
-                'host': pool_info['db_config']['host'],
-                'port': pool_info['db_config']['port'],
-                'db_name': pool_info['db_config']['db_name'],
-                'username': pool_info['db_config']['username']
-                # Don't include password in status for security
-            },
             'schema_analyzed': metadata['schema_analyzed'],
-            'schema_info': metadata['schema_info']
+            'created_at': metadata.get('created_at', 0),
+            'schema_analyzed_at': metadata.get('schema_analyzed_at', 0),
+            'pool_status': pool_status,
+            'db_config': {
+                'db_name': metadata['db_config']['db_name'],
+                'host': metadata['db_config']['host'],
+                'port': metadata['db_config']['port']
+            }
         }
         
+        # Add schema summary if available
+        if metadata['schema_analyzed'] and metadata['schema_info']:
+            schema_summary = metadata['schema_info'].get('summary', {})
+            status['schema_summary'] = schema_summary
+        
+        logger.debug(f"Workspace status retrieved for: {workspace_id}")
         return status
     
     def get_all_workspace_status(self) -> Dict[str, Dict[str, Any]]:
@@ -196,23 +226,31 @@ class WorkspaceManager:
     
     def close_workspace(self, workspace_id: str) -> bool:
         """
-        Close a workspace and clean up resources
+        Close a workspace and cleanup resources
         
         Args:
-            workspace_id: Unique identifier for the workspace
+            workspace_id: Workspace ID
             
         Returns:
-            bool: True if workspace closed successfully, False otherwise
+            bool: True if closed successfully, False otherwise
         """
+        logger.info(f"Closing workspace: {workspace_id}")
+        
         try:
             # Close connection pool
+            logger.debug(f"Closing connection pool for workspace: {workspace_id}")
             pool_closed = self.pool_manager.close_pool(workspace_id)
             
-            # Remove metadata
+            # Remove workspace metadata
             if workspace_id in self.workspace_metadata:
+                logger.debug(f"Removing metadata for workspace: {workspace_id}")
                 del self.workspace_metadata[workspace_id]
             
-            logger.info(f"Closed workspace {workspace_id}")
+            if pool_closed:
+                logger.info(f"Workspace closed successfully: {workspace_id}")
+            else:
+                logger.warning(f"Issues closing connection pool for workspace: {workspace_id}")
+            
             return pool_closed
             
         except Exception as e:
@@ -221,25 +259,36 @@ class WorkspaceManager:
     
     def refresh_workspace(self, workspace_id: str) -> bool:
         """
-        Refresh a workspace by recreating its connection pool
+        Refresh workspace by re-analyzing the schema
         
         Args:
-            workspace_id: Unique identifier for the workspace
+            workspace_id: Workspace ID
             
         Returns:
-            bool: True if workspace refreshed successfully, False otherwise
+            bool: True if refreshed successfully, False otherwise
         """
+        logger.info(f"Refreshing workspace: {workspace_id}")
+            
+        if workspace_id not in self.workspace_metadata:
+            logger.error(f"Workspace {workspace_id} not found for refresh")
+            return False
+        
         try:
-            # Refresh connection pool
-            pool_refreshed = self.pool_manager.refresh_pool(workspace_id)
+            # Reset schema analysis flag
+            logger.debug(f"Resetting schema analysis flag for workspace: {workspace_id}")
+            self.workspace_metadata[workspace_id]['schema_analyzed'] = False
+            self.workspace_metadata[workspace_id]['schema_info'] = None
             
-            if pool_refreshed and workspace_id in self.workspace_metadata:
-                # Reset schema analysis flag to force re-analysis if needed
-                self.workspace_metadata[workspace_id]['schema_analyzed'] = False
-                self.workspace_metadata[workspace_id]['schema_info'] = None
+            # Re-analyze schema
+            logger.info(f"Re-analyzing schema for workspace: {workspace_id}")
+            success = self.ensure_schema_analyzed(workspace_id)
             
-            logger.info(f"Refreshed workspace {workspace_id}")
-            return pool_refreshed
+            if success:
+                logger.info(f"Workspace refreshed successfully: {workspace_id}")
+            else:
+                logger.error(f"Failed to refresh workspace: {workspace_id}")
+            
+            return success
             
         except Exception as e:
             logger.error(f"Error refreshing workspace {workspace_id}: {e}")

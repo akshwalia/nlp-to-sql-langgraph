@@ -37,7 +37,7 @@ export const login = async (credentials: LoginRequest): Promise<TokenResponse> =
     formData.append('username', credentials.username);
     formData.append('password', credentials.password);
 
-    const response = await axios.post('/auth/token', formData.toString(), {
+    const response = await axios.post('/login', formData.toString(), {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
@@ -53,7 +53,7 @@ export const login = async (credentials: LoginRequest): Promise<TokenResponse> =
 // Get current user information
 export const getCurrentUser = async () => {
   try {
-    const response = await axios.get('/auth/me');
+    const response = await axios.get('/me');
     return response.data;
   } catch (error) {
     console.error('Error getting current user:', error);
@@ -63,7 +63,7 @@ export const getCurrentUser = async () => {
 
 export const register = async (user: { email: string; password: string; name: string }): Promise<any> => {
   try {
-    const response = await axios.post('/auth/register', user);
+    const response = await axios.post('/register', user);
     return response.data;
   } catch (error) {
     console.error('Registration failed:', error);
@@ -82,22 +82,6 @@ interface TableResponse {
   [key: string]: any; // Allow any additional fields
 }
 
-// Define types for workspace API
-export interface DatabaseConnectionRequest {
-  db_name: string;
-  username: string;
-  password: string;
-  host: string;
-  port: string;
-  db_type: string;
-}
-
-export interface WorkspaceRequest {
-  name: string;
-  description?: string;
-  db_connection: DatabaseConnectionRequest;
-}
-
 // Types for API requests and responses
 export interface QueryRequest {
   question: string;
@@ -113,96 +97,9 @@ export interface SessionRequest {
   port?: string;
   use_memory?: boolean;
   use_cache?: boolean;
-  workspace_id?: string;
   name?: string;
   description?: string;
 }
-
-// Workspace management
-export const createWorkspace = async (params: SessionRequest) => {
-  try {
-    const workspaceRequest: WorkspaceRequest = {
-      name: `${params.db_name || 'Default'} Workspace`,
-      description: `Workspace for ${params.host || 'localhost'} database`,
-      db_connection: {
-        db_name: params.db_name || 'postgres',
-        username: params.username || 'postgres',
-        password: params.password || '',
-        host: params.host || 'localhost',
-        port: params.port || '5432',
-        db_type: 'postgresql'
-      }
-    };
-    
-    const response = await axios.post('/workspaces', workspaceRequest);
-    
-    return response.data;
-  } catch (error) {
-    console.error('Error creating workspace:', error);
-    throw error;
-  }
-};
-
-// Additional workspace management functions
-export const createWorkspaceWithDetails = async (workspaceData: WorkspaceRequest) => {
-  try {
-    const response = await axios.post('/workspaces', workspaceData);
-    return response.data;
-  } catch (error) {
-    console.error('Error creating workspace:', error);
-    throw error;
-  }
-};
-
-export const getAllWorkspaces = async () => {
-  try {
-    const response = await axios.get('/workspaces');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching workspaces:', error);
-    throw error;
-  }
-};
-
-export const getWorkspace = async (workspaceId: string) => {
-  try {
-    const response = await axios.get(`/workspaces/${workspaceId}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching workspace:', error);
-    throw error;
-  }
-};
-
-export const updateWorkspace = async (workspaceId: string, workspaceData: Partial<WorkspaceRequest>) => {
-  try {
-    const response = await axios.put(`/workspaces/${workspaceId}`, workspaceData);
-    return response.data;
-  } catch (error) {
-    console.error('Error updating workspace:', error);
-    throw error;
-  }
-};
-
-export const deleteWorkspace = async (workspaceId: string) => {
-  try {
-    const response = await axios.delete(`/workspaces/${workspaceId}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error deleting workspace:', error);
-    throw error;
-  }
-};
-
-export const activateWorkspace = async (workspaceId: string) => {
-  try {
-    const response = await axios.post(`/workspaces/${workspaceId}/activate`);
-    return response.data;
-  } catch (error) {
-    console.error('Error activating workspace:', error);
-    throw error;
-  }
-};
 
 // Session management
 export const createSession = async (params: SessionRequest) => {
@@ -258,21 +155,10 @@ export const getSessionInfo = async (sessionId: string) => {
   }
 };
 
-// Update listWorkspaceSessions to use authentication
-export const listWorkspaceSessions = async (workspaceId: string) => {
-  try {
-    const response = await axios.get(`/workspaces/${workspaceId}/sessions`);
-    return response.data;
-  } catch (error) {
-    console.error(`Error listing sessions for workspace ${workspaceId}:`, error);
-    throw error;
-  }
-};
-
 export const listSessions = async () => {
   try {
-    console.warn('The listSessions function is deprecated. Use listWorkspaceSessions instead.');
-    return []; // Return empty array as this endpoint no longer exists
+    const response = await axios.get('/sessions');
+    return response.data;
   } catch (error) {
     console.error('Error listing sessions:', error);
     throw error;
@@ -390,7 +276,7 @@ export const getPaginatedResults = async (sessionId: string, tableId: string, pa
 // Admin functions
 export const getSettings = async () => {
   try {
-    const response = await axios.get('/auth/settings');
+    const response = await axios.get('/settings');
     return response.data;
   } catch (error) {
     console.error('Error fetching settings:', error);
@@ -400,7 +286,7 @@ export const getSettings = async () => {
 
 export const toggleEditMode = async () => {
   try {
-    const response = await axios.post('/auth/toggle-edit-mode');
+    const response = await axios.post('/toggle-edit-mode');
     return response.data;
   } catch (error) {
     console.error('Error toggling edit mode:', error);
@@ -457,7 +343,6 @@ export interface SavedQuery {
   data: any[];
   table_name?: string;
   user_id: string;
-  workspace_id?: string;
   session_id?: string;
   created_at: string;
   updated_at: string;
@@ -465,16 +350,15 @@ export interface SavedQuery {
 
 export const createSavedQuery = async (
   queryData: SavedQueryCreate,
-  workspaceId?: string,
   sessionId?: string
 ): Promise<SavedQuery> => {
   try {
-    const params = new URLSearchParams();
-    if (workspaceId) params.append('workspace_id', workspaceId);
-    if (sessionId) params.append('session_id', sessionId);
+    const params: any = {};
+    if (sessionId) {
+      params.session_id = sessionId;
+    }
     
-    const url = `/saved-queries${params.toString() ? `?${params.toString()}` : ''}`;
-    const response = await axios.post(url, queryData);
+    const response = await axios.post('/saved-queries', queryData, { params });
     return response.data;
   } catch (error) {
     console.error('Error creating saved query:', error);
@@ -483,16 +367,15 @@ export const createSavedQuery = async (
 };
 
 export const getSavedQueries = async (
-  workspaceId?: string,
   sessionId?: string
 ): Promise<SavedQuery[]> => {
   try {
-    const params = new URLSearchParams();
-    if (workspaceId) params.append('workspace_id', workspaceId);
-    if (sessionId) params.append('session_id', sessionId);
+    const params: any = {};
+    if (sessionId) {
+      params.session_id = sessionId;
+    }
     
-    const url = `/saved-queries${params.toString() ? `?${params.toString()}` : ''}`;
-    const response = await axios.get(url);
+    const response = await axios.get('/saved-queries', { params });
     return response.data;
   } catch (error) {
     console.error('Error fetching saved queries:', error);
@@ -532,13 +415,9 @@ export const deleteSavedQuery = async (queryId: string): Promise<void> => {
   }
 };
 
-export const deleteAllSavedQueries = async (workspaceId?: string): Promise<void> => {
+export const deleteAllSavedQueries = async (): Promise<void> => {
   try {
-    const params = new URLSearchParams();
-    if (workspaceId) params.append('workspace_id', workspaceId);
-    
-    const url = `/saved-queries${params.toString() ? `?${params.toString()}` : ''}`;
-    await axios.delete(url);
+    await axios.delete('/saved-queries');
   } catch (error) {
     console.error('Error deleting all saved queries:', error);
     throw error;

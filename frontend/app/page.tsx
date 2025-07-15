@@ -19,7 +19,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
-      router.push('/dashboard');
+      router.push('/chatbot');
     }
   }, [isAuthenticated, loading, router]);
 

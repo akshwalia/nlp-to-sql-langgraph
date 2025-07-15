@@ -5,10 +5,9 @@ from bson import ObjectId
 from src.models.schemas import (
     UserCreate, UserInDB, User, UserRole, UserSettings, UserSettingsUpdate,
     UserSearchResult, PromoteUserRequest,
-    WorkspaceCreate, WorkspaceInDB, Workspace,
     SessionCreate, SessionInDB, Session,
-    MessageCreate, MessageInDB, Message,
-    users_collection, workspaces_collection, sessions_collection, messages_collection
+    MessageCreate, MessageInDB, Message, PyObjectId,
+    users_collection, sessions_collection, messages_collection
 )
 from src.auth.handlers import get_password_hash
 from src.vector_store.manager import vector_store_manager
@@ -36,6 +35,9 @@ class UserService:
         
         # Get the created user
         created_user = users_collection.find_one({"_id": result.inserted_id})
+        
+        if not created_user:
+            raise ValueError("Failed to create user")
         
         # Convert ObjectId to string
         created_user["_id"] = str(created_user["_id"])
@@ -167,6 +169,10 @@ class UserService:
         
         # Return the updated user
         updated_user_dict = users_collection.find_one({"email": user_email})
+        
+        if not updated_user_dict:
+            return None
+        
         updated_user_dict["_id"] = str(updated_user_dict["_id"])
         
         return User(**updated_user_dict)
@@ -201,133 +207,19 @@ class UserService:
         return user_results
 
 
-class WorkspaceService:
-    """Service for workspace management"""
-    
-    @staticmethod
-    async def create_workspace(workspace: WorkspaceCreate, user_id: str) -> Workspace:
-        """Create a new workspace"""
-        # Create a new workspace
-        workspace_in_db = WorkspaceInDB(
-            **workspace.model_dump(),
-            user_id=user_id
-        )
-        
-        # Insert into database
-        result = workspaces_collection.insert_one(workspace_in_db.model_dump(by_alias=True))
-        
-        # Get the created workspace
-        created_workspace = workspaces_collection.find_one({"_id": result.inserted_id})
-        
-        # Convert ObjectIds to strings
-        created_workspace["_id"] = str(created_workspace["_id"])
-        if isinstance(created_workspace["user_id"], ObjectId):
-            created_workspace["user_id"] = str(created_workspace["user_id"])
-        
-        return Workspace(**created_workspace)
-    
-    @staticmethod
-    async def get_workspace(workspace_id: str, user_id: str) -> Optional[Workspace]:
-        """Get a workspace by ID"""
-        workspace = workspaces_collection.find_one({
-            "_id": workspace_id,
-            "user_id": user_id
-        })
-        
-        if not workspace:
-            return None
-        
-        # Convert ObjectIds to strings
-        workspace["_id"] = str(workspace["_id"])
-        if isinstance(workspace["user_id"], ObjectId):
-            workspace["user_id"] = str(workspace["user_id"])
-        
-        return Workspace(**workspace)
-    
-    @staticmethod
-    async def get_user_workspaces(user_id: str) -> List[Workspace]:
-        """Get all workspaces for a user"""
-        workspaces = list(workspaces_collection.find({"user_id": user_id}))
-        
-        # Convert ObjectIds to strings
-        for workspace in workspaces:
-            workspace["_id"] = str(workspace["_id"])
-            if isinstance(workspace["user_id"], ObjectId):
-                workspace["user_id"] = str(workspace["user_id"])
-        
-        return [Workspace(**workspace) for workspace in workspaces]
-    
-    @staticmethod
-    async def update_workspace(
-        workspace_id: str, 
-        user_id: str, 
-        workspace_data: Dict[str, Any]
-    ) -> Optional[Workspace]:
-        """Update a workspace"""
-        # Update the workspace
-        result = workspaces_collection.update_one(
-            {"_id": workspace_id, "user_id": user_id},
-            {"$set": {**workspace_data, "updated_at": datetime.utcnow()}}
-        )
-        
-        if result.matched_count == 0:
-            return None
-        
-        # Get the updated workspace
-        updated_workspace = workspaces_collection.find_one({"_id": workspace_id})
-        
-        # Convert ObjectIds to strings
-        updated_workspace["_id"] = str(updated_workspace["_id"])
-        if isinstance(updated_workspace["user_id"], ObjectId):
-            updated_workspace["user_id"] = str(updated_workspace["user_id"])
-        
-        return Workspace(**updated_workspace)
-    
-    @staticmethod
-    async def delete_workspace(workspace_id: str, user_id: str) -> bool:
-        """Delete a workspace"""
-        # Delete all sessions in this workspace first
-        sessions = list(sessions_collection.find({"workspace_id": workspace_id}))
-        
-        for session in sessions:
-            # Delete the vector store if it exists
-            if "vector_store_id" in session and session["vector_store_id"]:
-                vector_store_manager.delete_store(session["vector_store_id"])
-            
-            # Delete the session
-            sessions_collection.delete_one({"_id": session["_id"]})
-        
-        # Delete the workspace
-        result = workspaces_collection.delete_one({
-            "_id": workspace_id,
-            "user_id": user_id
-        })
-        
-        return result.deleted_count > 0
-
-
 class SessionService:
     """Service for session management"""
     
     @staticmethod
     async def create_session(session: SessionCreate, user_id: str) -> Session:
         """Create a new session"""
-        # Check if the workspace exists and belongs to the user
-        workspace = workspaces_collection.find_one({
-            "_id": session.workspace_id,
-            "user_id": user_id
-        })
-        
-        if not workspace:
-            raise ValueError("Workspace not found or does not belong to the user")
-        
         # Create a vector store for this session
-        vector_store_id = vector_store_manager.create_store(str(session.workspace_id))
+        vector_store_id = vector_store_manager.create_store(f"user_{user_id}")
         
         # Create a new session
         session_in_db = SessionInDB(
             **session.model_dump(),
-            user_id=user_id,
+            user_id=PyObjectId(user_id),
             vector_store_id=vector_store_id
         )
         
@@ -337,10 +229,11 @@ class SessionService:
         # Get the created session
         created_session = sessions_collection.find_one({"_id": result.inserted_id})
         
+        if not created_session:
+            raise ValueError("Failed to create session")
+        
         # Convert ObjectIds to strings
         created_session["_id"] = str(created_session["_id"])
-        if isinstance(created_session["workspace_id"], ObjectId):
-            created_session["workspace_id"] = str(created_session["workspace_id"])
         if isinstance(created_session["user_id"], ObjectId):
             created_session["user_id"] = str(created_session["user_id"])
         
@@ -359,8 +252,6 @@ class SessionService:
         
         # Convert ObjectIds to strings
         session["_id"] = str(session["_id"])
-        if isinstance(session["workspace_id"], ObjectId):
-            session["workspace_id"] = str(session["workspace_id"])
         if isinstance(session["user_id"], ObjectId):
             session["user_id"] = str(session["user_id"])
         
@@ -376,8 +267,6 @@ class SessionService:
         
         # Convert ObjectIds to strings
         session["_id"] = str(session["_id"])
-        if isinstance(session["workspace_id"], ObjectId):
-            session["workspace_id"] = str(session["workspace_id"])
         if isinstance(session["user_id"], ObjectId):
             session["user_id"] = str(session["user_id"])
         
@@ -385,17 +274,21 @@ class SessionService:
     
     @staticmethod
     async def get_workspace_sessions(workspace_id: str, user_id: str) -> List[Session]:
-        """Get all sessions for a workspace"""
+        """DEPRECATED: Get all sessions for a workspace - now returns user sessions"""
+        # This method is deprecated but kept for backward compatibility
+        # It now returns all sessions for the user
+        return await SessionService.get_user_sessions(user_id)
+    
+    @staticmethod
+    async def get_user_sessions(user_id: str) -> List[Session]:
+        """Get all sessions for a user"""
         sessions = list(sessions_collection.find({
-            "workspace_id": workspace_id,
             "user_id": user_id
         }))
         
         # Convert ObjectIds to strings
         for session in sessions:
             session["_id"] = str(session["_id"])
-            if isinstance(session["workspace_id"], ObjectId):
-                session["workspace_id"] = str(session["workspace_id"])
             if isinstance(session["user_id"], ObjectId):
                 session["user_id"] = str(session["user_id"])
         
@@ -452,7 +345,7 @@ class MessageService:
         # Create a new message
         message_in_db = MessageInDB(
             **message.model_dump(),
-            user_id=user_id
+            user_id=PyObjectId(user_id)
         )
         
         # Insert into database
@@ -460,6 +353,9 @@ class MessageService:
         
         # Get the created message
         created_message = messages_collection.find_one({"_id": result.inserted_id})
+        
+        if not created_message:
+            raise ValueError("Failed to create message")
         
         # Convert ObjectIds to strings
         created_message["_id"] = str(created_message["_id"])

@@ -2,6 +2,7 @@ from typing import Dict, List, Any, Tuple, Optional
 from sqlalchemy import text
 import pandas as pd
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -34,12 +35,17 @@ class QueryExecutor:
         Returns:
             Tuple of (success, results, error_message)
         """
+        logger.info(f"Executing SQL query for workspace: {self.workspace_id}")
+        logger.debug(f"Query: {query[:200]}{'...' if len(query) > 200 else ''}")
+        
         try:
             # Use connection pool if available, otherwise fall back to engine
             if self.connection_manager and self.workspace_id:
+                logger.debug(f"Using connection pool for workspace: {self.workspace_id}")
                 with self.connection_manager.get_connection(self.workspace_id) as conn:
                     return self._execute_with_connection(query, conn)
             else:
+                logger.debug("Using SQLAlchemy engine (no connection pool)")
                 # Fallback to SQLAlchemy engine
                 with self.engine.connect() as connection:
                     return self._execute_with_sqlalchemy(query, connection)
@@ -50,57 +56,65 @@ class QueryExecutor:
     
     def _execute_with_connection(self, query: str, conn) -> Tuple[bool, Optional[List[Dict[str, Any]]], Optional[str]]:
         """
-        Execute query using psycopg2 connection
+        Execute query using connection pool connection
         
         Args:
             query: SQL query to execute
-            conn: Database connection
+            conn: Database connection from pool
             
         Returns:
             Tuple of (success, results, error_message)
         """
-        cursor = conn.cursor()
+        logger.debug("Executing query with connection pool")
+        
         try:
-            cursor.execute(query)
+            cursor = conn.cursor()
+            logger.debug("Database cursor created")
             
-            # Check if query returns rows
-            if cursor.description:
-                # Get column names
-                columns = [desc[0] for desc in cursor.description]
+            # Check if this is a write operation
+            is_write = self._is_write_operation(query)
+            logger.debug(f"Query type: {'WRITE' if is_write else 'READ'}")
+            
+            # Execute query
+            start_time = time.time()
+            cursor.execute(query)
+            execution_time = time.time() - start_time
+            
+            if is_write:
+                logger.info(f"Write operation completed in {execution_time:.3f}s")
+                affected_rows = cursor.rowcount
+                logger.debug(f"Affected rows: {affected_rows}")
+                
+                # For write operations, return success with affected row count
+                return True, [{"affected_rows": affected_rows}], None
+            else:
+                # For read operations, fetch results
+                logger.debug("Fetching query results")
+                results = []
                 rows = cursor.fetchall()
                 
-                # Convert to list of dictionaries
-                data = []
-                for row in rows:
-                    row_dict = {}
-                    for idx, column in enumerate(columns):
-                        value = row[idx]
-                        # Convert non-serializable types to strings for JSON compatibility
-                        if isinstance(value, (pd.Timestamp, pd.Timedelta)):
-                            value = str(value)
-                        row_dict[column] = value
-                    data.append(row_dict)
+                if rows:
+                    # Get column names
+                    column_names = [desc[0] for desc in cursor.description]
+                    logger.debug(f"Result columns: {column_names}")
+                    
+                    # Convert rows to dictionaries
+                    for row in rows:
+                        row_dict = {}
+                        for i, value in enumerate(row):
+                            row_dict[column_names[i]] = value
+                        results.append(row_dict)
                 
-                # Commit the transaction for write operations
-                if self._is_write_operation(query):
-                    conn.commit()
-                
-                return True, data, None
-            else:
-                # For non-SELECT queries (INSERT, UPDATE, DELETE), return rowcount
-                affected_rows = cursor.rowcount
-                
-                # Commit the transaction for write operations
-                if self._is_write_operation(query):
-                    conn.commit()
-                
-                return True, affected_rows, None
+                logger.info(f"Read operation completed in {execution_time:.3f}s, returned {len(results)} rows")
+                return True, results, None
                 
         except Exception as e:
-            logger.error(f"Error executing query with connection: {e}")
+            logger.error(f"Error executing query with connection pool: {e}")
             return False, None, str(e)
         finally:
-            cursor.close()
+            if 'cursor' in locals():
+                cursor.close()
+                logger.debug("Database cursor closed")
     
     def _execute_with_sqlalchemy(self, query: str, connection) -> Tuple[bool, Optional[List[Dict[str, Any]]], Optional[str]]:
         """
@@ -113,37 +127,44 @@ class QueryExecutor:
         Returns:
             Tuple of (success, results, error_message)
         """
+        logger.debug("Executing query with SQLAlchemy")
+        
         try:
-            result = connection.execute(text(query))
+            # Check if this is a write operation
+            is_write = self._is_write_operation(query)
+            logger.debug(f"Query type: {'WRITE' if is_write else 'READ'}")
             
-            if result.returns_rows:
-                # Convert result to a list of dictionaries
-                columns = result.keys()
-                data = []
-                for row in result:
-                    row_dict = {}
-                    for idx, column in enumerate(columns):
-                        value = row[idx]
-                        # Convert non-serializable types to strings for JSON compatibility
-                        if isinstance(value, (pd.Timestamp, pd.Timedelta)):
-                            value = str(value)
-                        row_dict[column] = value
-                    data.append(row_dict)
-                
-                # Commit for write operations
-                if self._is_write_operation(query):
-                    connection.commit()
-                
-                return True, data, None
-            else:
-                # For non-SELECT queries, return rowcount
+            # Execute query
+            start_time = time.time()
+            result = connection.execute(text(query))
+            execution_time = time.time() - start_time
+            
+            if is_write:
+                logger.info(f"Write operation completed in {execution_time:.3f}s")
                 affected_rows = result.rowcount
+                logger.debug(f"Affected rows: {affected_rows}")
                 
-                # Commit for write operations
-                if self._is_write_operation(query):
-                    connection.commit()
+                return True, [{"affected_rows": affected_rows}], None
+            else:
+                # For read operations, fetch results
+                logger.debug("Fetching query results")
+                results = []
+                rows = result.fetchall()
                 
-                return True, affected_rows, None
+                if rows:
+                    # Get column names
+                    column_names = list(result.keys())
+                    logger.debug(f"Result columns: {column_names}")
+                    
+                    # Convert rows to dictionaries
+                    for row in rows:
+                        row_dict = {}
+                        for i, value in enumerate(row):
+                            row_dict[column_names[i]] = value
+                        results.append(row_dict)
+                
+                logger.info(f"Read operation completed in {execution_time:.3f}s, returned {len(results)} rows")
+                return True, results, None
                 
         except Exception as e:
             logger.error(f"Error executing query with SQLAlchemy: {e}")

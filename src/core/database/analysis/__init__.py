@@ -10,6 +10,7 @@ import logging
 from .schema_analyzer import SchemaAnalyzer
 from .table_analyzer import TableAnalyzer
 from .relationship_analyzer import RelationshipAnalyzer
+from .single_table_analyzer import SingleTableAnalyzer
 from ..query.executor import QueryExecutor
 from ..query.transaction_manager import TransactionManager
 from ..query.schema_updater import SchemaUpdater
@@ -287,4 +288,38 @@ if __name__ == "__main__":
         for schema_name in schema_names:
             result = connection.execute(text(f"SELECT table_name FROM information_schema.tables WHERE table_schema = '{schema_name}'"))
             for row in result:
-                print(f"- {schema_name}.{row[0]}") 
+                print(f"- {schema_name}.{row[0]}")
+
+    # Example of SingleTableAnalyzer usage
+    print("\n" + "="*80)
+    print("SINGLE TABLE ANALYZER EXAMPLE")
+    print("="*80)
+    
+    # Initialize single table analyzer
+    single_analyzer = SingleTableAnalyzer(
+        db_name=db_name,
+        username=username,
+        password=password,
+        host=host,
+        port=port,
+        table_name="IT_Professional_Services",
+        schema_name="public"
+    )
+    
+    # Perform analysis
+    result = single_analyzer.analyze_table()
+    
+    if result.get("success"):
+        print("Single table analysis completed successfully!")
+        print(f"Analysis saved to: {single_analyzer.output_file}")
+        print("\nSummary:")
+        print(single_analyzer.get_analysis_summary())
+    else:
+        print(f"Single table analysis failed: {result.get('error')}")
+    
+    # Show LLM context
+    print("\nLLM Context Preview:")
+    print(single_analyzer.get_llm_context()[:500] + "...")
+
+# Export both analyzers
+__all__ = ['DatabaseAnalyzer', 'SingleTableAnalyzer'] 

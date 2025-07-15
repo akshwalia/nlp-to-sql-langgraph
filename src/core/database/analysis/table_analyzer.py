@@ -40,7 +40,8 @@ class TableAnalyzer:
             "foreign_keys": [],
             "indexes": self.inspector.get_indexes(table_name, schema=schema_name),
             "row_count": 0,
-            "sample_data": None
+            "sample_data": None,
+            "description_table": None  # Will store description table information
         }
         
         # Get column information
@@ -92,6 +93,9 @@ class TableAnalyzer:
         # Get column statistics
         if table_info["row_count"] and table_info["row_count"] != "Error" and table_info["row_count"] > 0:
             self._analyze_column_statistics(table_name, table_info, connection, schema_name)
+        
+        # Analyze description table if it exists
+        table_info["description_table"] = self._analyze_description_table(table_name, connection, schema_name)
         
         return table_info
     
@@ -234,3 +238,81 @@ class TableAnalyzer:
         except Exception as e:
             logger.error(f"Error getting row count for {schema_name}.{table_name}: {e}")
             return 0 
+    
+    def _analyze_description_table(self, table_name: str, connection, schema_name: str = "public") -> Dict[str, Any]:
+        """
+        Analyze the description table for a given table if it exists
+        
+        Args:
+            table_name: Name of the main table
+            connection: Database connection
+            schema_name: Schema name (defaults to 'public')
+            
+        Returns:
+            Dictionary with description table information or None if not found
+        """
+        description_table_name = f"{table_name}_description"
+        
+        try:
+            # Check if description table exists
+            table_names = self.inspector.get_table_names(schema=schema_name)
+            if description_table_name not in table_names:
+                logger.debug(f"Description table {description_table_name} not found for {table_name}")
+                return None
+            
+            logger.info(f"Found description table: {description_table_name}")
+            
+            # Get the description table data
+            result = connection.execute(text(f'SELECT * FROM "{schema_name}"."{description_table_name}"'))
+            rows = []
+            for row in result:
+                row_dict = {}
+                for idx, column in enumerate(result.keys()):
+                    row_dict[column] = row[idx]
+                rows.append(row_dict)
+            
+            if not rows:
+                logger.warning(f"Description table {description_table_name} is empty")
+                return None
+            
+            # Process description data into a structured format
+            description_info = {
+                "table_name": description_table_name,
+                "row_count": len(rows),
+                "columns": {},
+                "must_have_columns": [],
+                "important_columns": [],
+                "mandatory_entity_columns": []
+            }
+            
+            for row in rows:
+                column_name = row.get('column_name', '')
+                common_name = row.get('common_name', '')
+                description = row.get('description', '')
+                is_important = row.get('is_important', False)
+                must_have = row.get('must_have', False)
+                mandatory_entity = row.get('mandatory_entity', False)
+                
+                if column_name:
+                    description_info["columns"][column_name] = {
+                        "common_name": common_name,
+                        "description": description,
+                        "is_important": is_important,
+                        "must_have": must_have,
+                        "mandatory_entity": mandatory_entity
+                    }
+                    
+                    # Track special columns
+                    if must_have:
+                        description_info["must_have_columns"].append(column_name)
+                    if is_important:
+                        description_info["important_columns"].append(column_name)
+                    if mandatory_entity:
+                        description_info["mandatory_entity_columns"].append(column_name)
+            
+            logger.info(f"Description analysis complete for {table_name}: {len(description_info['columns'])} columns, {len(description_info['must_have_columns'])} must-have")
+            return description_info
+            
+        except Exception as e:
+            logger.error(f"Error analyzing description table for {table_name}: {e}")
+            return None 

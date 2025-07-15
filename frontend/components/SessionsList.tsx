@@ -1,24 +1,22 @@
 import { useState, useEffect } from 'react';
 import { X, MessageSquare, Plus, Trash2, Calendar, Clock, Loader2 } from 'lucide-react';
-import { listWorkspaceSessions, deleteSession, createSession } from '../lib/api';
+import { listSessions, deleteSession, createSession } from '../lib/api';
 
 interface Session {
   _id: string;
   name: string;
   description?: string;
-  workspace_id: string;
   created_at: string;
   updated_at: string;
   message_count?: number;
 }
 
 interface SessionsListProps {
-  workspaceId: string;
   onClose: () => void;
   onSessionSelect: (sessionId: string) => void;
 }
 
-export default function SessionsList({ workspaceId, onClose, onSessionSelect }: SessionsListProps) {
+export default function SessionsList({ onClose, onSessionSelect }: SessionsListProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -28,12 +26,12 @@ export default function SessionsList({ workspaceId, onClose, onSessionSelect }: 
 
   useEffect(() => {
     fetchSessions();
-  }, [workspaceId]);
+  }, []);
 
   const fetchSessions = async () => {
     try {
       setLoading(true);
-      const data = await listWorkspaceSessions(workspaceId);
+      const data = await listSessions(); // Changed from listWorkspaceSessions
       setSessions(data);
     } catch (error) {
       console.error('Error fetching sessions:', error);
@@ -48,7 +46,6 @@ export default function SessionsList({ workspaceId, onClose, onSessionSelect }: 
     try {
       setCreating(true);
       await createSession({
-        workspace_id: workspaceId,
         name: newSessionName,
         description: newSessionDescription
       });

@@ -9,7 +9,7 @@ import SqlEditor from './SqlEditor';
 import AdminPanel from './AdminPanel';
 import VerificationResult from './VerificationResult';
 import UserProfile from './UserProfile';
-import { executeQuery, getSessionInfo, getPaginatedResults, createSession, activateWorkspace, getSessionMessages, createSavedQuery, getSavedQueries, deleteSavedQuery, deleteAllSavedQueries, SavedQuery, SavedQueryCreate } from '../lib/api';
+import { executeQuery, getSessionInfo, getPaginatedResults, createSession, getSessionMessages, createSavedQuery, getSavedQueries, deleteSavedQuery, deleteAllSavedQueries, SavedQuery, SavedQueryCreate } from '../lib/api';
 import { useAuth } from '../lib/authContext';
 import { useTheme } from '../lib/themeContext';
 import ThemeToggle from './ThemeToggle';
@@ -81,12 +81,10 @@ interface PaginationState {
 }
 
 interface ChatBotProps {
-  workspaceId?: string | null;
   autoSessionId?: string | null;
-  onBackToWorkspaces?: () => void;
 }
 
-export default function ChatBot({ workspaceId, autoSessionId, onBackToWorkspaces }: ChatBotProps) {
+export default function ChatBot({ autoSessionId }: ChatBotProps) {
   const { user, settings } = useAuth();
   const { theme } = useTheme();
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -238,12 +236,10 @@ export default function ChatBot({ workspaceId, autoSessionId, onBackToWorkspaces
     }
   }, [autoSessionId]);
 
-  // Load saved queries from database when component mounts or workspace changes
+  // Load saved queries from database when component mounts or session changes
   useEffect(() => {
-    if (workspaceId) {
-      loadSavedQueries();
-    }
-  }, [workspaceId]);
+    loadSavedQueries();
+  }, [sessionId]);
 
   const fetchSessionInfo = async () => {
     if (!sessionId) return;
@@ -297,11 +293,10 @@ export default function ChatBot({ workspaceId, autoSessionId, onBackToWorkspaces
     try {
       let currentSessionId = sessionId;
       
-      // Auto-create session if none exists and workspace is connected
-      if (!currentSessionId && workspaceId) {
+      // Auto-create session if none exists
+      if (!currentSessionId) {
         try {
           const sessionData = await createSession({
-            workspace_id: workspaceId,
             name: `Chat Session ${new Date().toLocaleString()}`,
             description: 'Auto-created session'
           });
@@ -544,36 +539,45 @@ export default function ChatBot({ workspaceId, autoSessionId, onBackToWorkspaces
 
   // New function to save a query to the dashboard
   const handleSaveQuery = async (query: any) => {
+    if (!query.sql || !query.data) return;
+    
     try {
-      // Validate query data before saving
-      if (!query || !query.sql) {
-        console.error('Invalid query data, cannot save');
-        return;
-      }
-      
-      // Prepare the query data for the API
       const queryData: SavedQueryCreate = {
-        title: query.title || "Untitled Query",
-        description: query.description || "",
+        title: query.title || `Query ${new Date().toLocaleString()}`,
+        description: query.description || '',
         sql: query.sql,
-        data: query.data || [],
-        table_name: query.tableName || ""
+        data: query.data,
+        table_name: query.table_name || 'results'
       };
       
       const savedQuery = await createSavedQuery(
         queryData,
-        workspaceId || undefined,
+        undefined, // No workspace context
         sessionId || undefined
       );
       
-      // Update local state by adding the new query at the beginning (most recent first)
+      // Add to local state
       setSavedQueries(prev => [savedQuery, ...prev]);
       
-      console.log('Query saved successfully to database');
+      // Show success message
+      const successMessage: ChatMessage = {
+        id: `save-success-${Date.now()}`,
+        isUser: false,
+        text: `✅ Query saved successfully: "${savedQuery.title}"`,
+        timestamp: new Date(),
+      };
       
+      setMessages((prev) => [...prev, successMessage]);
     } catch (error) {
       console.error('Error saving query:', error);
-      // You could add a toast notification here for better UX
+      const errorMessage: ChatMessage = {
+        id: `save-error-${Date.now()}`,
+        isUser: false,
+        text: '❌ Failed to save query. Please try again.',
+        timestamp: new Date(),
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
     }
   };
 
@@ -581,16 +585,16 @@ export default function ChatBot({ workspaceId, autoSessionId, onBackToWorkspaces
   const handleDeleteQuery = async (queryId: string) => {
     try {
       await deleteSavedQuery(queryId);
-      setSavedQueries(prev => prev.filter(query => query.id !== queryId));
+      setSavedQueries(prev => prev.filter(q => q.id !== queryId));
     } catch (error) {
-      console.error('Error deleting query:', error);
+      console.error('Error deleting saved query:', error);
     }
   };
 
   // Function to clear all saved queries
   const handleClearAllQueries = async () => {
     try {
-      await deleteAllSavedQueries(workspaceId || undefined);
+      await deleteAllSavedQueries(undefined); // No workspace context
       setSavedQueries([]);
     } catch (error) {
       console.error('Error clearing all queries:', error);
@@ -598,11 +602,8 @@ export default function ChatBot({ workspaceId, autoSessionId, onBackToWorkspaces
   };
 
   const handleNewChat = async () => {
-    if (!workspaceId) return;
-    
     try {
       const sessionData = await createSession({
-        workspace_id: workspaceId,
         name: `Chat Session ${new Date().toLocaleString()}`,
         description: 'New chat session'
       });
@@ -632,26 +633,27 @@ export default function ChatBot({ workspaceId, autoSessionId, onBackToWorkspaces
   };
 
   const handleRefreshConnection = async () => {
-    if (!workspaceId) return;
+    if (!sessionId) return;
     
     try {
       setIsRefreshing(true);
-      await activateWorkspace(workspaceId);
+      // Refresh session info instead of activating workspace
+      await fetchSessionInfo();
       
       const systemMessage: ChatMessage = {
         id: `system-${Date.now()}`,
         isUser: false,
-        text: '✅ Database connection refreshed successfully!',
+        text: '✅ Session refreshed successfully!',
         timestamp: new Date(),
       };
       
       setMessages((prev) => [...prev, systemMessage]);
     } catch (error) {
-      console.error('Error refreshing connection:', error);
+      console.error('Error refreshing session:', error);
       const errorMessage: ChatMessage = {
         id: `error-${Date.now()}`,
         isUser: false,
-        text: '❌ Failed to refresh database connection. Please check your connection settings.',
+        text: '❌ Failed to refresh session. Please check your connection settings.',
         timestamp: new Date(),
       };
       
@@ -827,7 +829,7 @@ export default function ChatBot({ workspaceId, autoSessionId, onBackToWorkspaces
   const loadSavedQueries = async () => {
     try {
       setIsLoadingSavedQueries(true);
-      const queries = await getSavedQueries(workspaceId || undefined);
+      const queries = await getSavedQueries(undefined); // No workspace context
       setSavedQueries(queries);
     } catch (error) {
       console.error('Error loading saved queries:', error);
@@ -987,22 +989,11 @@ export default function ChatBot({ workspaceId, autoSessionId, onBackToWorkspaces
 
   const navigationItems = [
     {
-      id: 'back-to-workspaces',
-      icon: ArrowLeft,
-      label: 'Back to Workspaces',
-      onClick: () => {
-        onBackToWorkspaces?.();
-        setSidebarOpen(false);
-      },
-      disabled: false,
-      color: 'text-gray-400 group-hover:text-gray-300'
-    },
-    {
       id: 'new-chat',
       icon: Plus,
       label: 'New Chat',
       onClick: handleNewChat,
-      disabled: !workspaceId,
+      disabled: false,
       color: 'text-emerald-400 group-hover:text-emerald-300'
     },
     {
@@ -1010,15 +1001,15 @@ export default function ChatBot({ workspaceId, autoSessionId, onBackToWorkspaces
       icon: History,
       label: 'Chat History',
       onClick: () => { setShowSessionsList(true); setSidebarOpen(false); },
-      disabled: !workspaceId,
+      disabled: false,
       color: 'text-blue-400 group-hover:text-blue-300'
     },
     {
       id: 'refresh',
       icon: RefreshCw,
-      label: 'Refresh Connection',
+      label: 'Refresh Session',
       onClick: handleRefreshConnection,
-      disabled: !workspaceId || isRefreshing,
+      disabled: !sessionId || isRefreshing,
       color: 'text-orange-400 group-hover:text-orange-300',
       spinning: isRefreshing
     },
@@ -1277,7 +1268,7 @@ export default function ChatBot({ workspaceId, autoSessionId, onBackToWorkspaces
                         transitionDelay: `${animationDelay + 150}ms`,
                         willChange: 'transform, opacity'
                       }}>
-                        <SqlResult
+                        {/* <SqlResult
                           sql={message.sqlResult.sql}
                           data={message.sqlResult.data}
                           error={message.sqlResult.error}
@@ -1289,7 +1280,7 @@ export default function ChatBot({ workspaceId, autoSessionId, onBackToWorkspaces
                           messageId={message.id}
                           visualizationRecommendations={message.sqlResult.visualization_recommendations}
                           savedCharts={message.sqlResult.saved_charts}
-                        />
+                        /> */}
                       </div>
                     )}
 
@@ -1311,7 +1302,7 @@ export default function ChatBot({ workspaceId, autoSessionId, onBackToWorkspaces
                               transitionDelay: `${animationDelay + 250 + tableIndex * 100}ms`,
                               willChange: 'transform, opacity'
                             }}>
-                            <SqlResult
+                            {/* <SqlResult
                               sql={table.sql}
                               data={table.results}
                               title={table.name}
@@ -1324,7 +1315,7 @@ export default function ChatBot({ workspaceId, autoSessionId, onBackToWorkspaces
                               messageId={message.id}
                               visualizationRecommendations={undefined}
                               savedCharts={undefined}
-                            />
+                            /> */}
                           </div>
                         ))}
                       </div>
@@ -1482,9 +1473,8 @@ export default function ChatBot({ workspaceId, autoSessionId, onBackToWorkspaces
       />
 
       {/* Sessions List */}
-      {showSessionsList && workspaceId && (
+      {showSessionsList && (
         <SessionsList 
-          workspaceId={workspaceId}
           onClose={() => setShowSessionsList(false)}
           onSessionSelect={handleSessionSelect}
         />

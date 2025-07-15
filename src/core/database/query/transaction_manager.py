@@ -2,6 +2,7 @@ from typing import Dict, List, Any, Tuple, Optional
 from sqlalchemy import text
 import pandas as pd
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -34,42 +35,58 @@ class TransactionManager:
         Returns:
             Tuple of (success, results_list, error_message)
         """
+        logger.info(f"Starting transaction execution for workspace: {self.workspace_id}")
+        logger.debug(f"Number of queries in transaction: {len(queries)}")
+        
         results = []
         
         try:
             # Use connection pool if available, otherwise fall back to engine
             if self.connection_manager and self.workspace_id:
+                logger.debug(f"Using connection pool for transaction in workspace: {self.workspace_id}")
                 with self.connection_manager.get_connection(self.workspace_id) as conn:
                     return self._execute_transaction_with_connection(queries, conn)
             else:
+                logger.debug("Using SQLAlchemy engine for transaction (no connection pool)")
                 # Fallback to SQLAlchemy engine with transaction
                 with self.engine.begin() as transaction:
                     return self._execute_transaction_with_sqlalchemy(queries, transaction)
                 
         except Exception as e:
             logger.error(f"Error executing transaction: {e}")
-            return False, results, str(e)
+            return False, [], str(e)
     
     def _execute_transaction_with_connection(self, queries: List[str], conn) -> Tuple[bool, List[Any], Optional[str]]:
         """
-        Execute transaction using psycopg2 connection
+        Execute transaction using connection pool connection
         
         Args:
             queries: List of SQL queries to execute
-            conn: Database connection
+            conn: Database connection from pool
             
         Returns:
             Tuple of (success, results_list, error_message)
         """
-        results = []
+        logger.debug("Starting transaction with connection pool")
         
-        # Start transaction explicitly
-        conn.autocommit = False
-        cursor = conn.cursor()
+        results = []
+        cursor = None
         
         try:
-            for i, query in enumerate(queries):
+            cursor = conn.cursor()
+            logger.debug("Database cursor created for transaction")
+            
+            # Start transaction
+            logger.debug("Starting database transaction")
+            
+            for i, query in enumerate(queries, 1):
+                logger.debug(f"Executing query {i}/{len(queries)} in transaction")
+                logger.debug(f"Query: {query[:200]}{'...' if len(query) > 200 else ''}")
+                
+                # Execute each query
+                start_time = time.time()
                 cursor.execute(query)
+                execution_time = time.time() - start_time
                 
                 # Check if query returns rows
                 if cursor.description:
@@ -78,7 +95,7 @@ class TransactionManager:
                     rows = cursor.fetchall()
                     
                     # Convert to list of dictionaries
-                    data = []
+                    query_results = []
                     for row in rows:
                         row_dict = {}
                         for idx, column in enumerate(columns):
@@ -87,54 +104,42 @@ class TransactionManager:
                             if isinstance(value, (pd.Timestamp, pd.Timedelta)):
                                 value = str(value)
                             row_dict[column] = value
-                        data.append(row_dict)
+                        query_results.append(row_dict)
                     
-                    results.append({
-                        "query_number": i + 1,
-                        "sql": query,
-                        "success": True,
-                        "results": data,
-                        "affected_rows": len(data),
-                        "error": None
-                    })
+                    results.append(query_results)
+                    logger.debug(f"Query {i} completed in {execution_time:.3f}s, returned {len(query_results)} rows")
                 else:
                     # For non-SELECT queries, return rowcount
                     affected_rows = cursor.rowcount
-                    results.append({
-                        "query_number": i + 1,
-                        "sql": query,
-                        "success": True,
-                        "results": [],
-                        "affected_rows": affected_rows,
-                        "error": None
-                    })
+                    results.append([{"affected_rows": affected_rows}])
+                    logger.debug(f"Query {i} completed in {execution_time:.3f}s, affected {affected_rows} rows")
             
-            # If we get here, all queries succeeded - commit the transaction
+            # Commit transaction
+            logger.info("Committing transaction")
             conn.commit()
-            cursor.close()
             
+            logger.info(f"Transaction completed successfully with {len(queries)} queries")
             return True, results, None
             
         except Exception as e:
-            # Rollback the transaction on any error
-            conn.rollback()
-            cursor.close()
+            logger.error(f"Error in transaction, rolling back: {e}")
+            try:
+                if conn:
+                    conn.rollback()
+                    logger.info("Transaction rolled back successfully")
+            except Exception as rollback_error:
+                logger.error(f"Error during rollback: {rollback_error}")
             
-            # Add error info to the last result
-            results.append({
-                "query_number": len(results) + 1,
-                "sql": queries[len(results)] if len(results) < len(queries) else "Unknown",
-                "success": False,
-                "results": [],
-                "affected_rows": 0,
-                "error": str(e)
-            })
+            return False, [], str(e)
             
-            return False, results, f"Transaction failed at query {len(results)}: {str(e)}"
+        finally:
+            if cursor:
+                cursor.close()
+                logger.debug("Database cursor closed")
     
     def _execute_transaction_with_sqlalchemy(self, queries: List[str], transaction) -> Tuple[bool, List[Any], Optional[str]]:
         """
-        Execute transaction using SQLAlchemy transaction
+        Execute transaction using SQLAlchemy
         
         Args:
             queries: List of SQL queries to execute
@@ -143,16 +148,24 @@ class TransactionManager:
         Returns:
             Tuple of (success, results_list, error_message)
         """
+        logger.debug("Starting transaction with SQLAlchemy")
+        
         results = []
         
         try:
-            for i, query in enumerate(queries):
+            for i, query in enumerate(queries, 1):
+                logger.debug(f"Executing query {i}/{len(queries)} in transaction")
+                logger.debug(f"Query: {query[:200]}{'...' if len(query) > 200 else ''}")
+                
+                # Execute each query
+                start_time = time.time()
                 result = transaction.execute(text(query))
+                execution_time = time.time() - start_time
                 
                 if result.returns_rows:
                     # Convert result to a list of dictionaries
                     columns = result.keys()
-                    data = []
+                    query_results = []
                     for row in result:
                         row_dict = {}
                         for idx, column in enumerate(columns):
@@ -161,44 +174,23 @@ class TransactionManager:
                             if isinstance(value, (pd.Timestamp, pd.Timedelta)):
                                 value = str(value)
                             row_dict[column] = value
-                        data.append(row_dict)
+                        query_results.append(row_dict)
                     
-                    results.append({
-                        "query_number": i + 1,
-                        "sql": query,
-                        "success": True,
-                        "results": data,
-                        "affected_rows": len(data),
-                        "error": None
-                    })
+                    results.append(query_results)
+                    logger.debug(f"Query {i} completed in {execution_time:.3f}s, returned {len(query_results)} rows")
                 else:
                     # For non-SELECT queries, return rowcount
                     affected_rows = result.rowcount
-                    results.append({
-                        "query_number": i + 1,
-                        "sql": query,
-                        "success": True,
-                        "results": [],
-                        "affected_rows": affected_rows,
-                        "error": None
-                    })
+                    results.append([{"affected_rows": affected_rows}])
+                    logger.debug(f"Query {i} completed in {execution_time:.3f}s, affected {affected_rows} rows")
             
-            # If we get here, all queries succeeded - transaction will be committed automatically
+            logger.info(f"Transaction completed successfully with {len(queries)} queries")
             return True, results, None
             
         except Exception as e:
-            # Add error info to the last result
-            results.append({
-                "query_number": len(results) + 1,
-                "sql": queries[len(results)] if len(results) < len(queries) else "Unknown",
-                "success": False,
-                "results": [],
-                "affected_rows": 0,
-                "error": str(e)
-            })
-            
-            # Transaction will be automatically rolled back
-            return False, results, f"Transaction failed at query {len(results)}: {str(e)}"
+            logger.error(f"Error in transaction, will be rolled back: {e}")
+            # SQLAlchemy will automatically rollback on exception
+            return False, [], str(e)
     
     def execute_batch_with_savepoints(self, query_batches: List[List[str]]) -> List[Tuple[bool, List[Any], Optional[str]]]:
         """

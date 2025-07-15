@@ -14,6 +14,7 @@ This package contains the modular components for the SmartSQLGenerator:
 - edit_operations: Edit mode operations
 - multi_query: Multi-query analysis
 - chart_recommendations: Chart recommendation generation
+- analytical_manager: Analytical workflow management
 - graph: LangGraph graph management
 - sql_generator: Main SQL generator class
 """

@@ -28,28 +28,53 @@ class RelationshipAnalyzer:
         Returns:
             List of relationships
         """
+        logger.info(f"Starting relationship analysis for schemas: {schema_names}")
         relationships = []
         
         try:
             # Collect all foreign keys
-            for schema_name in schema_names:
-                for table_name in self.inspector.get_table_names(schema=schema_name):
-                    for fk in self.inspector.get_foreign_keys(table_name, schema=schema_name):
-                        relationship = {
-                            "source_schema": schema_name,
-                            "source_table": table_name,
-                            "source_columns": fk["constrained_columns"],
-                            "target_schema": fk.get("referred_schema", schema_name),
-                            "target_table": fk["referred_table"],
-                            "target_columns": fk["referred_columns"],
-                            "name": fk.get("name")
-                        }
-                        relationships.append(relationship)
+            total_tables = 0
+            total_foreign_keys = 0
             
-            logger.info(f"Found {len(relationships)} relationships")
+            for schema_name in schema_names:
+                logger.info(f"Analyzing relationships in schema: {schema_name}")
+                
+                table_names = self.inspector.get_table_names(schema=schema_name)
+                logger.debug(f"Found {len(table_names)} tables in schema {schema_name}")
+                total_tables += len(table_names)
+                
+                for table_name in table_names:
+                    logger.debug(f"Checking foreign keys for table: {schema_name}.{table_name}")
+                    
+                    try:
+                        foreign_keys = self.inspector.get_foreign_keys(table_name, schema=schema_name)
+                        logger.debug(f"Found {len(foreign_keys)} foreign keys in {table_name}")
+                        total_foreign_keys += len(foreign_keys)
+                        
+                        for fk in foreign_keys:
+                            relationship = {
+                                "source_schema": schema_name,
+                                "source_table": table_name,
+                                "source_columns": fk["constrained_columns"],
+                                "target_schema": fk.get("referred_schema", schema_name),
+                                "target_table": fk["referred_table"],
+                                "target_columns": fk["referred_columns"],
+                                "name": fk.get("name")
+                            }
+                            relationships.append(relationship)
+                            
+                            logger.debug(f"  FK: {relationship['source_columns']} -> {relationship['target_schema']}.{relationship['target_table']}.{relationship['target_columns']}")
+                    
+                    except Exception as e:
+                        logger.error(f"Error getting foreign keys for {schema_name}.{table_name}: {e}")
+                
+                logger.info(f"Completed relationship analysis for schema: {schema_name}")
+            
+            logger.info(f"Relationship analysis completed: {len(relationships)} relationships found across {total_tables} tables")
+            logger.debug(f"Total foreign keys processed: {total_foreign_keys}")
             
         except Exception as e:
-            logger.error(f"Error analyzing relationships: {e}")
+            logger.error(f"Error during relationship analysis: {e}")
         
         return relationships
     

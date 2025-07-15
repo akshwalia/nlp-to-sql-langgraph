@@ -17,7 +17,6 @@ db = client.get_database("nlp_sql")
 
 # Collections
 users_collection = db.users
-workspaces_collection = db.workspaces
 sessions_collection = db.sessions
 messages_collection = db.messages
 saved_queries_collection = db.saved_queries
@@ -105,40 +104,6 @@ class TokenData(BaseModel):
     exp: Optional[datetime] = None
 
 
-# Database connection model
-class DatabaseConnection(BaseModel):
-    db_name: str
-    username: str
-    password: str
-    host: str = "localhost"
-    port: int = 5432
-
-
-# Workspace models
-class WorkspaceCreate(BaseModel):
-    name: str
-    description: Optional[str] = None
-    db_connection: DatabaseConnection
-
-
-class Workspace(BaseModel):
-    id: PyObjectId = Field(default_factory=lambda: str(ObjectId()), alias="_id")
-    name: str
-    description: Optional[str] = None
-    db_connection: DatabaseConnection
-    user_id: PyObjectId
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-    
-    class Config:
-        populate_by_name = True
-        arbitrary_types_allowed = True
-
-
-class WorkspaceInDB(Workspace):
-    pass
-
-
 # Chart recommendation models
 class ChartRecommendation(BaseModel):
     chart_type: str  # 'bar', 'line', 'pie', etc.
@@ -175,14 +140,12 @@ class SavedChart(BaseModel):
 class SessionCreate(BaseModel):
     name: str
     description: Optional[str] = None
-    workspace_id: PyObjectId
 
 
 class Session(BaseModel):
     id: PyObjectId = Field(default_factory=lambda: str(ObjectId()), alias="_id")
     name: str
     description: Optional[str] = None
-    workspace_id: PyObjectId
     user_id: PyObjectId
     vector_store_id: str = Field(default_factory=lambda: str(ObjectId()))
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -352,7 +315,6 @@ class SavedQuery(BaseModel):
     data: List[Dict[str, Any]]
     table_name: Optional[str] = None
     user_id: PyObjectId
-    workspace_id: Optional[PyObjectId] = None
     session_id: Optional[PyObjectId] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

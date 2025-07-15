@@ -326,27 +326,6 @@ class TextResponseManager:
             print(f"Error extracting response content: {e}")
             return ""
     
-    def is_analysis_question(self, question: str) -> bool:
-        """Check if question requires analysis beyond simple data retrieval"""
-        analysis_indicators = [
-            r'\bwhy\b', r'\bhow\b', r'\bwhat causes\b', r'\bwhat leads to\b',
-            r'\banalyz[e|ing]\b', r'\bcompare\b', r'\bcontrast\b',
-            r'\btrend\b', r'\bpattern\b', r'\bcorrelation\b',
-            r'\binsight\b', r'\bexplain\b', r'\breason\b',
-            r'\bfactor\b', r'\bimpact\b', r'\beffect\b',
-            r'\bperformance\b', r'\boptimiz\b', r'\bimprove\b',
-            r'\brecommend\b', r'\bsuggestion\b', r'\badvice\b',
-            r'\bpredict\b', r'\bforecast\b', r'\bfuture\b',
-            r'\bbest\b', r'\bworst\b', r'\btop\b', r'\bbottom\b',
-            r'\bhighest\b', r'\blowest\b', r'\bmost\b', r'\bleast\b'
-        ]
-        
-        question_lower = question.lower()
-        for indicator in analysis_indicators:
-            if re.search(indicator, question_lower):
-                return True
-        return False 
-
     def _create_fallback_response(self, question: str, sql: str = None, results: Any = None) -> str:
         """Create a fallback response when LLM fails"""
         try:
