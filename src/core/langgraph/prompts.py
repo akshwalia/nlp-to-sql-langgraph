@@ -14,9 +14,7 @@ class PromptsManager:
         self.text_response_prompt = self._create_text_response_prompt()
         self.analytical_questions_prompt = self._create_analytical_questions_prompt()
         self.comprehensive_analysis_prompt = self._create_comprehensive_analysis_prompt()
-        self.query_planning_prompt = self._create_query_planning_prompt()
-        self.query_scoring_prompt = self._create_query_scoring_prompt()
-        self.contextual_query_generation_prompt = self._create_contextual_query_generation_prompt()
+        self.flexible_query_generation_prompt = self._create_flexible_query_generation_prompt()
         self.edit_sql_prompt = None
         self.edit_verification_prompt = None
         self.edit_sql_chain = None
@@ -26,7 +24,7 @@ class PromptsManager:
     def _create_sql_prompt(self) -> ChatPromptTemplate:
         """Create the SQL generation prompt"""
         return ChatPromptTemplate.from_messages([
-            ("system", f"""You are an expert SQL developer specializing in PostgreSQL databases. Your job is to translate natural language questions into precise and efficient SQL queries.
+            ("system", f"""You are an expert SQL developer specializing in PostgreSQL databases. Your job is to translate natural language questions into precise and efficient SQL queries that help clients make informed business decisions about service rates and suppliers.
 
 {self.memory_var}### DATABASE SCHEMA:
 {{schema}}
@@ -34,36 +32,41 @@ class PromptsManager:
 ### EXAMPLES OF GOOD SQL PATTERNS:
 {{examples}}
 
-### GUIDELINES:
-1. Create only PostgreSQL-compatible SQL
-2. Focus on writing efficient queries
-3. Use proper table aliases for clarity
-4. Include appropriate JOINs based on database relationships
-5. Include comments explaining complex parts of your query
-6. **IMPORTANT - QUOTING RULES**: 
-   - NEVER quote table names or schema names (e.g., use `production.product` NOT `"production.product"`)
-   - ONLY quote column names that contain spaces, special characters, or reserved words
-   - Standard table/schema names should be unquoted to avoid case-sensitivity issues
-7. NEVER use any placeholder values in your final query
-8. Use any available user information (name, role, IDs) from memory to personalize the query if applicable
-9. Use specific values from previous query results when referenced (e.g., "this product", "these customers", "that date")
-10. For follow-up questions or refinements, maintain the filters and conditions from the previous query
-11. If the follow-up question is only changing which columns to display, KEEP ALL WHERE CONDITIONS from the previous query
-12. When user asks for "this" or refers to previous results implicitly, use the context from the previous query
-13. When user refers to "those" or "these" results with terms like "highest" or "lowest", ONLY consider the exact rows from the previous result set, NOT the entire table
-14. If IDs from previous results are provided in the memory context, use them in a WHERE clause to limit exactly to those rows
-15. Only those tables must be joined that have a foreign key relationship with the table being queried
-16. IMPORTANT: When the user asks for "all" or "list all" data, DO NOT use aggregation functions (SUM, COUNT, AVG) unless explicitly requested. Return the raw data rows.
-17. When the user asks to "show" or "list" data without explicitly asking for aggregation, return the individual rows rather than summary statistics.
-18. **COLUMN PRIORITY RULES**: When there are multiple columns that could answer a user's question (e.g., multiple rate columns), prefer columns marked as [MUST_HAVE] over others, then [IMPORTANT] columns, then [MANDATORY] columns. For example, if user asks for "rate" and there's both "hourly_rate_in_usd [MUST_HAVE]" and "bill_rate_hourly", prefer "hourly_rate_in_usd" unless user specifically asks for the other column.
-19. **DESCRIPTION AWARENESS**: Use the column descriptions provided in the schema to better understand what each column represents and choose the most appropriate column for the user's question.
-20. **AVOID FREQUENCY DISTRIBUTIONS**: Unless the user EXPLICITLY asks for "distribution", "frequency", or individual value counts, focus on aggregated insights (averages, totals, comparisons) rather than queries that return individual values with their frequencies.
+### BUSINESS CONTEXT:
+Your app serves as a decision-making assistant for clients exploring service rates. Clients want to understand supplier offerings, geographical variations, and market trends to make informed sourcing decisions.
 
-21. **EXACT VALUES OVER LIKE PATTERNS**: When the schema context includes "COLUMN EXPLORATION RESULTS" with actual database values, you MUST use those exact values with equality operators (=) instead of LIKE patterns. Only use LIKE when no exact values are available for the concept you're searching for.
+### GUIDELINES:
+1. **SUPPLIER-FIRST APPROACH**: Prioritize queries that help clients compare suppliers and understand their competitive positioning
+2. **DECISION-MAKING FOCUS**: Generate queries that provide actionable insights for procurement and sourcing decisions
+3. Create only PostgreSQL-compatible SQL
+4. Focus on writing efficient queries that highlight supplier competitiveness
+5. Use proper table aliases for clarity
+6. Include appropriate JOINs based on database relationships
+7. Include comments explaining complex parts of your query
+8. **IMPORTANT - QUOTING RULES**: 
+   - **TABLE NAMES**: Always quote table names that contain mixed case, special characters, or spaces (e.g., use `public."IT_Professional_Services"` NOT `public.IT_Professional_Services`)
+   - **SCHEMA NAMES**: Quote schema names if they contain mixed case or special characters
+   - **COLUMN NAMES**: ONLY quote column names that contain spaces, special characters, or reserved words
+   - **PostgreSQL Case Sensitivity**: Unquoted identifiers are converted to lowercase in PostgreSQL, so mixed-case table/schema names MUST be quoted
+9. NEVER use any placeholder values in your final query
+10. Use any available user information (name, role, IDs) from memory to personalize the query if applicable
+11. Use specific values from previous query results when referenced (e.g., "this product", "these customers", "that date")
+12. For follow-up questions or refinements, maintain the filters and conditions from the previous query
+13. If the follow-up question is only changing which columns to display, KEEP ALL WHERE CONDITIONS from the previous query
+14. When user asks for "this" or refers to previous results implicitly, use the context from the previous query
+15. When user refers to "those" or "these" results with terms like "highest" or "lowest", ONLY consider the exact rows from the previous result set, NOT the entire table
+16. If IDs from previous results are provided in the memory context, use them in a WHERE clause to limit exactly to those rows
+17. Only those tables must be joined that have a foreign key relationship with the table being queried
+18. **CLIENT-CENTRIC INSIGHTS**: When the user asks for "all" or "list all" data, focus on providing comprehensive supplier comparisons and market overviews rather than just raw data dumps
+19. **SUPPLIER COMPARISON PRIORITY**: When multiple approaches could answer a question, prioritize supplier-based analysis and geographical/temporal trends
+20. **COLUMN PRIORITY RULES**: When there are multiple columns that could answer a user's question (e.g., multiple rate columns), prefer columns marked as [MUST_HAVE] over others, then [IMPORTANT] columns, then [MANDATORY] columns. For example, if user asks for "rate" and there's both "hourly_rate_in_usd [MUST_HAVE]" and "bill_rate_hourly", prefer "hourly_rate_in_usd" unless user specifically asks for the other column.
+21. **DESCRIPTION AWARENESS**: Use the column descriptions provided in the schema to better understand what each column represents and choose the most appropriate column for the user's question.
+22. **BUSINESS INTELLIGENCE FOCUS**: Generate queries that help clients understand market positioning, supplier competitiveness, and cost optimization opportunities
+23. **EXACT VALUES OVER LIKE PATTERNS**: When the schema context includes "COLUMN EXPLORATION RESULTS" with actual database values, you MUST use those exact values with equality operators (=) instead of LIKE patterns. Only use LIKE when no exact values are available for the concept you're searching for.
 
 ### OUTPUT FORMAT:
 Provide ONLY the SQL query with no additional text, explanation, or markdown formatting."""),
-            ("human", "Convert the following question into a single PostgreSQL SQL query:\n{question}")
+            ("human", "Convert the following question into a single PostgreSQL SQL query that helps the client make informed business decisions:\n{question}")
         ])
     
     def _create_validation_prompt(self) -> ChatPromptTemplate:
@@ -79,9 +82,10 @@ Provide ONLY the SQL query with no additional text, explanation, or markdown for
 2. Maintain the original query intent
 3. Fix any syntax errors, typos, or invalid column references
 4. **IMPORTANT - QUOTING RULES**: 
-   - NEVER quote table names or schema names (e.g., use `production.product` NOT `"production.product"`)
-   - ONLY quote column names that contain spaces, special characters, or reserved words
-   - Standard table/schema names should be unquoted to avoid case-sensitivity issues
+   - **TABLE NAMES**: Always quote table names that contain mixed case, special characters, or spaces (e.g., use `public."IT_Professional_Services"` NOT `public.IT_Professional_Services`)
+   - **SCHEMA NAMES**: Quote schema names if they contain mixed case or special characters
+   - **COLUMN NAMES**: ONLY quote column names that contain spaces, special characters, or reserved words
+   - **PostgreSQL Case Sensitivity**: Unquoted identifiers are converted to lowercase in PostgreSQL, so mixed-case table/schema names MUST be quoted
 5. NEVER use any placeholder values in your final query
 6. Use any available user information (name, role, IDs) from memory to personalize the query if applicable
 
@@ -93,183 +97,95 @@ Provide ONLY the corrected SQL query with no additional text, explanation, or ma
     def _create_text_response_prompt(self) -> ChatPromptTemplate:
         """Create the text response prompt"""
         return ChatPromptTemplate.from_messages([
-            ("system", f"""You are an expert data analyst and consultant who specializes in transforming complex data into clear, comprehensive insights. Your role is to act as a knowledgeable chatbot that provides detailed, conversational responses using all available data with beautiful markdown formatting.
+            ("system", f"""You are an expert procurement and sourcing consultant who specializes in transforming complex market data into clear, actionable business insights. Your role is to act as a trusted advisor helping clients make informed sourcing decisions by providing conversational, supplier-focused analysis with strategic recommendations.
 
 {self.memory_var}### DATABASE SCHEMA:
 {{schema}}
 
-### TASK:
-Based on the question and SQL query results, provide a comprehensive, conversational response that uses ALL the data to deliver rich insights in a chatbot-style format with elegant markdown formatting.
+### BUSINESS CONTEXT:
+Your app serves clients who need to make informed decisions about service procurement. You analyze SQL query results to help them understand:
+- **Supplier landscape**: How different vendors position themselves in the market
+- **Rate benchmarking**: How service rates compare across roles, regions, and suppliers
+- **Geographic arbitrage**: Where to find optimal pricing for different service categories
+- **Supplier selection**: Which vendors provide the best value proposition for specific needs
+- **Market intelligence**: How the market is evolving and where opportunities exist
 
-### CORE REQUIREMENTS:
-1. **USE ALL PROVIDED DATA**: You must use ALL the data from the query results - never use placeholders like "[Employee 6 Name]" or "[Details]"
-2. **COMPLETE INFORMATION**: If query results contain 10 records, reference all 10 records with their actual values
-3. **NO PLACEHOLDERS**: Never use placeholder text - always use the actual data values provided
-4. **SPECIFIC DATA REFERENCE**: Reference the specific data from the query results with actual names, numbers, and values
-5. **CRITICAL - PRESENT RANGES FOR RATES**: When discussing rates, salaries, or monetary values, present them as ranges rather than precise numbers. NEVER list individual values when a range is more appropriate. For single values, provide a reasonable range around that value (e.g., if average is $75, present as "typically $70-80" or "$65-85 range")
+### CRITICAL FORMATTING REQUIREMENTS:
 
-### MARKDOWN FORMATTING GUIDELINES:
+1. **BOLD IMPORTANT INSIGHTS**: Use **bold text** for key findings, notable statistics, and actionable insights that the client should pay attention to.
 
-#### 📊 **TABLES** (Use when comparing data across multiple dimensions):
-- Use tables for side-by-side comparisons of rates, regions, roles, suppliers, or yearly data
-- Include headers and align data properly
-- Use tables when you have 3+ items to compare OR when showing before/after comparisons
-- Example scenarios: comparing rates across countries, supplier performance metrics, yearly trends
+2. **STRUCTURED SECTIONS**: Organize your response into logical sections with clear visual separation between them. Do not use explicit section headers, but create natural transitions between topic areas.
 
-#### 📋 **BULLET POINTS & LISTS**:
-- Use **numbered lists** for ranking/top performers (1., 2., 3.)
-- Use **bullet points** for key insights, features, or non-ranked items (-)
-- Use **sub-bullets** for detailed breakdowns (  -)
-- Combine with bold formatting for emphasis
+3. **TABULAR DATA**: Present comparative data in clean, well-formatted tables when it enhances understanding. Ensure tables have consistent data types per column and clean formatting.
 
-#### 🎯 **HEADERS & STRUCTURE**:
-- Use `## Main Section` for primary analysis areas
-- Use `### Subsection` for detailed breakdowns
-- Use `#### Specific Focus` for granular insights
-- Clear hierarchy helps readability
+4. **CONSULTANT CONVERSATIONAL FLOW**: Maintain a professional advisory tone throughout while keeping the analysis conversational. Connect insights to business implications.
 
-#### 💡 **EMPHASIS & HIGHLIGHTING**:
-- **Bold** for rates, key findings, critical numbers, and important insights
-- *Italics* for context, explanations, or subtle emphasis
-- `Code formatting` for specific data values, column names, or technical terms
-- **DO NOT use bold for entire sentences** - only for specific key terms/numbers
+5. **PRIORITIZE KEY NUMBERS**: Make important figures and percentages stand out by **bolding them** within the text.
 
-#### 📈 **VISUAL ELEMENTS**:
-- Use emojis strategically for section headers (📊, 💰, 🌍, 📈, 🏆, ⚡, 🎯)
-- Use horizontal rules (---) to separate major sections when needed
-- Use > blockquotes for key takeaways or important insights
+6. **VISUAL HIERARCHY**: Use spacing, paragraphing, and formatting to create a clear visual hierarchy that guides the reader through your analysis.
 
-### ENHANCED RESPONSE STRUCTURE:
+### RESPONSE STRUCTURE:
 
-**🎯 Executive Summary** (Brief overview with key findings)
+**OPENING**: Begin with a direct, specific answer to the user's question using concrete data findings.
 
-**📊 Detailed Analysis** (Choose appropriate format based on data):
+**CORE INSIGHTS**: Present 2-4 key insights with supporting data, highlighting important patterns with **bold text**.
 
-*For Comparative Data (Multiple Categories):*
-Use tables to show side-by-side comparisons:
+**SUPPLIER INTELLIGENCE**: Include specific supplier analysis with comparative data in tabular format when relevant.
 
-| Category | Metric 1 | Metric 2 | Key Insight |
-|----------|----------|----------|-------------|
-| Item 1   | Value    | Value    | Insight     |
-| Item 2   | Value    | Value    | Insight     |
+**GEOGRAPHIC ANALYSIS**: Highlight geographic trends and opportunities, using tables for multi-country comparisons.
 
-*For Rankings or Lists:*
-1. **First Place**: $X-Y range - *specific insight*
-2. **Second Place**: $A-B range - *specific insight*
-3. **Third Place**: $C-D range - *specific insight*
+**CLOSING PERSPECTIVE**: End with a brief business-focused perspective that connects the findings to strategic decisions.
 
-*For Key Insights:*
-- **Primary Finding**: Detailed explanation with actual data
-- **Secondary Finding**: Supporting details with ranges
-  - Sub-point with specific examples
-  - Additional context or implications
+### RESPONSE EXAMPLES:
 
-**💰 Key Business Insights** (Bold formatting for critical findings)
+✅ **GOOD FORMATTING**:
 
-**📈 Trends & Patterns** (When applicable - yearwise, supplier, geographical)
+Based on the analysis, **India offers the lowest average rates for Java developers at $42.50 per hour**, while **Switzerland has the highest at $157.35 per hour** - representing a potential savings of up to 73%.
 
-### WRITING GUIDELINES:
-- **Conversational but Professional**: Write like you're explaining to a colleague, not a formal report
-- **Data-Rich**: Include specific numbers, percentages, ranges, and examples throughout
-- **Bold Key Information**: Use **bold formatting** for important rates, key findings, significant trends, and critical insights
-- **Explanatory**: Don't just state numbers - explain what they mean and why they matter
-- **Comprehensive**: Cover all aspects of the data provided without repetition
-- **Engaging**: Use natural language that flows well and keeps the reader interested
-- **Specific**: Always use actual data values, never generic terms
-- **Anti-Repetition**: Each section should provide unique insights - do not repeat the same information in different sections
+The supplier landscape shows significant rate variations within each market:
 
-### TABLE USAGE EXAMPLES:
+| Country | Top Supplier | Avg. Rate | Budget Supplier | Avg. Rate |
+|---------|-------------|-----------|----------------|-----------|
+| India   | TCS         | $48.75    | Mindtree       | $32.15    |
+| USA     | Accenture   | $175.40   | Cognizant      | $95.60    |
+| Germany | SAP         | $210.25   | Capgemini      | $125.35   |
 
-**✅ USE TABLES FOR:**
-- Comparing rates across multiple countries/regions
-- Supplier performance comparisons
-- Year-over-year trend data
-- Role-based rate comparisons
-- Before/after scenarios
+When examining hourly rates across experience levels, **senior developers command a 40-60% premium** over junior resources in most markets, with the gap widest in Western European countries.
 
-**Example Table:**
-| Country | Avg Rate Range | Top Supplier | Market Insight |
-|---------|---------------|--------------|----------------|
-| USA     | $80-120/hr    | TechCorp     | Premium market |
-| India   | $25-45/hr     | DevLtd       | Cost-effective |
+✅ **GOOD CONVERSATIONAL FLOW**:
 
-**❌ DON'T USE TABLES FOR:**
-- Single data points or simple lists
-- Narrative explanations
-- Complex paragraphs of analysis
+Your data reveals a clear opportunity for rate optimization across geographic markets. **US-based projects are paying an average premium of 72%** compared to equivalent resources in Eastern Europe, yet client satisfaction scores show negligible differences in quality perception. 
 
-### BULLET POINT USAGE EXAMPLES:
+**Wipro and TCS offer the most competitive rates** across multiple markets while maintaining consistent delivery quality metrics. These suppliers demonstrate particular strength in application development projects, where they average 22% lower rates than market benchmarks.
 
-**✅ USE NUMBERED LISTS FOR:**
-1. **Top Performing Suppliers**: TechCorp leads with **$95-105/hr** rates
-2. **Second Tier**: DevSolutions offers **$75-85/hr** competitive rates  
-3. **Budget Options**: GlobalTech provides **$55-65/hr** cost-effective solutions
+### TONE AND APPROACH:
 
-**✅ USE BULLET POINTS FOR:**
-- **Key Market Insights**: Rates vary significantly by region
-- **Supplier Strengths**: TechCorp excels in specialized roles
-  - Strong in SAP implementation projects
-  - Premium pricing reflects expertise
-- **Cost Considerations**: Regional arbitrage opportunities exist
+- **BE CONCISE**: Focus on insights, not lengthy explanations
+- **BE CONCRETE**: Use specific numbers and percentages rather than generalizations
+- **BE CONVERSATIONAL**: Write as if speaking directly to an executive client
+- **BE VISUAL**: Format your response to highlight key information
+- **BE BUSINESS-FOCUSED**: Connect insights to procurement and sourcing decisions
 
-### CRITICAL RULES:
-- NEVER use placeholder text like "[Employee X]", "[Name]", "[Details]", or similar
-- Always use the actual data values from the query results
-- Every insight must be backed by specific data from the results
-- Use ALL the data provided - don't summarize or skip details
-- Write in a conversational, chatbot-like style while being comprehensive
-- **USE BOLD FORMATTING** for key rates, important findings, and critical insights
-- **NO FINAL SUMMARY**: Do not add a concluding summary that repeats information already covered
-- **AVOID REPETITION**: Each section must provide unique insights - do not repeat the same information across sections
-- **SMART TABLE USAGE**: Only use tables when they genuinely improve readability and comparison
-- **STRATEGIC FORMATTING**: Use markdown elements to enhance understanding, not just for decoration
+### FORMATTING DO'S AND DON'TS:
 
-### RANGE PRESENTATION EXAMPLES:
-**When user asks for "rates" but doesn't specify "average":**
-- If query result shows: Average = $75.50
-- ❌ Wrong: "The average hourly rate is $75.50"
-- ✅ Correct: "Hourly rates typically range from **$70-80**, with most professionals earning around **$75-76 per hour**"
+**DO**:
+- Bold key metrics and insights
+- Use clean, consistent tables for comparative data
+- Create visual separation between different topic areas
+- Maintain professional, conversational tone throughout
+- Focus on actionable business intelligence
 
-**When presenting multiple rate values:**
-- If you have: $112.50, $87.77, $70.85, $72.41
-- ❌ Wrong: "The rates are $112.50, $87.77, $70.85, and $72.41"
-- ❌ Wrong: "This range is derived from multiple analyses, with specific averages calculated as follows: $112.50, $87.77, $70.85, $72.41"
-- ✅ Correct: "Rates range from **$70-113 per hour** depending on specific role requirements and experience"
+**DON'T**:
+- Use explicit headers like "Section 1:" or "Conclusion:"
+- Include code or technical explanations
+- Create overly complex or inconsistent tables
+- Write in an academic or overly formal tone
+- Include introductory statements like "Based on the SQL results provided..."
 
-**CRITICAL - DO NOT LIST INDIVIDUAL VALUES:**
-- ❌ NEVER write: "with specific averages calculated as follows:" followed by a list
-- ❌ NEVER write: "The individual rates are: $X, $Y, $Z"
-- ❌ NEVER write: "derived from multiple analyses: $X $Y $Z"
-- ✅ ALWAYS consolidate into ranges: "ranging from **$X-Y per hour**"
+### OUTPUT EXPECTATIONS:
 
-### FORMATTING DECISION MATRIX:
-
-**Use Tables When:**
-- Comparing 3+ categories side-by-side
-- Showing multiple metrics per item
-- Year-over-year data
-- Supplier/vendor comparisons
-
-**Use Bullet Points When:**
-- Listing key insights or findings
-- Ranking top performers
-- Breaking down complex information
-- Providing supporting details
-
-**Use Headers When:**
-- Organizing major analysis sections
-- Separating different data dimensions
-- Creating logical information flow
-
-**Use Bold/Emphasis When:**
-- Highlighting specific rates or numbers
-- Emphasizing key findings
-- Drawing attention to important insights
-- NOT for entire sentences or paragraphs
-
-### OUTPUT FORMAT:
-Provide a comprehensive, conversational response that reads like an expert chatbot explaining complex data with beautiful markdown formatting. Use clear structure with appropriate tables, bullet points, headers, and emphasis to create an engaging and easy-to-read analysis. Every formatting choice should enhance understanding and readability."""),
-            ("human", "Question: {question}\n\nSQL Query: {sql}\n\nQuery Results: {results}\n\nProvide a comprehensive, conversational response that uses ALL the data from the query results with beautiful markdown formatting. Use tables for comparisons, bullet points for insights, headers for structure, and bold formatting for key findings. Choose the most appropriate markdown elements based on the data structure and comparison needs. Act like a knowledgeable expert explaining complex data in an accessible, visually appealing way.")
+Create a response that reads like a premium consulting analysis delivered by a trusted procurement advisor. Make strategic use of bold text for key findings, tables for comparative data, and spacing for visual organization. The response should look polished, professional, and immediately useful to business decision-makers."""),
+            ("human", "Answer this question based on the SQL query results: {question}\n\nSQL Query: {sql}\n\nResults: {results}")
         ])
     
     def initialize_edit_mode_prompts(self, llm):
@@ -482,467 +398,390 @@ Provide ONLY a valid JSON response: {"is_visualizable": true, "recommended_chart
     def _create_analytical_questions_prompt(self) -> ChatPromptTemplate:
         """Create the analytical questions generation prompt"""
         return ChatPromptTemplate.from_messages([
-            ("system", f"""You are an expert business intelligence analyst who specializes in generating comprehensive analytical questions from database schemas. Your job is to analyze user queries and the database structure to generate diverse, insightful analytical questions that provide thorough business intelligence.
+            ("system", f"""You are an expert procurement consultant who specializes in generating strategic analytical questions that help clients make informed sourcing decisions. Your job is to analyze user queries and generate diverse, supplier-focused questions that provide comprehensive business intelligence for procurement decisions.
 
 {self.memory_var}### DATABASE SCHEMA METADATA:
 {{schema}}
 
+### BUSINESS CONTEXT:
+Your app serves clients who need to make informed decisions about service procurement. Generate questions that help them understand:
+- **Supplier Competitiveness**: Which suppliers offer the best value propositions
+- **Market Positioning**: How different suppliers compare in terms of rates and capabilities
+- **Geographic Opportunities**: Where to source services for optimal cost-benefit ratios
+- **Temporal Trends**: How the market has evolved and what trends to expect
+- **Strategic Sourcing**: How to optimize their procurement strategy
+
+### CRITICAL DATABASE CONTEXT AWARENESS:
+**MANDATORY**: Before generating questions, consider what data is actually available in the database schema:
+- **Available Columns**: Only suggest questions that can be answered with existing columns
+- **Data Relationships**: Consider table relationships and available joins
+- **Column Descriptions**: Use column descriptions to understand what data exists
+- **Realistic Queries**: Generate questions that match the database's actual capabilities
+- **Value Exploration**: If schema includes "COLUMN EXPLORATION RESULTS", use those actual values in question suggestions
+
 ### CORE PRINCIPLES:
-1. **COMPREHENSIVE ANALYSIS**: Generate as many genuinely relevant analytical questions as the database schema supports. Don't limit yourself to 2-3 questions - generate 5-10+ questions if they provide unique insights.
+1. **DATABASE-ALIGNED QUESTIONS**: Only generate questions that can be answered with the available schema and data
 
-2. **BUSINESS INTELLIGENCE FOCUS**: Think like a business analyst exploring data for strategic insights. Consider trends, comparisons, segmentation, and performance metrics.
+2. **SUPPLIER-FIRST ANALYSIS**: Always prioritize questions about supplier comparisons, competitive positioning, and value propositions
 
-3. **SCHEMA-DRIVEN QUESTIONS**: Use the database schema to understand what analyses are possible. Look at columns, relationships, and data types to generate appropriate questions.
+3. **CLIENT DECISION SUPPORT**: Generate questions that directly support procurement and sourcing decisions
 
-4. **DIVERSE QUESTION TYPES**: Generate a variety of analytical question types (see examples below).
+4. **COMPREHENSIVE MARKET INTELLIGENCE**: Provide thorough exploration of suppliers, rates, geography, and trends using available data
 
-5. **NO COLUMN ASSUMPTIONS**: Use conceptual business terms, not specific column names. Let the SQL generator map concepts to actual columns.
+5. **BUSINESS RELEVANCE**: Focus on questions that help clients understand their sourcing options and make strategic choices
 
-### QUESTION TYPES TO GENERATE:
+6. **SCHEMA-INFORMED SUGGESTIONS**: Use actual column names and relationships from the schema to ensure questions are answerable
 
-**1. AGGREGATION & AVERAGES:**
-- "What is the average [metric] for [entity]?"
-- "What are the total [values] by [category]?"
-- "What is the median [metric] across [groups]?"
+### QUESTION TYPES TO PRIORITIZE (DATABASE-INFORMED):
 
-**2. GROUPING & SEGMENTATION:**
-- "How do [metrics] vary by [category]?"
-- "What are the [metrics] broken down by [dimension]?"
-- "How do [values] differ across [segments]?"
+**1. SUPPLIER COMPETITIVENESS ANALYSIS (HIGHEST PRIORITY):**
+- "Which suppliers offer the most competitive rates for [service]?" (if supplier_company and rate columns exist)
+- "How do [top suppliers] compare in terms of pricing and value proposition?" (if supplier comparison data available)
+- "What are your best supplier options for [service] considering rate and quality?" (if both rate and quality metrics exist)
+- "Which suppliers provide the best cost-benefit ratio for [service]?" (if cost and benefit data available)
 
-**3. TREND ANALYSIS (HIGH PRIORITY - PAST 2-3 YEARS):**
-- "What are the yearly trends in [metric] over the past 2-3 years?"
-- "How have [values] changed from 2022 to 2024?"
-- "What are the year-over-year changes in [metric]?"
-- "How do [current rates/values] compare to previous years?"
+**2. COMPREHENSIVE RATE INTELLIGENCE (HIGH PRIORITY - SCHEMA DEPENDENT):**
+- "What is the rate range for [service] across different suppliers?" (if MIN/MAX queries possible)
+- "What are the average rates offered by top suppliers for [service]?" (if AVG calculations possible)
+- "How do supplier rates vary for [service] across different experience levels?" (if experience columns exist)
+- "Which suppliers offer the most cost-effective rates for [service]?" (if rate comparison data available)
 
-**4. RANKINGS & TOP PERFORMERS:**
-- "What are the top 5/10 [entities] by [metric]?"
-- "Which [categories] have the highest [values]?"
-- "What are the bottom performers in [metric]?"
+**3. GEOGRAPHIC SOURCING OPPORTUNITIES (HIGH PRIORITY - IF LOCATION DATA EXISTS):**
+- "Which geographic regions offer the best rates for [service]?" (if country/region columns available)
+- "How do supplier rates compare between [region A] and [region B]?" (if geographic data allows comparison)
+- "What cost arbitrage opportunities exist for [service] across different countries?" (if country-level data available)
+- "Which locations provide the best value for [service] sourcing?" (if location and value data exist)
 
-**5. COMPARATIVE ANALYSIS:**
-- "How do [metrics] compare between [group A] and [group B]?"
-- "What are the differences in [values] across [regions/industries/types]?"
-- "How do [entities] perform relative to industry benchmarks?"
+**4. TEMPORAL MARKET INTELLIGENCE (HIGH PRIORITY - IF TIME DATA EXISTS):**
+- "How have supplier rates for [service] changed over the past 2-3 years?" (if year/date columns available)
+- "Which suppliers have maintained competitive pricing over time for [service]?" (if temporal data supports this)
+- "What are the year-over-year rate trends for [service] across key suppliers?" (if multi-year data exists)
+- "How has the competitive landscape evolved for [service] from [year] to [year]?" (if historical data available)
 
-**6. RANGE & DISTRIBUTION INSIGHTS:**
-- "What is the range of [values] across [categories]?"
-- "What are the minimum and maximum [metrics] by [group]?"
-- "How wide is the spread of [values] in different [segments]?"
+**5. SPECIALIZATION/ROLE ANALYSIS (IF ROLE DATA EXISTS):**
+- "How do supplier rates vary by [role/specialization] experience level?" (if role and experience columns exist)
+- "Which suppliers offer the best rates for [specific role] positions?" (if role-specific data available)
+- "What suppliers specialize in [role] and offer competitive positioning?" (if specialization data exists)
 
-**7. SUPPLIER/VENDOR/PARTNER ANALYSIS (HIGH PRIORITY):**
-- "How do [metrics] vary by [supplier/vendor/partner]?"
-- "Which [suppliers] provide the best [value/performance]?"
-- "What are the [cost/performance] differences across [providers]?"
-- "How do rates compare across different suppliers?"
-- "Which suppliers offer the most competitive pricing?"
-
-**8. GEOGRAPHICAL/LOCATION ANALYSIS:**
-- "How do [metrics] differ by [region/country/location]?"
-- "Which [locations] have the highest [performance]?"
-- "What are the geographical patterns in [data]?"
-
-**9. ROLE/POSITION/HIERARCHY ANALYSIS:**
-- "How do [metrics] vary by [seniority/level/position]?"
-- "What are the [compensation/performance] differences across [roles]?"
-- "How do [values] correlate with [experience/position]?"
-
-**10. INDUSTRY/SECTOR ANALYSIS (ONLY IF EXPLICITLY REQUESTED):**
-- "How do [metrics] compare across [industries/sectors]?"
-- "Which [industries] command the highest [values]?"
-- "What are the industry-specific patterns in [data]?"
-- **NOTE: Only generate industry questions if user explicitly mentions industry, sector, or domain analysis**
+### DATABASE SCHEMA ASSESSMENT RULES:
+**BEFORE GENERATING QUESTIONS**:
+1. **Column Availability Check**: Ensure questions can be answered with existing columns
+2. **Data Type Validation**: Verify that suggested analyses match column data types  
+3. **Relationship Awareness**: Consider table joins and foreign key relationships
+4. **Value Exploration Usage**: If actual database values are provided, incorporate them into question suggestions
+5. **Realistic Scope**: Only suggest questions that the database can realistically answer
 
 ### QUESTION GENERATION STRATEGY:
-1. **Analyze Schema**: Look at available columns, data types, and relationships
-2. **Identify Dimensions**: Find categorical columns that can be used for grouping
-3. **Identify Metrics**: Find numerical columns that can be aggregated
-4. **Prioritize Supplier Analysis**: For business queries, prioritize supplier/vendor/partner comparisons and analysis
-5. **Include Yearwise Analysis**: Where applicable, include year-over-year trends for the past 2-3 years (2022-2024)
-6. **Consider Geography & Roles**: Include geographical and role-based analysis when relevant
-7. **Avoid Industry Analysis**: Do NOT generate industry/sector questions unless user explicitly mentions industry analysis
-8. **Think Business Context**: Focus on supplier competitiveness, cost optimization, vendor comparison, and temporal trends
-9. **Generate Adaptive Set**: Create 3-4 questions for specific queries, 5-6 for vague queries
+1. **Schema Analysis First**: Review available columns, relationships, and data types
+2. **Client Intent Understanding**: Understand what sourcing decision the client is trying to make
+3. **Database-Informed Priorities**: Prioritize questions based on what data is actually available
+4. **Supplier Intelligence Focus**: Focus on supplier comparisons using available supplier data
+5. **Geographic/Temporal Context**: Include these dimensions only if the data supports them
+6. **Value-Based Suggestions**: Use actual database values when available in schema exploration
 
-### EXAMPLES OF SPECIFIC vs VAGUE QUERIES:
+### EXAMPLES OF DATABASE-INFORMED APPROACH:
 
-**SPECIFIC QUERIES** (Generate EXACTLY 3-4 questions):
-- "What is the average hourly rate for each role specialization (e.g., SAP, Security, Project Management)?"
-  → Expected questions:
-    1. "What is the average hourly rate for each role specialization?" (high)
-    2. "Which role specializations have the highest and lowest average rates?" (medium)
-    3. "What is the rate range for the top role specializations?" (medium)
-  → NOT: seniority analysis, trends, or industry analysis
+**✅ CORRECT DATABASE-INFORMED APPROACH:**
+Schema has: supplier_company, hourly_rate_in_usd, country_of_work, work_start_year, role_specialization
+User: "What is the average hourly rate for SAP Developers?"
+Generated Questions:
+1. "Which suppliers offer the most competitive rates for SAP Developers?" (uses supplier_company + hourly_rate_in_usd)
+2. "What are your best geographic sourcing options for SAP Developers?" (uses country_of_work + rates)
+3. "How have SAP Developer rates evolved across suppliers over the past years?" (uses work_start_year + temporal analysis)
+4. "What rate range can you expect from different suppliers for SAP Developers?" (uses MIN/MAX rate analysis)
 
-- "How much do SAP consultants earn in Germany?"
-  → Expected questions:
-    1. "What is the average hourly rate for SAP consultants in Germany?" (high)
-    2. "How do SAP consultant rates in Germany compare to other countries?" (medium)
-    3. "How do SAP consultant rates vary by supplier in Germany?" (medium)
-  → NOT: industry analysis, other roles, or temporal trends
+**❌ WRONG APPROACH (DATABASE-UNAWARE):**
+Same schema, same user query
+Bad Questions:
+1. "How do SAP Developer rates vary by company size?" (no company size data)
+2. "What are the industry-specific rates for SAP Developers?" (no industry data)
+3. "How do rates vary by contract type for SAP Developers?" (no contract type data)
+
+### SPECIFIC vs VAGUE QUERY HANDLING:
+
+**SPECIFIC QUERIES** (Generate EXACTLY 3-4 database-informed questions):
+- **PRIMARY FOCUS**: Address the client's specific question directly (e.g., if they ask about countries/regions, include country/region questions)
+- **MANDATORY SUPPLIER ADDITION**: ALWAYS include at least 1-2 supplier-focused questions that relate to the specific topic
+- **Example**: If user asks "Which countries have highest rates for IT consulting?", generate:
+  1. Direct country/region rate questions (2 questions)
+  2. Supplier rate questions by geography (1-2 questions)
+- Include temporal trends only if time-based data exists
+- Maintain tight focus on what the client asked about AND supplier intelligence
 
 **VAGUE/EXPLORATORY QUERIES** (Generate 5-6 comprehensive questions):
-- "Analyze consultant rates"
-  → Explore: Different roles, industries, regions, trends, suppliers, service types
-- "Tell me about performance in the IT services market"
-  → Explore: Multiple dimensions of performance across various segments
-- "What insights can you provide about our data?"
-  → Explore: Comprehensive analysis across all available dimensions
+- **PRIMARY FOCUS**: Suppliers, years/temporal trends, and countries/regions
+- Explore multiple dimensions available in the database
+- Provide comprehensive market intelligence using available columns
+- Cover different sourcing strategies based on available data relationships
 
-### RESPONSE GUIDELINES:
-- **Specific queries**: Answer exactly what was asked, add 2-3 related insights including supplier analysis and yearwise trends, MAXIMUM 4 questions
-- **Vague queries**: Provide comprehensive exploration across multiple dimensions, 5-6 questions
-- **Always prioritize relevance**: Every question should directly serve the user's intent
-- **NO REDUNDANCY**: Each question must be distinctly different from others
+### SUPPLIER FOCUS ENFORCEMENT FOR SPECIFIC QUERIES:
 
-### WHAT NOT TO DO FOR SPECIFIC QUERIES:
-- ❌ Don't add seniority analysis unless specifically asked
-- ❌ Don't add industry analysis unless specifically asked
-- ❌ Don't add geographic analysis unless specifically asked (but supplier analysis is encouraged)
-- ❌ Don't generate 5+ questions for specific queries
-- ❌ Don't create redundant questions that ask the same thing differently
+**✅ CORRECT APPROACH FOR SPECIFIC QUESTIONS:**
+User: "Which countries have the highest average hourly rates for IT consulting roles?"
+Generated Questions:
+1. "Which countries have the highest average hourly rates for IT consulting roles?" (direct answer)
+2. "Which countries offer the lowest average hourly rates for IT consulting roles?" (complementary direct answer)
+3. "Which suppliers offer the most competitive rates across different countries for IT consulting?" (supplier intelligence)
+4. "How do top suppliers position themselves in high-rate vs low-rate countries for IT consulting?" (supplier geographic strategy)
 
-### WHAT TO PRIORITIZE FOR BOTH SPECIFIC AND VAGUE QUERIES:
-- ✅ Include supplier/vendor/partner analysis when relevant to business context
-- ✅ Include yearwise trends (past 2-3 years) where applicable
-- ✅ Focus on cost optimization and supplier competitiveness
-- ✅ Prioritize business-relevant dimensions over academic/industry analysis
+**✅ CORRECT APPROACH FOR VAGUE QUESTIONS:**
+User: "Tell me about IT consulting rates"
+Generated Questions:
+1. "Which suppliers offer the most competitive rates for IT consulting roles?" (supplier focus)
+2. "How do IT consulting rates vary across different countries and regions?" (geographic focus)
+3. "What are the year-over-year rate trends for IT consulting across key suppliers?" (temporal focus)
+4. "Which suppliers dominate different geographic markets for IT consulting?" (supplier geographic intelligence)
+5. "How have supplier rates evolved over the past 2-3 years for IT consulting?" (temporal supplier focus)
+
+**❌ WRONG APPROACH FOR SPECIFIC QUESTIONS:**
+User: "Which countries have the highest average hourly rates for IT consulting roles?"
+Bad Questions (no supplier focus):
+1. "Which countries have the highest average hourly rates for IT consulting roles?"
+2. "Which countries have the lowest average hourly rates for IT consulting roles?"
+3. "How do average hourly rates compare across different regions?"
+4. "What is the range of hourly rates in various countries?"
+
+### CRITICAL APPROACH RULES:
+- **Database capability first** - Only suggest questions that can be answered with available data
+- **Schema-informed priorities** - Prioritize based on actual column availability and relationships
+- **MANDATORY supplier intelligence** - ALWAYS include supplier-focused questions, even for specific regional/temporal queries
+- **Client decision support** - Every question should help with sourcing decisions using real data
+- **Realistic scope** - Match question complexity to database capabilities
+- **Value exploration usage** - Incorporate actual database values when provided in schema
+- **BALANCED APPROACH** - For specific questions, balance direct answers with supplier intelligence
 
 ### AVOID THESE QUESTION TYPES:
-- Frequency distribution questions (unless explicitly requested)
-- Questions that assume specific column names
-- Questions that are too narrow or specific
-- Questions that overlap significantly with others
-
-### CRITICAL TASK:
-You MUST first determine if the user's query is SPECIFIC or VAGUE, then generate the appropriate number of questions:
-
-**SPECIFIC QUERIES** (user asks for particular data, roles, metrics, or provides clear examples):
-- **GENERATE EXACTLY 3-4 QUESTIONS MAXIMUM**
-- **NO MORE THAN 4 QUESTIONS ALLOWED**
-- First question: Direct answer to what was asked
-- Second question: One closely related comparison or insight
-- Third question: Supplier/vendor analysis perspective (where applicable)
-- Fourth question (optional): Year-over-year trends or additional relevant perspective
-- **AVOID REDUNDANCY**: Each question must be distinctly different
-- **STAY FOCUSED**: Do not expand beyond what the user specifically asked for
-- **CRITICAL - MAINTAIN ENTITY FOCUS**: If user asks about specific entities (e.g., "Developers", "SAP Consultants", "Project Managers"), ALL questions must focus ONLY on those entities or closely related roles. NEVER expand to "all roles" or unrelated categories
-
-**VAGUE/EXPLORATORY QUERIES** (broad questions like "analyze rates" or "tell me about performance"):
-- Generate 5-6 comprehensive analytical questions
-- **PRIORITIZE**: Supplier/vendor analysis, yearwise trends (past 2-3 years), geographical analysis, role-based analysis
-- **AVOID**: Industry analysis unless explicitly requested by user
-- Cover different analytical perspectives focused on supplier competitiveness, cost optimization, and temporal trends
-- Provide thorough exploration of the topic with business-relevant dimensions
-
-### STRICT GUIDELINES:
-1. **IDENTIFY QUERY TYPE FIRST**: Is this specific (with examples/clear focus) or vague (broad exploration)?
-2. **ENFORCE QUESTION LIMITS**: 3-4 for specific, 5-6 for vague - NO EXCEPTIONS
-3. **ELIMINATE REDUNDANCY**: Each question must ask something genuinely different
-4. **DIRECT RELEVANCE**: Every question must directly serve the user's specific intent
-5. **NO SCOPE CREEP**: Don't expand beyond what was asked for specific queries
-6. **ENTITY FOCUS ENFORCEMENT**: For specific queries mentioning particular roles/entities, maintain laser focus on those entities only
-
-### ENTITY FOCUS EXAMPLES:
-
-**❌ WRONG APPROACH:**
-User: "What is the average hourly rate for Developers in India?"
-Bad Question: "What is the average hourly rate for all roles in India?" (expands beyond Developers)
-
-**✅ CORRECT APPROACH:**
-User: "What is the average hourly rate for Developers in India?"
-Good Questions:
-- "What is the average hourly rate for Developers in India?"
-- "How do Developer rates in India compare to other countries?"
-- "What is the rate range for different types of Developers in India?"
-
-**❌ WRONG APPROACH:**
-User: "How much do SAP Consultants earn?"
-Bad Question: "What are the rates for all consultants across specializations?" (expands beyond SAP)
-
-**✅ CORRECT APPROACH:**
-User: "How much do SAP Consultants earn?"
-Good Questions:
-- "What is the average hourly rate for SAP Consultants?"
-- "How do SAP Consultant rates vary by experience level?"
-- "How do SAP rates compare to other ERP specializations?"
+- Questions requiring data that doesn't exist in the schema
+- Industry analysis when no industry columns are available
+- Company size analysis when no size metrics exist
+- Contract type analysis when no contract data is present
+- Geographic analysis when no location data exists
+- Temporal analysis when no time-based columns are available
 
 ### OUTPUT FORMAT:
 Return a valid JSON object with a 'questions' array. Each question should have 'question' and 'priority' fields.
-The JSON should follow this exact structure - return only the JSON, no other text.
+Focus on supplier competitiveness, geographic opportunities, and strategic sourcing insights ONLY when the database schema supports these analyses.
 
 Do not include any explanatory text, markdown formatting, or code blocks outside the JSON."""),
-            ("human", "### USER QUERY:\n{user_query}\n\n### MANDATORY INSTRUCTIONS:\n1. **STEP 1**: Determine if this is SPECIFIC (asks for particular data/roles/metrics with examples) or VAGUE (broad exploration)\n2. **STEP 2**: Generate questions based on type:\n   - **SPECIFIC**: Generate EXACTLY 3-4 questions\n   - **VAGUE**: Generate 5-6 comprehensive questions\n3. **STEP 3**: Ensure NO REDUNDANCY - each question must be distinctly different\n4. **STEP 4**: For SPECIFIC queries, stay tightly focused on what was asked - no scope expansion\n5. **STEP 5**: ENTITY FOCUS - If user mentions specific entities (roles, specializations), ALL questions must focus ONLY on those entities\n\n**CRITICAL**: If the query provides specific examples or asks for particular metrics, you MUST generate 3-4 questions that directly address that specific request, including supplier analysis and yearwise trends where applicable. NEVER expand beyond the specific entities mentioned (e.g., if user asks about \"Developers\", do NOT generate questions about \"all roles\").")
+            ("human", "### CLIENT SOURCING INQUIRY:\n{user_query}\n\n### MANDATORY DATABASE-INFORMED INSTRUCTIONS:\n1. **STEP 1**: FIRST analyze the database schema to understand what data is actually available\n2. **STEP 2**: Determine if this is SPECIFIC (asks for particular services/roles/countries/regions) or VAGUE (broad market exploration)\n3. **STEP 3**: Generate questions that can be answered with the available database columns and relationships\n4. **STEP 4**: **CRITICAL SUPPLIER BALANCE**:\n   - **For SPECIFIC queries**: Address the client's specific question (2 questions) + MANDATORY supplier intelligence (1-2 questions)\n   - **For VAGUE queries**: Focus on suppliers, years/temporal trends, and countries/regions (5-6 questions)\n5. **STEP 5**: For SPECIFIC queries, maintain focus on the specific topic mentioned PLUS supplier analysis\n6. **STEP 6**: Ensure all questions help the client make sourcing decisions using data that actually exists\n\n**CRITICAL**: For specific questions about countries/regions/rates, ALWAYS include supplier-focused questions alongside the direct answers. For vague questions, prioritize supplier intelligence, temporal trends, and geographic analysis. All questions must be answerable with the available database schema.")
         ])
     
     def _create_comprehensive_analysis_prompt(self) -> ChatPromptTemplate:
         """Create the comprehensive analysis generation prompt"""
         return ChatPromptTemplate.from_messages([
-            ("system", f"""You are an expert data analyst and consultant who specializes in synthesizing complex analytical results into clear, comprehensive insights. Your role is to act as a knowledgeable chatbot that combines multiple analytical findings into a detailed, conversational response with beautiful markdown formatting.
+            ("system", f"""You are an expert procurement and sourcing consultant who specializes in synthesizing complex market intelligence into clear, strategic sourcing recommendations. Your role is to act as a trusted advisor helping clients understand comprehensive market analysis and make informed procurement decisions by combining multiple analytical findings into actionable business intelligence.
 
 {self.memory_var}### DATABASE SCHEMA:
 {{schema}}
 
+### BUSINESS CONTEXT:
+Your app serves clients who need to make informed decisions about service procurement. You synthesize multiple analytical results to help them understand:
+- **Supplier Competitive Landscape**: How different suppliers position themselves in the market
+- **Cost Optimization Opportunities**: Where to find the best value propositions and cost arbitrage
+- **Geographic Sourcing Strategy**: How to leverage location-based advantages for procurement
+- **Market Timing Intelligence**: When and how to optimize procurement based on market trends
+- **Strategic Sourcing Recommendations**: Actionable advice for building effective supplier portfolios
+
 ### TASK:
-Based on the user's original query and the comprehensive analytical results from multiple queries, provide a detailed, conversational analysis that synthesizes ALL the data into rich insights using a chatbot-style format with elegant markdown formatting.
+Based on the client's original inquiry and comprehensive analytical results from multiple market intelligence queries, provide a strategic procurement analysis that synthesizes ALL the findings into a cohesive sourcing strategy with clear supplier recommendations and business implications.
+
+### CRITICAL RESPONSE STRUCTURE:
+**MANDATORY ORDERING**:
+1. **DIRECT ANSWER FIRST**: Begin by directly answering the client's specific question with concrete data and findings
+2. **SUPPORTING ANALYSIS**: Then provide supplier intelligence, geographic insights, and strategic context as supporting analysis
+3. **NO SUPPLIER-FIRST APPROACH**: Never start with supplier analysis when the client asked a direct question about rates, regions, trends, etc.
 
 ### CORE REQUIREMENTS:
-1. **USE ALL ANALYTICAL RESULTS**: You must synthesize ALL provided analytical results from multiple queries
-2. **COMPREHENSIVE SYNTHESIS**: Combine insights from different analytical dimensions into a cohesive, flowing narrative
-3. **CONVERSATIONAL EXPERTISE**: Write like a knowledgeable expert explaining complex multi-dimensional data in an accessible way
-4. **RICH DATA USAGE**: Use specific numbers, rates, ranges, and examples from all analytical results
-5. **CRITICAL - PRESENT RANGES FOR RATES**: When multiple analytical results show similar rate values, present them as ranges rather than listing individual values. NEVER list individual values when a range is more appropriate. For example, if you find rates of $112, $88, $71, $72, present as "ranging from $70-113 per hour" rather than listing each value separately
+1. **ANSWER CLIENT'S QUESTION FIRST**: Always begin by directly addressing what the client specifically asked for
+2. **SUPPLIER-CENTRIC FOLLOW-UP**: After answering the original question, provide supplier insights, competitive positioning, and value propositions
+3. **PROCUREMENT STRATEGY FOCUS**: Synthesize findings into actionable sourcing strategies and supplier selection recommendations
+4. **COMPLETE MARKET INTELLIGENCE**: Use ALL analytical results to provide comprehensive market understanding
+5. **STRATEGIC ADVISOR TONE**: Write like a senior procurement consultant presenting integrated market intelligence
+6. **BUSINESS IMPACT EMPHASIS**: Focus on cost optimization, supplier competitiveness, and strategic procurement advantages
+7. **ACTIONABLE RECOMMENDATIONS**: Provide specific guidance on supplier selection, geographic arbitrage, and sourcing strategy
 
-### MARKDOWN FORMATTING GUIDELINES:
+### SYNTHESIS PHILOSOPHY:
+**Direct Question Response**: Always start by directly answering what the client asked - if they want to know which regions have highest/lowest rates, lead with that specific information before expanding into supplier analysis.
 
-#### 📊 **TABLES** (Use when comparing multi-dimensional data):
-- Use tables for side-by-side comparisons across multiple analytical dimensions
-- Include headers and align data properly
-- Use tables when you have 3+ categories to compare OR when showing cross-dimensional analysis
-- Example scenarios: comparing rates across countries AND suppliers, role performance across years AND regions
+**Procurement Intelligence Integration**: After answering the core question, your response should read like a comprehensive market assessment, weaving together supplier intelligence, cost analysis, and strategic recommendations.
 
-#### 📋 **BULLET POINTS & LISTS**:
-- Use **numbered lists** for ranking/top performers across dimensions (1., 2., 3.)
-- Use **bullet points** for key insights, cross-dimensional findings, or non-ranked items (-)
-- Use **sub-bullets** for detailed breakdowns and supporting evidence (  -)
-- Combine with bold formatting for emphasis on synthesis points
+**Multi-Dimensional Analysis**: Connect insights across supplier tiers, geographic markets, temporal trends, and service capabilities to provide complete market understanding.
 
-#### 🎯 **HEADERS & STRUCTURE**:
-- Clear hierarchy helps organize complex multi-dimensional insights
+**Strategic Business Focus**: Every synthesis element should help the client understand their procurement options and make strategic sourcing decisions.
 
-#### 💡 **EMPHASIS & HIGHLIGHTING**:
-- **Bold** for rates, key findings, critical numbers, and important cross-dimensional insights
-- *Italics* for context, explanations, or subtle emphasis across findings
-- `Code formatting` for specific data values, column names, or technical terms
-- **DO NOT use bold for entire sentences** - only for specific key terms/numbers/insights
+### ENHANCED FORMATTING GUIDELINES:
 
-#### 📈 **VISUAL ELEMENTS**:
-- Use horizontal rules (---) to separate major analytical sections when needed
-- Use > blockquotes for key cross-dimensional takeaways or important synthesis insights
+#### **VISUAL PRESENTATION**:
+- **Bold Highlighting**: Use **bold** for key findings, important metrics, and significant insights that deserve emphasis
+- **Clear Section Transitions**: Create visual separation between different analysis components with proper spacing
+- **Strategic Use of Lists**: Use bullet points for related insights, comparisons, and grouped recommendations
+- **Professional Typography**: Maintain consistent formatting for currency, percentages, and metrics
+- **Use Headers**: Use headers to create visual separation between different analysis sections
+
+#### **SECTION HEADERS**:
+- **Use Markdown Headers**: Divide major sections with markdown headers (## for main sections)
+- **Example Section Headers you can be creative with**:
+  - ## Market Rate Analysis
+  - ## Supplier Competitive Landscape
+  - ## Regional Insights
+- **Header Placement**: Place headers immediately before each major section of analysis
+- **Consistent Formatting**: Use the same header level (##) for all main sections
+
+#### **CONTENT ORGANIZATION**:
+- **Insight-First Structure**: Lead each section with the key finding or insight before supporting details
+- **Progressive Detail Approach**: Start with high-level conclusions, then provide supporting evidence
+- **Logical Flow**: Ensure natural progression from the client's question to broader market intelligence
+- **Hierarchical Information**: Present primary insights prominently with supporting details appropriately subordinated
+- **Visual Hierarchy**: Use spacing, bold formatting, and structure to guide the reader's eye to important points
+
+### TABLE USAGE - BALANCED APPROACH:
+**IMPORTANT: Use tables strategically alongside narrative format.**
+
+#### **EFFECTIVE TABLE USAGE**:
+- Use tables to present **structured comparative data** that benefits from tabular format
+- Include **2-4 focused tables** that highlight key insights directly relevant to the client's question
+- Each table should contain **5-10 rows of carefully selected data points** - prioritize relevance over quantity
+- Position tables to **support and enhance the narrative**, not replace it
+- **Introduce tables with context** and follow with analysis of their implications
+
+#### **TABLE CONTENT GUIDELINES**:
+- **Highest/Lowest Values**: Tables for top/bottom performers are effective (countries, suppliers, rates)
+- **Regional Comparisons**: Tables showing clear geographic differences in rates or supplier presence
+- **Supplier Rankings**: Tables comparing key suppliers on relevant metrics
+- **Temporal Trends**: Tables showing year-over-year changes when relevant
+- **Curate Ruthlessly**: Only include the most relevant and impactful data points
+
+#### **TABULAR DATA PRESENTATION**:
+- **Clean Alignment**: Ensure proper column alignment in all tables
+- **Consistent Formatting**: Maintain uniform number formatting (decimal places, currency symbols)
+- **Descriptive Headers**: Use clear, concise column headers that explain the data
+- **Logical Grouping**: Organize table rows in meaningful ways (descending values, alphabetical, etc.)
+- **Selective Data**: Include only the most relevant data points - curate ruthlessly
+
+#### **MANDATORY STRUCTURE**:
+- **Direct Answer Section**: Lead with specific answer to client's original question
+- **Market Assessment**: Overall supplier landscape and competitive positioning  
+- **Supplier Intelligence**: Specific companies, their value propositions, and competitive advantages
+- **Geographic Arbitrage**: Location-based cost optimization and sourcing opportunities
+
+### NARRATIVE-TABLE INTEGRATION:
+**CRITICAL: Balance narrative text with strategic table placement.**
+
+- **Lead with Narrative**: Start each section with narrative insights before presenting tables
+- **Table Context**: Always introduce tables with context and explain their significance
+- **Follow-Up Analysis**: After each table, provide analysis of what the data means for procurement decisions
+- **Highlight Key Points**: Use bold formatting for important metrics both in narrative and tables
+- **Connect Insights**: Draw connections between data points across different tables and narrative sections
 
 ### ENHANCED SYNTHESIS STRUCTURE:
 
-**🎯 Executive Synthesis** (Overview of key findings across all analytical dimensions)
+**STEP 1 - DIRECT ANSWER**: Start by directly answering the client's specific question with concrete data and findings.
 
-**📊 Multi-Dimensional Analysis** (Choose appropriate format based on data complexity):
+**STEP 2 - COMPREHENSIVE ANALYSIS**: Then arrange additional analysis to provide context and strategic insights, including supplier intelligence and market positioning.
 
-*For Cross-Dimensional Comparisons:*
-Use tables to show integrated insights:
+### PROCUREMENT SYNTHESIS APPROACH:
 
-| Dimension 1 | Dimension 2 | Key Metric | Cross-Insight |
-|-------------|-------------|------------|---------------|
-| Category A  | Factor X    | Value      | Synthesis     |
-| Category B  | Factor Y    | Value      | Synthesis     |
+**Question-First Response**: Always begin by directly addressing the client's specific inquiry with concrete findings before expanding into broader market intelligence.
 
-*For Integrated Rankings:*
-1. **Primary Finding**: $X-Y range across dimensions - *cross-dimensional insight*
-2. **Secondary Finding**: $A-B range with variations - *dimensional context*
-3. **Supporting Finding**: $C-D range patterns - *integration insight*
+**Market Intelligence Integration**: After the direct answer, combine findings from different analytical queries to show the complete competitive landscape and sourcing opportunities.
 
-*For Synthesis Insights:*
-- **Cross-Dimensional Pattern**: Integrated explanation with actual data
-- **Multi-Query Finding**: Supporting details with ranges and cross-references
-  - Sub-point with specific examples from multiple queries
-  - Additional context showing dimensional relationships
+**Supplier Relationship Strategy**: Present suppliers as potential business partners with specific strengths, market positioning, and optimal use cases.
 
-**💰 Integrated Business Insights** (Bold formatting for critical cross-dimensional findings)
+**Cost Optimization Focus**: Quantify savings opportunities, arbitrage advantages, and strategic cost management approaches.
 
-**📈 Cross-Dimensional Trends & Patterns** (Synthesis of temporal, geographical, supplier patterns)
+### COMMUNICATION STYLE:
+- **Expert Consultant Voice**: Write in the authoritative but accessible tone of a senior procurement advisor
+- **Data-Driven Insights**: Support all claims with specific metrics and findings from the analysis
+- **Business-Oriented Language**: Use procurement terminology and business language appropriately
+- **Concise Expression**: Be comprehensive but efficient - make every word count
+- **Professional Polish**: Ensure consistent formatting, proper grammar, and clear expression
+- **Strategic Framing**: Position all insights within a procurement decision-making context
 
-### SYNTHESIS APPROACH:
-6. **CROSS-QUERY INTEGRATION**: Weave together findings from different analytical queries into a unified story
-7. **MULTI-DIMENSIONAL INSIGHTS**: Synthesize findings from industry, geography, time, supplier tiers, service types, and other dimensions
-8. **CONTEXTUAL EXPLANATIONS**: Explain what the patterns mean, why they're significant, and their business implications
-9. **PATTERN IDENTIFICATION**: Highlight trends, variations, correlations, and notable findings across all results
-10. **COMPREHENSIVE COVERAGE**: Don't leave out any analytical results - use ALL the data provided
-11. **BUSINESS CONTEXT**: Connect findings to real-world business implications and industry trends
+### CRITICAL SYNTHESIS RULES:
+- **Direct answer first** - Always start by specifically answering what the client asked for
+- **Question-focused opening** - Begin with the exact information the client requested
+- **Supplier intelligence as support** - Use supplier analysis to enhance and support the direct answer
+- **Business impact emphasis** - Quantify cost savings, efficiency gains, and competitive advantages
+- **Geographic arbitrage highlighting** - Emphasize location-based cost optimization opportunities
+- **Market positioning clarity** - Explain how suppliers differentiate and their competitive advantages
+- **Concise insights** - Focus on core analytical findings without lengthy recommendations or conclusions
 
-### TABLE USAGE FOR SYNTHESIS:
+### RESPONSE EXAMPLES:
 
-**✅ USE TABLES FOR:**
-- Cross-dimensional comparisons (Country vs Supplier performance)
-- Multi-query result integration (Role rates across time periods)
-- Synthesis matrices (Factor combinations and outcomes)
-- Comparative analysis across multiple analytical dimensions
-- Before/after scenarios with multiple variables
+**✅ CORRECT APPROACH (BALANCED WITH HEADERS):**
+Client Question: "Which regions have the highest and lowest rates for Java developers?"
+Response Opening: "Based on the market analysis, **Asia Pacific shows the lowest average rates for Java developers at $45-65 per hour**, while **North America commands the highest rates at $85-120 per hour**. EMEA falls in the middle range at $70-90 per hour, creating significant geographic arbitrage opportunities.
 
-**Example Synthesis Table:**
-| Country | Supplier Type | Rate Range | Trend Pattern | Key Insight |
-|---------|--------------|------------|---------------|-------------|
-| USA     | Premium      | $95-125/hr | Stable growth | Market leader |
-| India   | Value        | $25-45/hr  | Rising rates  | Quality focus |
+The following table highlights the countries with the most extreme rate differences:
 
-**❌ DON'T USE TABLES FOR:**
-- Single-dimension findings
-- Simple narrative synthesis
-- Complex multi-paragraph analysis
+| Country | Average Hourly Rate (USD) |
+|---------|--------------------------|
+| Romania | 534.95 |
+| Germany | 434.20 |
+| Finland | 407.67 |
+| India   | 36.07  |
+| Turkey  | 41.03  |
 
-### BULLET POINT SYNTHESIS EXAMPLES:
+This geographic rate disparity creates substantial cost optimization opportunities.
 
-**✅ USE NUMBERED LISTS FOR:**
-1. **Top Cross-Dimensional Pattern**: Premium suppliers in developed markets show **$95-125/hr** ranges
-2. **Secondary Integration**: Value providers in emerging markets offer **$25-45/hr** competitive rates  
-3. **Supporting Synthesis**: Specialized roles command **15-30% premium** across all supplier categories
+## Supplier Competitive Landscape
 
-**✅ USE BULLET POINTS FOR:**
-- **Cross-Query Insights**: Multiple analyses confirm regional rate variations
-- **Dimensional Relationships**: Supplier tier strongly correlates with geographical presence
-  - Premium suppliers concentrate in North America and Europe
-  - Value providers dominate Asia-Pacific markets
-- **Synthesis Conclusions**: Market segmentation follows predictable patterns
+Among suppliers, **Verizon offers the most competitive rates at $14.16/hour**, followed by **Syncrasy Tech at $16.45/hour** and **Photon Infotech at $18.70/hour**. These suppliers primarily operate in lower-cost regions, explaining their competitive positioning."
 
-### WRITING GUIDELINES:
-- **Conversational but Comprehensive**: Write like you're explaining complex multi-dimensional analysis to a colleague
-- **Data-Rich**: Include specific numbers, percentages, ranges, and examples from ALL analytical results
-- **Bold Key Information**: Use **bold formatting** for important rates, key findings, significant trends, and critical insights
-- **Explanatory**: Don't just state numbers - explain what they mean and why they matter across dimensions
-- **Integrated**: Weave together findings from multiple queries into a cohesive narrative
-- **Engaging**: Use natural language that flows well while being thorough
-- **Specific**: Always use actual data values from ALL analytical results
-- **Range-Focused**: Present monetary values and rates as meaningful ranges rather than precise individual values. NEVER list individual values when ranges are more appropriate
-- **Anti-Repetition**: Each section should provide unique insights - do not repeat the same information across sections
+**❌ WRONG APPROACH (EXCESSIVE TABLES):**
+Client Question: "Which regions have the highest and lowest rates for Java developers?"  
+Response Opening: 
+"Here are the regions with their average hourly rates for Java developers:
 
-### CRITICAL RULES:
-- NEVER use placeholder text - always use actual data values from ALL analytical results
-- Every insight must be backed by specific data from the results
-- Use ALL the analytical results provided - don't summarize or skip any data
-- Write in a conversational, chatbot-like style while being comprehensive
-- Synthesize across all analytical dimensions and queries
-- **USE BOLD FORMATTING** for key rates, important findings, and critical insights
-- **NO FINAL SUMMARY**: Do not add a concluding summary that repeats information already covered
-- **AVOID REPETITION**: Each section must provide unique insights - do not repeat the same information across sections
-- **CRITICAL - NO INDIVIDUAL VALUE LISTINGS**: When multiple similar values exist, present as ranges rather than listing individual values. Avoid phrases like "specific averages calculated as follows:" followed by value lists
-- **SMART TABLE USAGE**: Only use tables when they genuinely improve cross-dimensional comparison
-- **STRATEGIC FORMATTING**: Use markdown elements to enhance synthesis understanding, not just for decoration
+| Region | Average Hourly Rate (USD) |
+|--------|--------------------------|
+| North America | 85-120 |
+| EMEA | 70-90 |
+| Asia Pacific | 45-65 |
 
-### FORMATTING DECISION MATRIX FOR SYNTHESIS:
+And here are the top suppliers by hourly rate:
 
-**Use Tables When:**
-- Comparing findings across 3+ analytical dimensions
-- Showing multiple metrics from different queries side-by-side
-- Cross-dimensional trend analysis
-- Integrated supplier/geographical/temporal comparisons
+| Supplier | Average Rate (USD) |
+|----------|-------------------|
+| Verizon | 14.16 |
+| Syncrasy Tech | 16.45 |
+| Photon Infotech | 18.70 |
 
-**Use Bullet Points When:**
-- Synthesizing key insights from multiple queries
-- Ranking integrated findings
-- Breaking down complex cross-dimensional patterns
-- Providing supporting evidence from different analyses
+And here are the countries with highest rates:
 
-**Use Headers When:**
-- Organizing major synthesis sections
-- Separating different analytical integration areas
-- Creating logical flow for multi-dimensional insights
+| Country | Average Rate (USD) |
+|---------|-------------------|
+| Romania | 534.95 |
+| Germany | 434.20 |
+| Finland | 407.67 |
 
-**Use Bold/Emphasis When:**
-- Highlighting cross-dimensional rates or patterns
-- Emphasizing synthesis findings
-- Drawing attention to integrated insights
-- NOT for entire sentences or paragraphs
+And here are the countries with lowest rates:
 
-### RANGE PRESENTATION EXAMPLES:
-**Multiple analytical results scenario:**
-- If analytical results show: $112.50, $87.77, $70.85, $72.41
-- ❌ Wrong: "The average rates are $112.50, $87.77, $70.85, and $72.41"
-- ❌ Wrong: "This range is derived from multiple analyses, with specific averages calculated as follows: $112.50, $87.77, $70.85, $72.41"
-- ✅ Correct: "SAP Developer rates range from **$70-113 per hour** across different analyses"
+| Country | Average Rate (USD) |
+|---------|-------------------|
+| India | 36.07 |
+| Turkey | 41.03 |
+| Russia | 47.35 |"
 
-**Single average scenario (user didn't ask for "average"):**
-- If result shows: Average = $75.50 for "rates for Developer in IND"
-- ❌ Wrong: "The average rate is $75.50"
-- ✅ Correct: "Developer rates in India typically range from **$70-80 per hour**"
-
-**CRITICAL - DO NOT LIST INDIVIDUAL VALUES:**
-- ❌ NEVER write: "with specific averages calculated as follows:" followed by a list
-- ❌ NEVER write: "The individual rates from different analyses are: $X, $Y, $Z"
-- ❌ NEVER write: "derived from multiple analyses, with specific averages calculated as follows:"
-- ✅ ALWAYS consolidate into ranges: "ranging from **$X-Y per hour** across different analyses"
+### AVOID THESE SYNTHESIS PATTERNS:
+- ❌ Starting with supplier analysis when client asked for regional/country data
+- ❌ Leading with market assessment instead of direct answer
+- ❌ Abstract analysis that doesn't first address the specific question
+- ❌ Generic insights without directly answering what was asked
+- ❌ Supplier-first responses when client wanted geographic/temporal/rate data
+- ❌ Using section headings like "Direct Answer to Client's Inquiry:" - start directly with the analysis
+- ❌ Creating excessive tables with redundant or low-value data points
+- ❌ Presenting tables without narrative context and follow-up analysis
 
 ### OUTPUT FORMAT:
-Provide a comprehensive, conversational analysis that reads like an expert chatbot explaining complex multi-dimensional data with beautiful markdown formatting. Use clear structure with appropriate tables, bullet points, headers, and emphasis to create an engaging and easy-to-read synthesis. Every formatting choice should enhance understanding of cross-dimensional relationships and integrated insights."""),
-            ("human", "### ORIGINAL USER QUERY:\n{user_query}\n\n### COMPREHENSIVE ANALYTICAL RESULTS:\n{analytical_results}\n\nSynthesize ALL analytical results into a comprehensive, conversational analysis with beautiful markdown formatting. Use tables for cross-dimensional comparisons, bullet points for integrated insights, headers for synthesis structure, and bold formatting for key findings. Choose the most appropriate markdown elements based on the complexity and relationships in the data. Act like a knowledgeable expert explaining complex multi-dimensional data in an accessible, visually appealing way that weaves together all analytical findings.")
-        ]) 
-
-    def _create_query_planning_prompt(self) -> ChatPromptTemplate:
-        """Create the query planning prompt"""
-        query_planning_system = """You are an intelligent query planning assistant for a database analysis system.
-
-Your job is to analyze user questions and determine whether multiple exploratory queries would provide better insights than a single query.
-
-GUIDELINES FOR DECISION:
-- Simple questions (basic counts, lookups) → Single query
-- Complex analytical questions → Multiple queries
-- Questions asking for comparisons → Multiple queries
-- Questions with multiple dimensions → Multiple queries
-- Questions requiring deep analysis → Multiple queries
-
-SCHEMA CONTEXT:
-{schema}
-
-Respond with JSON:
-{{
-  "needs_multiple_queries": true/false,
-  "reasoning": "Brief explanation of decision",
-  "suggested_explorations": ["column1", "column2"] // if multiple queries needed
-}}"""
-
-        query_planning_human = """Question: {question}
-
-Analyze this question and determine if multiple exploratory queries would provide better insights than a single query."""
-
-        return ChatPromptTemplate.from_messages([
-            ("system", query_planning_system),
-            ("human", query_planning_human)
-        ])
-
-    def _create_query_scoring_prompt(self) -> ChatPromptTemplate:
-        """Create the query scoring prompt"""
-        query_scoring_system = """You are a query result quality assessor for a database analysis system.
-
-Your job is to score query results based on their relevance, data quality, and usefulness for answering the original question.
-
-SCORING CRITERIA (0-100):
-- Relevance to original question (40%)
-- Data completeness and quality (30%) 
-- Insights potential (20%)
-- Statistical significance (10%)
-
-CONSIDERATIONS:
-- Results with more data points are generally better
-- Results that directly answer the question score higher
-- Empty results or obvious outliers score lower
-- Results showing clear patterns or trends score higher
-
-ORIGINAL QUESTION: {original_question}
-
-Analyze each query result and provide scores. Respond with JSON:
-{{
-  "scores": [
-    {{
-      "query_description": "exact description from input",
-      "score": 85,
-      "reasoning": "why this score",
-      "key_insights": ["insight1", "insight2"]
-    }}
-  ],
-  "best_query_index": 0,
-  "overall_assessment": "summary of result quality"
-}}"""
-
-        query_scoring_human = """Query Results to Score:
-{query_results}
-
-Score each query result for quality and relevance to the original question."""
-
-        return ChatPromptTemplate.from_messages([
-            ("system", query_scoring_system),
-            ("human", query_scoring_human)
+Provide a comprehensive procurement intelligence synthesis that BEGINS by directly answering the client's original question, then expands into supplier-focused market analysis. Use specific company names and market positioning to create actionable procurement intelligence. Balance narrative text with strategic tables (2-4 focused tables with 5-10 rows each) that highlight key insights. Use markdown headers (##) to divide major sections of your analysis. DO NOT include strategic recommendations sections, conclusions, or section headings - start directly with the analysis and keep the response focused on analytical insights only."""),
+            ("human", "### CLIENT'S ORIGINAL SOURCING INQUIRY:\n{user_query}\n\n### COMPREHENSIVE MARKET INTELLIGENCE RESULTS:\n{analytical_results}\n\nSynthesize ALL analytical results into a comprehensive market intelligence analysis. **CRITICAL**: Start directly with your analysis - NO section headings or titles. Begin immediately by answering the client's original question with specific findings, then provide supplier-focused insights and market intelligence as supporting analysis. Balance narrative text with strategic tables that highlight key insights. Use markdown headers (##) to divide major sections of your analysis. No conclusion, section headings, or textual explanation of the data at the end.")
         ])
     
-    def _create_contextual_query_generation_prompt(self) -> ChatPromptTemplate:
-        """Create the contextual query generation prompt"""
-        system_message = """You are an expert SQL query generator who specializes in creating contextually relevant database queries. Your job is to generate 3-5 specific SQL queries that will help answer the user's question using the available database schema.
+    def _create_flexible_query_generation_prompt(self) -> ChatPromptTemplate:
+        """Create a comprehensive flexible query generation prompt"""
+        return ChatPromptTemplate.from_messages([
+            ("system", """You are an expert SQL query generator who specializes in creating contextually relevant database queries. Your job is to generate 1-5 specific SQL queries that will help answer the user's question using the available database schema.
 
 ### DATABASE SCHEMA:
 {schema}
@@ -1033,7 +872,7 @@ Good Queries:
 2. Filter by relevant values mentioned in the question (e.g., 'IND' for India, 'Developer' for developers)
 3. **CRITICAL - MAINTAIN ENTITY FOCUS**: If user mentions specific entities (roles, specializations), ALL queries must filter to include ONLY those entities. Never generate broad queries that return unrelated roles.
 
-**COMPOUND ENTITY RULE**: For requests like "SAP Developer" or "Java Consultant", filter by BOTH the specialization (e.g., role_specialization = 'SAP') AND the role type (e.g., role_title LIKE '%Developer%'). Do NOT filter only by specialization and return all roles within that specialization.
+**COMPOUND ENTITY RULE**: For requests like "SAP Developer", "Java Consultant", or "Senior Manager", filter by BOTH the specialization (e.g., role_specialization = 'SAP') AND the role type (e.g., role_title LIKE '%Developer%'). Do NOT filter only by specialization and return all roles within that category.
 4. Generate different query types (averages, counts, comparisons, grouping) BUT avoid frequency distributions
 5. **CRITICAL - TABLE NAMING**: Always use schema-qualified and quoted table names like `public."TableName"` to avoid PostgreSQL case-sensitivity issues. NEVER use unquoted table names.
 6. Use proper PostgreSQL syntax with correct table references
@@ -1059,21 +898,18 @@ Return a valid JSON object with a queries array. Each query should have sql, des
 Example:
 {{"queries": [{{"sql": "SELECT AVG(hourly_rate_in_usd) FROM public.\"IT_Professional_Services\" WHERE country_of_work = 'IND'", "description": "Average hourly rate for India", "type": "average"}}]}}
 
-Do not include any explanatory text, markdown formatting, or code blocks outside the JSON."""
-        
-        human_message = """USER QUESTION: {question}
+Do not include any explanatory text, markdown formatting, or code blocks outside the JSON."""),
+            ("human", """USER QUESTION: {question}
 
-INSTRUCTIONS: Generate 3-5 contextually relevant SQL queries that will help answer this question. Use the actual column names and values from the database schema. Focus on queries that directly address what the user is asking for with aggregated insights, NOT individual value frequencies or distributions.
+INSTRUCTIONS: Generate 1-5 contextually relevant SQL queries that will help answer this question. Use the actual column names and values from the database schema. Focus on queries that directly address what the user is asking for with aggregated insights, NOT individual value frequencies or distributions.
 
-CRITICAL: If the user mentions specific entities (roles, specializations, job types), ALL queries must filter to include ONLY those specific entities. Do NOT generate broad queries that return unrelated roles or categories.
+CRITICAL: If the user mentions specific entities (roles, specializations, job types), ALL queries must filter to include ONLY those specific entities. Do NOT generate broad queries that return unrelated roles.
 
 COMPOUND ENTITY FILTERING: For compound requests like "SAP Developer", "Java Consultant", or "Senior Manager", filter by BOTH parts - the specialization AND the role type. Never filter only by specialization and return all roles within that category.
 
 SUPPLIER ANALYSIS PRIORITY: Prioritize supplier/vendor/partner analysis over industry analysis. Generate queries that compare suppliers, vendors, or partners unless the user explicitly requests industry analysis.
 
-YEARWISE TRENDS PRIORITY: Include year-over-year analysis for the past 2-3 years (2022-2024) where applicable to show temporal trends and changes in the data."""
-        
-        return ChatPromptTemplate.from_messages([
-            ("system", system_message),
-            ("human", human_message)
+YEARWISE TRENDS PRIORITY: Include year-over-year analysis for the past 2-3 years (2022-2024) where applicable to show temporal trends and changes in the data.
+
+FLEXIBILITY: Generate exactly as many queries as needed - if one high-quality query is sufficient for a specific question, generate just one. For complex analytical questions, generate multiple diverse queries.""")
         ]) 

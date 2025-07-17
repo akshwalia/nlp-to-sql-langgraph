@@ -1,5 +1,6 @@
 import json
 import logging
+from time import sleep
 import traceback
 from decimal import Decimal
 from datetime import datetime, date
@@ -429,7 +430,7 @@ class AnalyticalManager:
             
             # Generate enhanced contextual queries using LLM
             response = await self.llm.ainvoke(
-                self.prompts_manager.contextual_query_generation_prompt.format_messages(**prompt_values)
+                self.prompts_manager.flexible_query_generation_prompt.format_messages(**prompt_values)
             )
             
             queries_text = self._extract_response_content(response)
@@ -598,89 +599,64 @@ class AnalyticalManager:
                             enhanced_schema_context = schema_context + f"\n\n### COLUMN EXPLORATION RESULTS:\n{enhanced_context}"
                             print(f"🔍 DEBUG: Enhanced context created with {len(enhanced_context)} characters")
                 
-                # Step 2: Intelligent Query Planning - Let LLM decide if multiple queries are needed (using enhanced context)
-                planning_result = await self._plan_query_approach(question, enhanced_schema_context)
+                # Step 2: Generate queries directly using flexible approach (no planning needed)
+                print(f"🔍 DEBUG: Generating queries for question {i+1}")
                 
-                if planning_result["needs_multiple_queries"]:
-                    logger.info(f"📊 LLM decided multiple queries needed for question {i+1}: {planning_result['reasoning']}")
-                    print(f"🔍 DEBUG: Multiple queries needed: {planning_result['reasoning']}")
+                # Generate queries using the flexible prompt that can decide on 1 or multiple queries
+                generated_queries = await self._generate_flexible_queries(question, enhanced_schema_context)
+                
+                if generated_queries:
+                    logger.info(f"📊 Generated {len(generated_queries)} queries for question {i+1}")
+                    print(f"🔍 DEBUG: Generated {len(generated_queries)} queries")
                     
-                    # Generate contextual queries using enhanced schema context
-                    contextual_queries = await self._generate_contextual_queries(question, enhanced_schema_context)
+                    # Execute all generated queries
+                    query_results = await self._execute_multiple_queries(generated_queries, question)
                     
-                    if contextual_queries:
-                        # Execute all contextual queries
-                        query_results = await self._execute_multiple_queries(contextual_queries, question)
+                    # Filter for successful results only
+                    successful_results = [r for r in query_results if r["success"] and r.get("results")]
+                    
+                    if successful_results:
+                        successful_executions += 1
+                        total_execution_time += sum(r.get("execution_time", 0) for r in successful_results)
                         
-                        # Step 2: Score query results for quality and relevance
-                        scored_results = await self._score_query_results(query_results, question)
+                        # Combine all successful results
+                        all_results = []
                         
-                        # Step 3: Filter and prioritize based on scores
-                        filtered_results = self._filter_by_quality_score(scored_results)
+                        for result in successful_results:
+                                all_results.extend(result["results"])
                         
-                        if filtered_results:
-                            successful_executions += 1
-                            total_execution_time += sum(r.get("execution_time", 0) for r in filtered_results)
-                            
-                            # Combine results with weights based on scores
-                            all_results = []
-                            total_score = sum(r.get("quality_score", 0) for r in filtered_results)
-                            
-                            for result in filtered_results:
-                                if result["success"] and result["results"]:
-                                    weight = result.get("quality_score", 0) / total_score if total_score > 0 else 1.0
-                                    result["weight"] = weight
-                                    all_results.extend(result["results"])
-                            
-                            analytical_results.append({
-                                "question": question,
-                                "priority": priority,
-                                "sql": f"Intelligent multi-query approach ({len(filtered_results)} high-quality queries)",
-                                "execution_success": True,
-                                "results": all_results,
-                                "individual_queries": filtered_results,
-                                "error": None,
-                                "row_count": len(all_results),
-                                "execution_time": sum(r.get("execution_time", 0) for r in filtered_results),
-                                "successful_queries": len(filtered_results),
-                                "total_queries": len(contextual_queries),
-                                "approach": "intelligent_multi_query",
-                                "planning_reasoning": planning_result["reasoning"]
-                            })
-                        else:
-                            failed_executions += 1
-                            analytical_results.append({
-                                "question": question,
-                                "priority": priority,
-                                "sql": "Multiple queries attempted but none met quality threshold",
-                                "execution_success": False,
-                                "results": [],
-                                "error": "No high-quality results found",
-                                "approach": "intelligent_multi_query_failed"
-                            })
+                        analytical_results.append({
+                            "question": question,
+                            "priority": priority,
+                            "sql": f"Multi-query approach ({len(successful_results)} successful queries)",
+                            "execution_success": True,
+                            "results": all_results,
+                            "individual_queries": successful_results,
+                            "error": None,
+                            "row_count": len(all_results),
+                            "execution_time": sum(r.get("execution_time", 0) for r in successful_results),
+                            "successful_queries": len(successful_results),
+                            "total_queries": len(generated_queries),
+                            "approach": "multi_query",
+                            "planning_reasoning": "No planning needed, LLM generated queries directly"
+                        })
                     else:
-                        # Fallback to single query
-                        result = await self._execute_single_query(question)
-                        analytical_results.append(result)
-                        if result["execution_success"]:
-                            successful_executions += 1
-                        else:
-                            failed_executions += 1
+                        failed_executions += 1
+                        analytical_results.append({
+                            "question": question,
+                            "priority": priority,
+                            "sql": "Multiple queries attempted but none met quality threshold",
+                            "execution_success": False,
+                            "results": [],
+                            "error": "No high-quality results found",
+                            "approach": "intelligent_multi_query_failed"
+                        })
                 else:
-                    logger.info(f"📝 LLM decided single query sufficient for question {i+1}: {planning_result['reasoning']}")
-                    print(f"🔍 DEBUG: Single query sufficient: {planning_result['reasoning']}")
-                    
-                    # Execute single optimized query using enhanced context
-                    result = await self._execute_single_query_with_enhancement(question, enhanced_schema_context)
-                    result["approach"] = "intelligent_single_query"
-                    result["planning_reasoning"] = planning_result["reasoning"]
-                    result["enhanced_with_exploration"] = len(exploration_results) > 0
-                    result["explored_columns"] = list(exploration_results.keys()) if exploration_results else []
+                    # Fallback to single query
+                    result = await self._execute_single_query(question)
                     analytical_results.append(result)
-                    
                     if result["execution_success"]:
                         successful_executions += 1
-                        total_execution_time += result.get("execution_time", 0)
                     else:
                         failed_executions += 1
             
@@ -713,57 +689,24 @@ class AnalyticalManager:
                 "total_execution_time": 0
             }
 
-    async def _plan_query_approach(self, question: str, schema_context: str) -> Dict[str, Any]:
-        """Let LLM decide if multiple queries are needed for this question"""
+    async def _generate_flexible_queries(self, question: str, schema_context: str) -> List[Dict]:
+        """
+        Generate contextual queries using LLM with flexible approach (can decide 1 or multiple queries).
+        This prompt is designed to be more open-ended and let the LLM decide the number of queries.
+        
+        Args:
+            question: The natural language question
+            schema_context: The database schema context
+            
+        Returns:
+            List of generated query dictionaries
+        """
         if not self.llm:
-            return {
-                "needs_multiple_queries": False,
-                "reasoning": "LLM not available for query planning",
-                "suggested_explorations": []
-            }
-            
-        try:
-            logger.info(f"🤔 Planning query approach for: {question}")
-            
-            prompt_values = {
-                "question": question,
-                "schema": schema_context
-            }
-            
-            response = await self.llm.ainvoke(
-                self.prompts_manager.query_planning_prompt.format_messages(**prompt_values)
-            )
-            
-            planning_text = self._extract_response_content(response)
-            planning_json = self._extract_json_from_response(planning_text)
-            
-            try:
-                planning_result = json.loads(planning_json)
-                logger.info(f"✅ Query planning completed: {planning_result.get('reasoning', 'No reasoning provided')}")
-                return planning_result
-            except json.JSONDecodeError:
-                logger.warning("Failed to parse planning response, defaulting to single query")
-                return {
-                    "needs_multiple_queries": False,
-                    "reasoning": "Failed to parse LLM planning response",
-                    "suggested_explorations": []
-                }
-        except Exception as e:
-            logger.error(f"Error in query planning: {e}")
-            return {
-                "needs_multiple_queries": False,
-                "reasoning": f"Planning error: {str(e)}",
-                "suggested_explorations": []
-            }
-
-    async def _generate_contextual_queries(self, question: str, schema_context: str) -> List[Dict]:
-        """Generate contextual queries for a given question"""
-        if not self.llm:
-            logger.warning("LLM not available for contextual query generation")
+            logger.warning("LLM not available for flexible query generation")
             return []
             
         try:
-            logger.info(f"Generating contextual queries for: '{question}'")
+            logger.info(f"Generating flexible queries for: '{question}'")
             
             # Get memory context
             memory_context = self.memory_manager.get_memory_context(question) if self.memory_manager.use_memory else ""
@@ -771,32 +714,235 @@ class AnalyticalManager:
             # Prepare the enhanced prompt
             prompt_values = {
                 "schema": schema_context,
-                "question": question
+                "question": question,
+                "memory": memory_context  # Always include memory, even if empty
             }
+
+            print("Reached AI Invoke")
             
-            # Include memory context if available
-            if memory_context:
-                prompt_values["memory"] = memory_context
+            # Generate queries using the flexible prompt - with proper exception handling
+            try:
+                messages = self.prompts_manager.flexible_query_generation_prompt.format_messages(**prompt_values)
+                response = await self.llm.ainvoke(messages)
+                print(f"🔍 DEBUG: LLM invoke successful - response type: {type(response)}")
+            except Exception as llm_error:
+                print(f"🔍 DEBUG: LLM invoke error: {llm_error}")
+                logger.error(f"Error in LLM invocation: {llm_error}")
+                
+                # Create a fallback query directly - don't try to parse the response
+                fallback_query = [{
+                    "sql": self._generate_fallback_sql(question),
+                    "description": f"Fallback query due to LLM error: {question}",
+                    "type": "fallback_query"
+                }]
+                logger.info(f"Using direct fallback query for: '{question}' due to LLM error")
+                return fallback_query
             
-            # Generate queries using the contextual prompt
-            response = await self.llm.ainvoke(
-                self.prompts_manager.contextual_query_generation_prompt.format_messages(**prompt_values)
-            )
+            print(f"🔍 DEBUG: Flexible queries - Raw response: {response}")
             
-            response_text = self._extract_response_content(response)
+            # Extract content from response
+            try:
+                response_text = self._extract_response_content(response)
+            except Exception as extract_error:
+                print(f"🔍 DEBUG: Error extracting response content: {extract_error}")
+                logger.error(f"Error extracting response content: {extract_error}")
+                # Create a fallback query directly - don't try to parse the response
+                fallback_query = [{
+                    "sql": self._generate_fallback_sql(question),
+                    "description": f"Fallback query due to content extraction error: {question}",
+                    "type": "fallback_query"
+                }]
+                logger.info(f"Using direct fallback query for: '{question}' due to content extraction error")
+                return fallback_query
             
+            # Add detailed logging for debugging  
+            logger.info(f"Flexible queries - Raw response type: {type(response)}")
+            logger.info(f"Flexible queries - Response text length: {len(response_text)}")
+            logger.info(f"Flexible queries - Response text (first 200 chars): {response_text[:200] if len(response_text) > 0 else 'empty'}")
+            
+            # Handle specific error pattern: "\n  "queries""
+            if response_text.strip() in ['"queries"', "'queries'", '\n  "queries"', '\n "queries"', '\n\t"queries"', '\n"queries"']:
+                logger.warning(f"Detected bare 'queries' string response, using fallback query")
+                return [{
+                    "sql": self._generate_fallback_sql(question),
+                    "description": f"Fallback query for: {question}",
+                    "type": "fallback_query"
+                }]
+                
+            # Direct fix for malformed JSON - if response starts with "queries" but not with "{"
+            if ('"queries"' in response_text or "'queries'" in response_text) and not response_text.strip().startswith('{'):
+                logger.warning(f"Detected malformed JSON starting with 'queries' but missing braces")
+                return [{
+                    "sql": self._generate_fallback_sql(question),
+                    "description": f"Fallback query for: {question}",
+                    "type": "fallback_query"
+                }]
+                
+            # Extract JSON from response (handles markdown code blocks)
+            try:
+                json_text = self._extract_json_from_response(response_text)
+                logger.info(f"Flexible queries - Cleaned JSON text length: {len(json_text)}")
+                logger.info(f"Flexible queries - Cleaned JSON text: {json_text[:200] if len(json_text) > 0 else 'empty'}")
+            except Exception as json_extract_error:
+                logger.error(f"Error extracting JSON: {json_extract_error}")
+                return [{
+                    "sql": self._generate_fallback_sql(question),
+                    "description": f"Fallback query due to JSON extraction error: {question}",
+                    "type": "fallback_query"
+                }]
+            
+            # Extra validation for common LLM error patterns
+            if json_text.strip().startswith('"queries"') or json_text.strip().startswith("'queries'"):
+                logger.warning(f"JSON still malformed after extraction, using fallback query")
+                return [{
+                    "sql": self._generate_fallback_sql(question),
+                    "description": f"Fallback query for: {question}",
+                    "type": "fallback_query"
+                }]
+                
             # Parse the JSON response
             try:
                 import json
-                response_data = json.loads(response_text)
-                queries = response_data.get("queries", [])
+                # Final sanity check - make sure we have a proper JSON object
+                if not json_text.strip().startswith('{'):
+                    logger.warning(f"JSON doesn't start with '{{', wrapping in object")
+                    json_text = f'{{"queries": {json_text}}}'
                 
-                logger.info(f"Generated {len(queries)} contextual queries")
-                return queries
+                response_data = json.loads(json_text)
                 
-            except json.JSONDecodeError:
-                logger.error(f"Failed to parse contextual queries response: {response_text}")
-                return []
+                # Check if queries key exists, if not create it
+                if "queries" not in response_data:
+                    logger.warning("Response data doesn't contain 'queries' key, creating empty queries array")
+                    queries = []
+                else:
+                    queries = response_data.get("queries", [])
+                    
+                # Validate each query has the required fields
+                valid_queries = []
+                for i, query in enumerate(queries):
+                    if not isinstance(query, dict):
+                        logger.warning(f"Query {i} is not a dictionary, skipping")
+                        continue
+                        
+                    # Check required fields
+                    if "sql" not in query:
+                        logger.warning(f"Query {i} missing 'sql' field, skipping")
+                        continue
+                        
+                    if "description" not in query:
+                        # Add default description
+                        query["description"] = f"Query {i+1} for {question}"
+                        logger.info(f"Added default description to query {i}")
+                        
+                    if "type" not in query:
+                        # Add default type
+                        query["type"] = "general_query"
+                        logger.info(f"Added default type to query {i}")
+                        
+                    valid_queries.append(query)
+                
+                if valid_queries:
+                    logger.info(f"Generated {len(valid_queries)} valid flexible queries out of {len(queries)} total")
+                    return valid_queries
+                else:
+                    # If no valid queries after all that, use fallback
+                    logger.warning("No valid queries found after validation, using fallback query")
+                    return [{
+                        "sql": self._generate_fallback_sql(question),
+                        "description": f"Fallback query for: {question}",
+                        "type": "fallback_query"
+                    }]
+                
+            except json.JSONDecodeError as json_error:
+                logger.error(f"Error generating flexible queries: {json_error}")
+                logger.error(f"JSON parsing failed with error: {json_error}")
+                logger.error(f"JSON text that failed to parse: {json_text}")
+                # Create a fallback query to avoid empty results
+                fallback_query = [{
+                    "sql": self._generate_fallback_sql(question),
+                    "description": f"Fallback query for: {question}",
+                    "type": "fallback_query"
+                }]
+                logger.info(f"Using fallback query for: '{question}'")
+                return fallback_query
+            
+        except Exception as e:
+            logger.error(f"Error generating flexible queries: {e}")
+            # Create a fallback query to avoid empty results
+            fallback_query = [{
+                "sql": self._generate_fallback_sql(question),
+                "description": f"Fallback query for: {question}",
+                "type": "fallback_query"
+            }]
+            logger.info(f"Using fallback query for: '{question}'")
+            return fallback_query
+            
+    def _generate_fallback_sql(self, question: str) -> str:
+        """Generate a simple fallback SQL query when other methods fail"""
+        # Extract potential column names from the question
+        potential_columns = []
+        lower_question = question.lower()
+        
+        # Check for common column indicators
+        if "rate" in lower_question or "salary" in lower_question or "cost" in lower_question:
+            potential_columns.append("hourly_rate_in_usd")
+        if "country" in lower_question or "location" in lower_question:
+            potential_columns.append("country_of_work")
+        if "supplier" in lower_question or "vendor" in lower_question or "company" in lower_question:
+            potential_columns.append("supplier_company")
+        if "role" in lower_question or "job" in lower_question or "title" in lower_question or "position" in lower_question:
+            potential_columns.append("normalized_role_title")
+        
+        # Generate appropriate SQL based on column references
+        if "country" in lower_question and "rate" in lower_question and ("highest" in lower_question or "top" in lower_question):
+            return """SELECT country_of_work, ROUND(AVG(hourly_rate_in_usd),2) as avg_rate 
+                     FROM public."IT_Professional_Services"
+                     WHERE hourly_rate_in_usd > 0 AND service_type = 'Consulting'
+                     GROUP BY country_of_work 
+                     ORDER BY avg_rate DESC 
+                     LIMIT 10"""
+        elif "country" in lower_question and "rate" in lower_question and ("lowest" in lower_question or "bottom" in lower_question):
+            return """SELECT country_of_work, ROUND(AVG(hourly_rate_in_usd),2) as avg_rate 
+                     FROM public."IT_Professional_Services"
+                     WHERE hourly_rate_in_usd > 0 AND service_type = 'Consulting'
+                     GROUP BY country_of_work 
+                     ORDER BY avg_rate ASC 
+                     LIMIT 10"""
+        elif "role" in lower_question and "rate" in lower_question:
+            return """SELECT normalized_role_title, ROUND(AVG(hourly_rate_in_usd),2) as avg_rate 
+                     FROM public."IT_Professional_Services"
+                     WHERE hourly_rate_in_usd > 0 AND service_type = 'Consulting'
+                     GROUP BY normalized_role_title 
+                     ORDER BY avg_rate DESC 
+                     LIMIT 10"""
+        elif "supplier" in lower_question and "rate" in lower_question:
+            return """SELECT supplier_company, ROUND(AVG(hourly_rate_in_usd),2) as avg_rate 
+                     FROM public."IT_Professional_Services"
+                     WHERE hourly_rate_in_usd > 0 AND service_type = 'Consulting'
+                     GROUP BY supplier_company 
+                     ORDER BY avg_rate DESC 
+                     LIMIT 10"""
+        else:
+            # Generic fallback
+            columns = ", ".join(potential_columns) if potential_columns else "country_of_work, normalized_role_title, ROUND(AVG(hourly_rate_in_usd),2) as avg_rate"
+            return f"""SELECT {columns}
+                     FROM public."IT_Professional_Services"
+                     WHERE service_type = 'Consulting'
+                     GROUP BY country_of_work, normalized_role_title
+                     ORDER BY avg_rate DESC
+                     LIMIT 10"""
+
+    async def _generate_contextual_queries(self, question: str, schema_context: str) -> List[Dict]:
+        """Generate contextual queries for a given question using the simplified flexible prompt"""
+        if not self.llm:
+            logger.warning("LLM not available for contextual query generation")
+            return []
+            
+        try:
+            logger.info(f"Generating contextual queries for: '{question}'")
+            
+            # Use the same simplified flexible query generation
+            return await self._generate_flexible_queries(question, schema_context)
             
         except Exception as e:
             logger.error(f"Error generating contextual queries: {e}")
@@ -970,123 +1116,7 @@ class AnalyticalManager:
         
         return query_results
 
-    async def _score_query_results(self, query_results: List[Dict], original_question: str) -> List[Dict]:
-        """Score query results for quality and relevance"""
-        if not self.llm:
-            # Assign default scores based on row count and success
-            for result in query_results:
-                if result["success"]:
-                    result["quality_score"] = min(50 + result["row_count"], 100)
-                else:
-                    result["quality_score"] = 0
-                result["score_reasoning"] = "LLM not available for scoring"
-                result["key_insights"] = []
-            return query_results
-            
-        try:
-            logger.info(f"📊 Scoring {len(query_results)} query results for relevance and quality")
-            
-            # Prepare query results summary for scoring
-            results_summary = []
-            for result in query_results:
-                if result["success"]:
-                    results_summary.append({
-                        "query_description": result["query_description"],
-                        "row_count": result["row_count"],
-                        "execution_time": result["execution_time"],
-                        "sample_results": result["results"][:3] if result["results"] else []
-                    })
-                else:
-                    results_summary.append({
-                        "query_description": result["query_description"],
-                        "error": result["error"],
-                        "row_count": 0
-                    })
-            
-            prompt_values = {
-                "original_question": original_question,
-                "query_results": json.dumps(results_summary, indent=2, cls=DecimalEncoder)
-            }
-            
-            response = await self.llm.ainvoke(
-                self.prompts_manager.query_scoring_prompt.format_messages(**prompt_values)
-            )
-            
-            scoring_text = self._extract_response_content(response)
-            scoring_json = self._extract_json_from_response(scoring_text)
-            
-            try:
-                scoring_result = json.loads(scoring_json)
-                scores = scoring_result.get("scores", [])
-                
-                # Apply scores to query results
-                for i, result in enumerate(query_results):
-                    if i < len(scores):
-                        result["quality_score"] = scores[i].get("score", 0)
-                        result["score_reasoning"] = scores[i].get("reasoning", "")
-                        result["key_insights"] = scores[i].get("key_insights", [])
-                    else:
-                        result["quality_score"] = 0
-                        result["score_reasoning"] = "No score provided"
-                        result["key_insights"] = []
-                
-                best_score = max(s.get('score', 0) for s in scores) if scores else 0
-                logger.info(f"✅ Query scoring completed. Best score: {best_score}")
-                return query_results
-                
-            except json.JSONDecodeError:
-                logger.warning("Failed to parse scoring response, assigning default scores")
-                # Assign default scores based on row count and success
-                for result in query_results:
-                    if result["success"]:
-                        result["quality_score"] = min(50 + result["row_count"], 100)
-                    else:
-                        result["quality_score"] = 0
-                    result["score_reasoning"] = "Default scoring due to parse error"
-                    result["key_insights"] = []
-                return query_results
-                
-        except Exception as e:
-            logger.error(f"Error scoring query results: {e}")
-            # Assign default scores
-            for result in query_results:
-                result["quality_score"] = 50 if result["success"] else 0
-                result["score_reasoning"] = f"Error in scoring: {str(e)}"
-                result["key_insights"] = []
-            return query_results
 
-    def _filter_by_quality_score(self, scored_results: List[Dict], min_score: int = 60) -> List[Dict]:
-        """Filter query results by quality score and keep only the best ones"""
-        # Filter out failed queries and low-scoring queries
-        valid_results = [r for r in scored_results if r["success"] and r.get("quality_score", 0) >= min_score]
-        
-        if not valid_results:
-            # If no results meet the threshold, lower it and try again
-            min_score = 30
-            valid_results = [r for r in scored_results if r["success"] and r.get("quality_score", 0) >= min_score]
-        
-        if not valid_results:
-            # If still no results, take the best successful ones
-            successful_results = [r for r in scored_results if r["success"]]
-            if successful_results:
-                valid_results = sorted(successful_results, key=lambda x: x.get("quality_score", 0), reverse=True)[:3]
-        
-        # Sort by score and take top results
-        filtered_results = sorted(valid_results, key=lambda x: x.get("quality_score", 0), reverse=True)
-        
-        logger.info(f"🎯 Filtered to {len(filtered_results)} high-quality results (min score: {min_score})")
-        print(f"🔍 DEBUG: Filtering details:")
-        print(f"  Input results: {len(scored_results)}")
-        print(f"  Min score threshold: {min_score}")
-        for i, result in enumerate(scored_results):
-            score = result.get("quality_score", 0)
-            success = result.get("success", False)
-            print(f"  Result {i+1}: Score={score}, Success={success}, Meets threshold={score >= min_score and success}")
-        
-        for result in filtered_results:
-            logger.debug(f"  - {result['query_description']}: Score {result.get('quality_score', 0)}")
-        
-        return filtered_results
 
     async def _execute_single_query(self, question: str) -> Dict[str, Any]:
         """Execute a single optimized query for the question using contextual generation"""
@@ -1383,6 +1413,17 @@ class AnalyticalManager:
         try:
             print(f"🔍 DEBUG: _extract_response_content called with response type: {type(response)}")
             
+            # Special handling for AzureChatOpenAI response
+            if str(type(response).__name__).endswith('AzureChatOpenAI') or str(type(response)).find('Azure') >= 0:
+                print(f"🔍 DEBUG: Detected Azure OpenAI response")
+                if hasattr(response, 'choices') and len(getattr(response, 'choices', [])) > 0:
+                    choice = response.choices[0]
+                    if hasattr(choice, 'message') and hasattr(choice.message, 'content'):
+                        content = choice.message.content.strip()
+                        print(f"🔍 DEBUG: Extracted Azure OpenAI content: '{content[:100]}...'")
+                        return content
+            
+            # Standard LangChain response handling
             if hasattr(response, 'content'):
                 content = response.content.strip()
                 print(f"🔍 DEBUG: Extracted content from .content attribute: '{content[:100]}...'")
@@ -1395,49 +1436,148 @@ class AnalyticalManager:
                 content = response.strip()
                 print(f"🔍 DEBUG: Response is string: '{content[:100]}...'")
                 return content
-            else:
+            elif hasattr(response, '__dict__'):
+                # Try to extract content from object attributes
+                print(f"🔍 DEBUG: Response has __dict__, trying to find content in attributes")
+                attrs = dir(response)
+                for attr in ['content', 'text', 'message', 'result', 'output']:
+                    if attr in attrs:
+                        content = getattr(response, attr)
+                        if isinstance(content, str):
+                            print(f"🔍 DEBUG: Found content in .{attr} attribute")
+                            return content.strip()
+                
+                # If response has choices attribute (OpenAI-like)
+                if hasattr(response, 'choices') and len(getattr(response, 'choices', [])) > 0:
+                    print(f"🔍 DEBUG: Response has .choices, extracting from first choice")
+                    choice = response.choices[0]
+                    if hasattr(choice, 'message') and hasattr(choice.message, 'content'):
+                        content = choice.message.content.strip()
+                        print(f"🔍 DEBUG: Extracted from choices.message.content: '{content[:100]}...'")
+                        return content
+                        
+                # Try to convert to string as a last resort
+                print(f"🔍 DEBUG: No content attribute found, trying str(response)")
                 content = str(response).strip()
                 print(f"🔍 DEBUG: Converted response to string: '{content[:100]}...'")
                 return content
+            else:
+                # Last resort - convert to string
+                content = str(response).strip()
+                print(f"🔍 DEBUG: Converted response to string: '{content[:100]}...'")
+                return content
+                
         except Exception as e:
             print(f"🔍 DEBUG: Error extracting response content: {e}")
             logger.error(f"Error extracting response content: {e}")
             return ""
     
     def _extract_json_from_response(self, response_text: str) -> str:
-        """Extract JSON from response text, handling markdown code blocks"""
+        """Extract JSON from response text, handling markdown code blocks and malformed responses"""
         try:
             print(f"🔍 DEBUG: _extract_json_from_response called with text length: {len(response_text)}")
+            logger.debug(f"Extracting JSON from response text of length: {len(response_text)}")
             
-            # Remove markdown code blocks
+            # Special case for empty or very short responses
+            if not response_text or len(response_text.strip()) < 5:
+                print(f"🔍 DEBUG: Response too short or empty, returning default JSON")
+                logger.warning("Response text too short or empty, returning default JSON")
+                return '{"queries": []}'
+            
+            # Special case for when response is just the string "queries"
+            if response_text.strip() in ['"queries"', "'queries'", "queries", '"questions"', "'questions'", "questions"]:
+                print(f"🔍 DEBUG: Response is just '{response_text.strip()}' string, returning empty queries JSON")
+                logger.warning(f"Response text is just '{response_text.strip()}', returning default JSON")
+                return '{"queries": []}'
+            
+            # Clean up any non-JSON parts of the response
             import re
+            import json
             
-            # Pattern to match ```json ... ``` or ``` ... ```
+            # First try to extract from code blocks
             json_pattern = r'```(?:json)?\s*\n?(.*?)\n?```'
             match = re.search(json_pattern, response_text, re.DOTALL)
             
             if match:
                 json_text = match.group(1).strip()
                 print(f"🔍 DEBUG: Found JSON in code block: {len(json_text)} chars")
-                return json_text
+                logger.debug(f"Extracted JSON from code block: {len(json_text)} chars")
+                
+                # Validate that it's proper JSON
+                try:
+                    json.loads(json_text)
+                    return json_text
+                except json.JSONDecodeError:
+                    logger.warning(f"JSON from code block is not valid, continuing with other extraction methods")
             
-            # If no code block, try to find JSON-like content
+            # Try finding the most complete JSON structure with queries
+            json_pattern = r'\{[^{]*"queries"\s*:\s*\[[^\]]*\][^}]*\}'
+            match = re.search(json_pattern, response_text, re.DOTALL)
+            
+            if match:
+                json_text = match.group(0).strip()
+                print(f"🔍 DEBUG: Found JSON with queries array: {len(json_text)} chars")
+                logger.debug(f"Found JSON with queries array: {len(json_text)} chars")
+                
+                # Validate that it's proper JSON
+                try:
+                    json.loads(json_text)
+                    return json_text
+                except json.JSONDecodeError:
+                    logger.warning(f"Found JSON-like structure with queries but it's not valid JSON")
+            
+            # Try a broader pattern for any JSON with queries key
+            json_pattern = r'\{.*"queries".*\}'
+            match = re.search(json_pattern, response_text, re.DOTALL)
+            
+            if match:
+                json_text = match.group(0).strip()
+                print(f"🔍 DEBUG: Found JSON-like content with queries key: {len(json_text)} chars")
+                logger.debug(f"Found JSON-like content with queries key: {len(json_text)} chars")
+                
+                # Try to clean it up
+                try:
+                    json.loads(json_text)
+                    return json_text
+                except json.JSONDecodeError:
+                    logger.warning(f"Found JSON-like content with queries key but it's not valid JSON")
+            
+            # Try to see if response is already valid JSON
+            try:
+                json.loads(response_text)
+                print(f"🔍 DEBUG: Response is already valid JSON")
+                logger.debug(f"Response is already valid JSON")
+                return response_text
+            except json.JSONDecodeError:
+                pass
+            
+            # Look for questions pattern (legacy support)
             json_pattern = r'\{.*"questions".*\}'
             match = re.search(json_pattern, response_text, re.DOTALL)
             
             if match:
                 json_text = match.group(0).strip()
-                print(f"🔍 DEBUG: Found JSON-like content: {len(json_text)} chars")
-                return json_text
+                print(f"🔍 DEBUG: Found JSON-like content with questions key: {len(json_text)} chars")
+                logger.debug(f"Found JSON-like content with questions key: {len(json_text)} chars")
+                
+                # Try to replace "questions" with "queries" and parse again
+                try:
+                    fixed_json = json_text.replace('"questions"', '"queries"').replace("'questions'", "'queries'")
+                    json.loads(fixed_json)
+                    logger.info(f"Converted questions to queries in JSON")
+                    return fixed_json
+                except json.JSONDecodeError:
+                    logger.warning(f"Found JSON-like content with questions key but couldn't convert to valid JSON")
             
-            # If nothing found, return original text
-            print(f"🔍 DEBUG: No JSON pattern found, returning original text")
-            return response_text.strip()
+            # Last resort: create a default JSON with queries array
+            print(f"🔍 DEBUG: No valid JSON found, returning default queries JSON")
+            logger.warning(f"Couldn't extract valid JSON from response, returning default JSON")
+            return '{"queries": []}'
             
         except Exception as e:
             print(f"🔍 DEBUG: Error in _extract_json_from_response: {e}")
             logger.error(f"Error extracting JSON from response: {e}")
-            return response_text.strip()
+            return '{"queries": []}'
 
     def _extract_questions_fallback(self, response_text: str, user_query: str) -> Dict[str, Any]:
         """Fallback method to extract questions from malformed responses"""

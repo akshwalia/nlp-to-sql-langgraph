@@ -502,7 +502,7 @@ class SQLGenerationManager:
             if any(word in question_lower for word in ['how many', 'count', 'number of']):
                 queries.append({
                     "type": "count",
-                    "sql": f"SELECT COUNT(*) FROM public.IT_Professional_Services WHERE {column_name} = '{value}';",
+                    "sql": f"SELECT COUNT(*) FROM public.\"IT_Professional_Services\" WHERE {column_name} = '{value}';",
                     "description": f"Count of records where {column_name} = '{value}'"
                 })
             
@@ -511,7 +511,7 @@ class SQLGenerationManager:
                 for numeric_col in numeric_columns:
                     queries.append({
                         "type": "average",
-                        "sql": f"SELECT AVG({numeric_col}) FROM public.IT_Professional_Services WHERE {column_name} = '{value}';",
+                        "sql": f"SELECT AVG({numeric_col}) FROM public.\"IT_Professional_Services\" WHERE {column_name} = '{value}';",
                         "description": f"Average {numeric_col} for {column_name} = '{value}'"
                     })
             
@@ -520,7 +520,7 @@ class SQLGenerationManager:
                 for numeric_col in numeric_columns:
                     queries.append({
                         "type": "min_max",
-                        "sql": f"SELECT MIN({numeric_col}) as min_{numeric_col}, MAX({numeric_col}) as max_{numeric_col} FROM public.IT_Professional_Services WHERE {column_name} = '{value}';",
+                        "sql": f"SELECT MIN({numeric_col}) as min_{numeric_col}, MAX({numeric_col}) as max_{numeric_col} FROM public.\"IT_Professional_Services\" WHERE {column_name} = '{value}';",
                         "description": f"Min/Max {numeric_col} for {column_name} = '{value}'"
                     })
             
@@ -530,7 +530,7 @@ class SQLGenerationManager:
                     order_direction = "DESC" if any(word in question_lower for word in ['top', 'highest', 'best']) else "ASC"
                     queries.append({
                         "type": "ranking",
-                        "sql": f"SELECT * FROM public.IT_Professional_Services WHERE {column_name} = '{value}' ORDER BY {numeric_col} {order_direction} LIMIT 10;",
+                        "sql": f"SELECT * FROM public.\"IT_Professional_Services\" WHERE {column_name} = '{value}' ORDER BY {numeric_col} {order_direction} LIMIT 10;",
                         "description": f"{'Top' if order_direction == 'DESC' else 'Bottom'} 10 records by {numeric_col} for {column_name} = '{value}'"
                     })
         
@@ -543,14 +543,14 @@ class SQLGenerationManager:
                     for numeric_col in numeric_columns:
                         queries.append({
                             "type": "fuzzy_average",
-                            "sql": f"SELECT AVG({numeric_col}) FROM public.IT_Professional_Services WHERE {column_name} ILIKE '%{value}%';",
+                            "sql": f"SELECT AVG({numeric_col}) FROM public.\"IT_Professional_Services\" WHERE {column_name} ILIKE '%{value}%';",
                             "description": f"Average {numeric_col} for {column_name} containing '{value}'"
                         })
                 
                 if any(word in question_lower for word in ['how many', 'count', 'number of']):
                     queries.append({
                         "type": "fuzzy_count",
-                        "sql": f"SELECT COUNT(*) FROM public.IT_Professional_Services WHERE {column_name} ILIKE '%{value}%';",
+                        "sql": f"SELECT COUNT(*) FROM public.\"IT_Professional_Services\" WHERE {column_name} ILIKE '%{value}%';",
                         "description": f"Count of records where {column_name} contains '{value}'"
                     })
         
@@ -1010,22 +1010,22 @@ Do not include any explanatory text, markdown formatting, or code blocks outside
             examples = []
             
             # Basic SELECT examples
-            examples.append("-- Basic query:\nSELECT * FROM public.IT_Professional_Services LIMIT 10;")
+            examples.append("-- Basic query:\nSELECT * FROM public.\"IT_Professional_Services\" LIMIT 10;")
             
             # COUNT examples
-            examples.append("-- Count records:\nSELECT COUNT(*) FROM public.IT_Professional_Services;")
+            examples.append("-- Count records:\nSELECT COUNT(*) FROM public.\"IT_Professional_Services\";")
             
             # GROUP BY examples
-            examples.append("-- Group by analysis:\nSELECT role_title_group, COUNT(*) FROM public.IT_Professional_Services GROUP BY role_title_group;")
+            examples.append("-- Group by analysis:\nSELECT role_title_group, COUNT(*) FROM public.\"IT_Professional_Services\" GROUP BY role_title_group;")
             
             # WHERE with LIKE examples  
-            examples.append("-- Filter with LIKE:\nSELECT * FROM public.IT_Professional_Services WHERE role_title_group ILIKE '%consultant%';")
+            examples.append("-- Filter with LIKE:\nSELECT * FROM public.\"IT_Professional_Services\" WHERE role_title_group ILIKE '%consultant%';")
             
             # Aggregation examples
-            examples.append("-- Average calculation:\nSELECT AVG(hourly_rate_in_usd) FROM public.IT_Professional_Services WHERE hourly_rate_in_usd > 0;")
+            examples.append("-- Average calculation:\nSELECT AVG(hourly_rate_in_usd) FROM public.\"IT_Professional_Services\" WHERE hourly_rate_in_usd > 0;")
             
             # ORDER BY examples
-            examples.append("-- Sort by value:\nSELECT * FROM public.IT_Professional_Services ORDER BY hourly_rate_in_usd DESC LIMIT 5;")
+            examples.append("-- Sort by value:\nSELECT * FROM public.\"IT_Professional_Services\" ORDER BY hourly_rate_in_usd DESC LIMIT 5;")
             
             return "\n\n".join(examples)
             
@@ -1033,10 +1033,10 @@ Do not include any explanatory text, markdown formatting, or code blocks outside
             print(f"Error generating example patterns: {e}")
             # Return basic examples as fallback
             return """-- Basic query:
-SELECT * FROM public.IT_Professional_Services LIMIT 10;
+SELECT * FROM public."IT_Professional_Services" LIMIT 10;
 
 -- Count records:
-SELECT COUNT(*) FROM public.IT_Professional_Services;
+SELECT COUNT(*) FROM public."IT_Professional_Services";
 
 -- Group by analysis:
-SELECT role_title_group, COUNT(*) FROM public.IT_Professional_Services GROUP BY role_title_group;""" 
+SELECT role_title_group, COUNT(*) FROM public."IT_Professional_Services" GROUP BY role_title_group;""" 
