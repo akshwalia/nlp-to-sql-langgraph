@@ -6,7 +6,7 @@ DATABASE TABLE ANALYSIS: public.IT_Professional_Services
 BASIC INFORMATION:
 - Database: PBTest
 - Table: public.IT_Professional_Services
-- Analysis Date: 2025-07-17T14:54:08.011255
+- Analysis Date: 2025-07-22T12:21:40.172683
 
 TABLE STRUCTURE:
 - Total Columns: 26
@@ -120,7 +120,7 @@ DETAILED ANALYSIS (JSON):
 {
   "table_name": "IT_Professional_Services",
   "schema_name": "public",
-  "analysis_timestamp": "2025-07-17T14:54:08.011255",
+  "analysis_timestamp": "2025-07-22T12:21:40.172683",
   "database_info": {
     "database_name": "PBTest",
     "host": "localhost",
@@ -1944,7 +1944,7 @@ DETAILED ANALYSIS (JSON):
     "count": 10
   },
   "statistics": {
-    "generated_at": "2025-07-17T14:54:12.030191",
+    "generated_at": "2025-07-22T12:21:44.621912",
     "summary": {}
   },
   "recommendations": [],

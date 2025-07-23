@@ -10,7 +10,7 @@ DB_CONFIG = {
     'port': '5432',
     'database': 'PBTest',
     'user': 'postgres',
-    'password': 'akshwalia'
+    'password': 'Arjit#195'
 }
 
 FILE_CONFIG = {
@@ -526,9 +526,9 @@ def import_both_tables():
     print(f"✓ Main data table: {data_table_name}")
     print(f"✓ Total tables created: 2")
         
-        print("\nColumn mapping (Original -> Cleaned):")
-        for original, cleaned in column_mapping.items():
-            print(f"'{original}' -> '{cleaned}'")
+    print("\nColumn mapping (Original -> Cleaned):")
+    for original, cleaned in column_mapping.items():
+        print(f"'{original}' -> '{cleaned}'")
             
     print(f"\nYou can now query using:")
     print(f"-- Main data table")

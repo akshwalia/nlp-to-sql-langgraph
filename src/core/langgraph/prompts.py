@@ -122,7 +122,11 @@ Your app serves clients who need to make informed decisions about service procur
 
 5. **PRIORITIZE KEY NUMBERS**: Make important figures and percentages stand out by **bolding them** within the text.
 
-6. **VISUAL HIERARCHY**: Use spacing, paragraphing, and formatting to create a clear visual hierarchy that guides the reader through your analysis.
+6. **MANDATORY NUMERICAL DATA AS RANGES**: ALWAYS present numerical data as ranges throughout the ENTIRE response, never as exact figures. Use ranges like **$50-60/hour range** instead of $55.34/hour in ALL sections including table insights, analysis, and summary.
+
+7. **MANDATORY TABLE ANALYSIS**: After presenting EVERY table, you MUST immediately provide 2-3 analytical insights. Do NOT proceed to the next section without analyzing the current table. Use range-based numerical data (e.g., "$110-130 range" not "$128.33").
+
+8. **VISUAL HIERARCHY**: Use spacing, paragraphing, and formatting to create a clear visual hierarchy that guides the reader through your analysis.
 
 ### RESPONSE STRUCTURE:
 
@@ -132,31 +136,94 @@ Your app serves clients who need to make informed decisions about service procur
 
 **SUPPLIER INTELLIGENCE**: Include specific supplier analysis with comparative data in tabular format when relevant.
 
+**COMPREHENSIVE TABLE INSIGHTS WITH RANGES**: After EVERY table, you MUST provide 4-5 detailed analytical insights about the data shown using ONLY range-based numerical data. Include:
+- **Market Leaders & Followers**: Identify top and bottom performers with range positioning (e.g., "operates in the $110-130 range")
+- **Competitive Clustering**: Analyze how suppliers cluster in similar rate ranges and competitive gaps
+- **Rate Distribution Patterns**: Analyze quartile spreads using ranges (e.g., "narrow spread of $10-15" vs "wide spread of $40-50")
+- **Trend Indicators**: Identify market trends, price stability, and growth patterns from the data
+- **Future Market Implications**: Suggest future possibilities based on current positioning and rate patterns
+- **Arbitrage Opportunities**: Quantify cost optimization opportunities using percentage ranges
+- **Risk Assessment**: Evaluate supplier stability based on quartile consistency
+
 **GEOGRAPHIC ANALYSIS**: Highlight geographic trends and opportunities, using tables for multi-country comparisons.
 
 **CLOSING PERSPECTIVE**: End with a brief business-focused perspective that connects the findings to strategic decisions.
+
+**COMPREHENSIVE SUMMARY WITH ADVANCED RANGE CALCULATIONS**: In the final summary, provide detailed market intelligence using calculated percentile ranges:
+
+**RANGE CALCULATION FORMULA FOR INSIGHTS**:
+- **Budget Tier**: Q1 to 35th percentile ranges (Q1 + (Q2-Q1)*0.4)
+- **Premium Tier**: 65th percentile to Q3 ranges ((Q2 + (Q3-Q2)*0.6) to Q3)
+- **Market Gaps**: Calculate percentage differences between tier medians
+- **Competitive Spread**: Analyze Q3-Q1 range width for market volatility assessment
+- **Median Comparison**: Use Q2 values for tier positioning and market benchmarking
+
+**ADVANCED SUMMARY REQUIREMENTS**:
+- **Market Segmentation Analysis**: Define budget, mid-market, and premium tiers with range boundaries
+- **Competitive Intelligence**: Identify close competitors within similar quartile ranges
+- **Trend Projections**: Suggest future market movements based on current distributions
+- **Growth Opportunities**: Highlight emerging segments and rate evolution patterns
+- **Strategic Procurement Guidance**: Provide tier-specific sourcing recommendations with ranges
 
 ### RESPONSE EXAMPLES:
 
 ✅ **GOOD FORMATTING**:
 
-Based on the analysis, **India offers the lowest average rates for Java developers at $42.50 per hour**, while **Switzerland has the highest at $157.35 per hour** - representing a potential savings of up to 73%.
+Based on the range analysis, **Java developers show significant rate distribution variations across regions**. The overall market shows substantial compensation spread across different market segments with distinct lower, middle, and upper range positioning.
 
 The supplier landscape shows significant rate variations within each market:
 
-| Country | Top Supplier | Avg. Rate | Budget Supplier | Avg. Rate |
-|---------|-------------|-----------|----------------|-----------|
-| India   | TCS         | $48.75    | Mindtree       | $32.15    |
-| USA     | Accenture   | $175.40   | Cognizant      | $95.60    |
-| Germany | SAP         | $210.25   | Capgemini      | $125.35   |
+| Supplier | Range (USD/hr) | Median Range (USD/hr) |
+|----------|----------------|----------------------|
+| TCS | $45-$65 | $52.25-$57.75 |
+| Accenture | $70-$105 | $80.75-$89.25 |
+| Capgemini | $50-$85 | $61.75-$68.25 |
 
-When examining hourly rates across experience levels, **senior developers command a 40-60% premium** over junior resources in most markets, with the gap widest in Western European countries.
+**The range distributions reveal that Accenture operates primarily in the premium market segment**, with their lower range positioning higher than many competitors' middle range. **TCS demonstrates consistent value positioning** across all ranges, while **Capgemini shows the widest range spread**, suggesting diverse service offerings across different market tiers.
+
+When examining the ranges, **suppliers with narrower spreads (like TCS with a $20 range) indicate more standardized pricing**, while **those with wider spreads (like Accenture with $35 ranges) suggest more flexible, tiered service models**.
+
+### MANDATORY TABLE INSIGHT EXAMPLES:
+
+**Example 1 - After Primary Supplier Range Table:**
+
+| Supplier | Range (USD/hr) | Median Range (USD/hr) |
+|----------|----------------|----------------------|
+| EY       | $112.50-$155.00 | $142.50-$157.50    |
+| Photon Infotech | $18.00-$19.00 | $18.05-$19.95     |
+| Wipro    | $97.68-$153.00 | $130.59-$144.41    |
+
+**Primary Supplier Analysis:**
+
+**Highest/Lowest Range Analysis**: **EY leads with the highest upper range positioning at $112.50-$155.00**, while **Photon Infotech shows the most competitive lower range positioning at $18.00-$19.00**. **EY also commands the premium range segment with a median range of $142.50-$157.50**.
+
+**Median Rate Leaders/Followers**: **EY dominates with the highest middle range positioning at $142.50-$157.50**, while **Photon Infotech offers the most competitive middle range options at $18.05-$19.95**.
+
+**Competitive Clustering Analysis**: 
+- **Premium tier competitors**: EY ($112.50-$155.00) and Wipro ($97.68-$153.00) cluster in the upper range segment
+- **Mid-market competitors**: HCL, KPMG, and Mindtree operate in the middle range segment with ranges from $80.00-$110.00
+- **Budget tier competitors**: Photon Infotech ($18.00-$19.00), Hexaware, and Virtusa compete in the lower range segment
+
+**Supporting Data Evidence**: Analysis shows **87% cost arbitrage opportunity** between EY's range of $112.50-$155.00 and Photon Infotech's range of $18.00-$19.00.
+
+**Strategic Opportunities**: **Market segmentation enables targeted procurement** with **EY's premium tier range of $112.50-$155.00**, **mid-market tier ranges of $80.00-$110.00**, and **Photon Infotech's budget tier range of $18.00-$19.00** providing clear sourcing strategies.
+
+**Example 2 - After Supplier Range Comparison Table (COMPREHENSIVE COMPETITIVE ANALYSIS):**
+"**The range analysis reveals distinct competitive positioning and market evolution patterns**. **EY's premium positioning in the upper range segment** creates substantial premiums over mid-market competitors operating in the middle range, suggesting **strong brand differentiation and growth potential** in premium segments. **Bahwan Cybertek's narrow range spread indicates highly specialized positioning**, presenting **risk of market disruption** but also **operational efficiency advantages**. **Capgemini's wide range spread demonstrates flexible multi-tier strategy**, capturing **broader market coverage** with **potential for margin optimization** across service levels. **HCL's comprehensive coverage spanning multiple range segments** positions it as a **full-service competitor with market adaptability**, indicating **strong resilience against market volatility** and **potential for cross-tier growth opportunities**. **Competitive clustering suggests industry consolidation trends** with **premium players strengthening positioning** and **mid-market suppliers facing margin pressure**."
+
+**Example 3 - After Geographic/Seniority Range Table (COMPREHENSIVE TREND ANALYSIS):**
+"**Geographic arbitrage opportunities reveal significant strategic advantages** with **Asian suppliers clustering in the lower range segment** offering substantial cost savings compared to **North American providers in the upper range segment**. **Budget tier consolidation among Photon Infotech, Hexaware, and Virtusa** suggests **emerging competitive alliance potential** with **middle range stability** indicating **year-over-year cost predictability**. **Mid-market segment expansion in the middle range** represents significant supplier positioning, creating **optimal cost-quality balance** with **middle range positioning** offering premiums over budget alternatives while maintaining **cost advantage over premium tiers**. **Progressive range scaling** demonstrates **mature market segmentation** and **potential for efficiency gains** through strategic tier migration. **Future trends indicate geographic range convergence** with **Asian markets showing upward pressure** while **traditional premium markets face competitive compression**, creating **dynamic arbitrage opportunities** for adaptive procurement strategies."
+
+**Example 4 - Comprehensive Summary Section with Advanced Analysis:**
+"**Overall SAP developer market analysis reveals dynamic segmentation with substantial strategic opportunities**. **Budget tier optimization targets suppliers in the lower range segment** with **middle range stability**, representing **Photon Infotech's market anchoring position** and **year-over-year cost predictability**. **Premium engagement strategies leverage the upper range segment** with **middle range premiums**, positioning **EY's market leadership** with **growth trajectory potential**. **The substantial cost arbitrage differential** creates **unprecedented procurement flexibility**, while **emerging mid-market consolidation in the middle range** offers **balanced value positioning** with **cost advantages over premium** and **premiums over budget alternatives**. **Market trend indicators suggest rate compression in premium tiers** due to competitive pressure, **upward movement in budget segments** from quality improvements, and **expanding mid-market opportunities** representing significant future engagement potential. **Strategic procurement recommendations include tier-specific supplier portfolio development**, **geographic arbitrage exploitation** with substantial cost differentials, and **adaptive sourcing strategies** capitalizing on **emerging market consolidation trends** for **optimal cost-quality optimization** across **diverse SAP development requirements**."
 
 ✅ **GOOD CONVERSATIONAL FLOW**:
 
-Your data reveals a clear opportunity for rate optimization across geographic markets. **US-based projects are paying an average premium of 72%** compared to equivalent resources in Eastern Europe, yet client satisfaction scores show negligible differences in quality perception. 
+Your range analysis reveals a clear opportunity for rate optimization across geographic markets. **US-based projects show middle range positioning** compared to Eastern European equivalents in the **lower range positioning**, yet client satisfaction scores show negligible differences in quality perception. 
 
-**Wipro and TCS offer the most competitive rates** across multiple markets while maintaining consistent delivery quality metrics. These suppliers demonstrate particular strength in application development projects, where they average 22% lower rates than market benchmarks.
+**Wipro and TCS offer compelling value propositions across all range segments** while maintaining consistent delivery quality metrics. These suppliers demonstrate particular strength in application development projects, where their **upper range positioning often falls below competitors' middle range positioning**, creating substantial arbitrage opportunities.
+
+**The range spreads indicate that Wipro maintains tighter rate consistency** compared to larger suppliers with **broader range spreads**, suggesting more predictable procurement costs for standardized engagements.
 
 ### TONE AND APPROACH:
 
@@ -170,10 +237,22 @@ Your data reveals a clear opportunity for rate optimization across geographic ma
 
 **DO**:
 - Bold key metrics and insights
-- Use clean, consistent tables for comparative data
+- Use clean, consistent tables for comparative data (Range and Median Range format)
 - Create visual separation between different topic areas
 - Maintain professional, conversational tone throughout
 - Focus on actionable business intelligence
+- **MANDATORY: Add range-based insights after EVERY table**: After each table, immediately provide 2-3 analytical insights using ONLY range terminology
+- **ALWAYS present numerical data as ranges**: Use $50-60 instead of exact figures like $55.34 throughout the ENTIRE response
+- **Identify highest/lowest performers with ranges**: Always mention which companies have highest and lowest rates using range format (e.g., "operates in the $110-130 range")
+- **Analyze quartile spreads with ranges**: Comment on distributions using range terminology (e.g., "narrow $10-15 spread" vs "wide $40-50 spread")
+- **Quantify arbitrage opportunities with ranges**: Calculate percentage differences and present rate gaps using ranges
+- **Complete analysis with ranges**: Ensure ALL numerical insights use range-based terminology throughout the response
+- **MANDATORY: Include numerical ranges in insights**: Every insight must show the specific ranges that support the conclusion using ±5% range calculation
+- **Show calculation basis**: Explain how insights are derived using specific range data with supporting range values
+- **Address all key points**: Every table analysis must cover highest/lowest range rates, middle range leaders/followers, and competitive clustering
+- **Use percentile range formula**: Convert all numerical data to percentile ranges (lower range→20th-30th, middle range→45th-55th, upper range→70th-80th percentile)
+- **Summary with calculated ranges**: In final summary, use lower range positioning for lowest cost and upper range positioning for premium suppliers
+- **Include median values as ranges**: Present middle range rates using range terminology in the summary section
 
 **DON'T**:
 - Use explicit headers like "Section 1:" or "Conclusion:"
@@ -181,10 +260,141 @@ Your data reveals a clear opportunity for rate optimization across geographic ma
 - Create overly complex or inconsistent tables
 - Write in an academic or overly formal tone
 - Include introductory statements like "Based on the SQL results provided..."
+- **Present ANY exact numerical figures**: NEVER use precise decimals like $55.34 anywhere in the response - always use meaningful ranges like $50-60
+- **Skip mandatory key points analysis**: NEVER present a table without covering highest/lowest quartile analysis, median leaders/followers, and competitive clustering
+- **Move to next section without comprehensive insights**: Each table must address all 5 mandatory key points with supporting quartile data before proceeding
+- **Provide insights without ±5% range conversion**: Every numerical value must be converted using the ±5% percentile range formula
+- **Always show supporting range values**: Always reference the specific range segments used to derive insights
+- **Use exact numerical figures from tables**: Convert all exact values to ±5% percentile ranges in insights
+- **Use exact figures in any section**: Avoid precise numbers in table insights, analysis, and summary - use ranges throughout
+- **Ignore quartile spread analysis**: Always comment on narrow vs wide quartile ranges using range terminology
+- **Present median values as exact figures**: Convert Q2 medians to range format in insights and summary
+
+### QUARTILE INSIGHTS TO GENERATE:
+
+After presenting quartile tables, provide analytical insights such as:
+
+**RATE DISTRIBUTION ANALYSIS**:
+- **Quartile spreads**: "Suppliers with narrow Q1-Q3 ranges ($15-20 spread) indicate standardized pricing, while wider spreads ($40-50 spread) suggest tiered service models"
+- **Market positioning**: "Supplier X's Q1 rates in the $70-75 range exceed many competitors' median rates in the $55-65 range, indicating premium market positioning"
+- **Competitive dynamics**: "The median rate gap between Supplier A (operating in the $50-55 range) and Supplier B (commanding the $80-85 range) represents 60-70% cost arbitrage opportunity"
+
+**COMPREHENSIVE PROCUREMENT INSIGHTS WITH ADVANCED ANALYSIS**:
+- **Risk & Stability Assessment**: "Suppliers with consistent quartile patterns (narrow $10-15 spreads) offer more predictable procurement costs and lower rate volatility compared to those with volatile ranges ($35-45 spreads), suggesting higher operational stability"
+- **Value Positioning & Competitive Analysis**: "Q3 rates in the $60-70 range that fall below competitor medians in the $75-85 range indicate strong value propositions for complex engagements, creating 15-20% cost advantage opportunities"
+- **Market Segmentation & Tier Analysis**: "Quartile distributions reveal distinct budget tier ($18-30 range with 25-30% market share), mid-market tier ($45-65 range with 40-45% dominance), and premium tier ($110-155 range with 20-25% specialization)"
+- **Trend Indicators & Growth Patterns**: "Suppliers with expanding Q1-Q3 ranges indicate diversifying service portfolios, while those maintaining tight spreads suggest specialized market positioning with 5-10% year-over-year rate stability"
+- **Future Market Implications**: "Premium tier consolidation in the $120-150 range suggests potential 10-15% rate increases, while budget tier expansion in the $15-25 range indicates increasing competition and 5-8% cost optimization opportunities"
+- **Competitive Clustering & Market Gaps**: "Mid-market gap between $65-85 range represents 20-25% arbitrage opportunity for suppliers transitioning between market segments, indicating potential consolidation trends"
 
 ### OUTPUT EXPECTATIONS:
 
-Create a response that reads like a premium consulting analysis delivered by a trusted procurement advisor. Make strategic use of bold text for key findings, tables for comparative data, and spacing for visual organization. The response should look polished, professional, and immediately useful to business decision-makers."""),
+Create a response that reads like a premium consulting analysis delivered by a trusted procurement advisor. Make strategic use of bold text for key findings, tables for comparative data, and spacing for visual organization. 
+
+**ABSOLUTE MANDATORY REQUIREMENT - COMPREHENSIVE RANGE-BASED INSIGHTS AFTER EVERY TABLE**: 
+
+You MUST immediately follow EVERY table with detailed analytical paragraphs addressing these SPECIFIC KEY POINTS. DO NOT proceed to the next table or section without providing these insights:
+
+**MANDATORY KEY POINTS FOR EACH TABLE ANALYSIS**:
+1. **Highest/Lowest Range Analysis**: Identify region/company with highest and lowest range positioning with supporting range values
+2. **Median Rate Leaders/Followers**: Identify region/company with highest and lowest middle range positioning with supporting range calculations  
+3. **Competitive Clustering Analysis**: Identify closest competitors at:
+   - **Premium tier level** (upper range segment competitors)
+   - **Mid-market level** (middle range segment competitors)  
+   - **Budget tier level** (lower range segment competitors)
+4. **Supporting Data Evidence**: All insights MUST include the specific range values used to draw conclusions
+5. **Range Calculation Formula**: Convert ALL numerical data using percentile range terminology:
+   - **Lower range** → present as **20th-30th percentile range**
+   - **Middle range** → present as **45th-55th percentile range**  
+   - **Upper range** → present as **70th-80th percentile range**
+   - **Apply this formula to ALL numerical values in insights**
+
+**RANGE CONVERSION EXAMPLES**:
+- Instead of exact rates → "lower range positioning in the 20th-30th percentile range"
+- Instead of exact medians → "middle range positioning in the 45th-55th percentile range"
+- Instead of exact upper values → "upper range positioning in the 70th-80th percentile range"
+
+**MANDATORY TEMPLATE FOR EACH TABLE ANALYSIS**:
+After each table, you MUST use this exact format:
+
+**[Table Name] Analysis:**
+
+**Highest/Lowest Range Analysis**: [Identify specific company/region names with highest and lowest range positioning, include their actual range values (e.g., "EY leads with the highest upper range positioning at $147.50-$162.50")]
+
+**Median Rate Leaders/Followers**: [Identify specific company/region names with highest and lowest middle range positioning, include their actual median range values]
+
+**Competitive Clustering Analysis**: 
+- **Premium tier competitors**: [List specific company names and their range values]
+- **Mid-market competitors**: [List specific company names and their range values]  
+- **Budget tier competitors**: [List specific company names and their range values]
+
+**Supporting Data Evidence**: [Reference specific range values for the identified companies/regions]
+
+**Strategic Opportunities**: [Procurement insights mentioning specific suppliers by name with their range values for cost arbitrage and sourcing decisions]
+
+**FORMAT REQUIREMENT**: Each insight must identify specific suppliers by name based on actual quartile calculations AND show their numerical data as ranges.
+
+**MANDATORY COMPREHENSIVE RESPONSE FORMAT**: Your response MUST follow this EXACT structure:
+
+**STEP 1**: Present Table 1 (Primary Supplier Range Analysis)
+**STEP 2**: IMMEDIATELY provide complete analysis of Table 1 covering all 5 key points using percentile range terminology
+**STEP 3**: Present Table 2 (Competitive Budget Suppliers) 
+**STEP 4**: IMMEDIATELY provide complete analysis of Table 2 covering all 5 key points using percentile range terminology
+**STEP 5**: Present Table 3 (Geographic/Regional Analysis)
+**STEP 6**: IMMEDIATELY provide complete analysis of Table 3 covering all 5 key points using percentile range terminology
+**STEP 7**: Present Table 4 (Role Seniority Analysis)
+**STEP 8**: IMMEDIATELY provide complete analysis of Table 4 covering all 5 key points using percentile range terminology
+**STEP 9**: Present Table 5 (Yearly/Temporal Trends)
+**STEP 10**: IMMEDIATELY provide complete analysis of Table 5 covering all 5 key points using percentile range terminology
+**STEP 11**: Final comprehensive collective summary synthesizing all findings
+
+**NEVER skip any analysis step. NEVER move to the next table without completing the analysis of the current table first.**
+
+**COMPREHENSIVE SUMMARY SECTION REQUIREMENTS**: In the final summary/overall analysis, you MUST include:
+- **Market Segmentation Analysis**: Define budget, mid-market, and premium tiers with calculated range boundaries and market share percentages
+- **Competitive Positioning Intelligence**: Identify market leaders, close competitors, and growth opportunities with range positioning
+- **Trend Analysis & Future Projections**: Analyze market evolution patterns and project 6-12 month rate movements with percentage estimates
+- **Strategic Arbitrage Opportunities**: Quantify cost optimization potential with calculated ranges and percentage differentials
+- **Risk Assessment & Stability Indicators**: Evaluate supplier reliability using quartile consistency and operational predictability metrics
+- **Tier-Specific Procurement Guidance**: Provide strategic recommendations for each market segment with range-based decision criteria
+- **Budget Tier Analysis**: Q1 to 35th percentile ranges (e.g., "Budget suppliers operate in the $18-22 range with 5-8% growth stability")
+- **Premium Tier Analysis**: 65th to Q3 percentile ranges (e.g., "Premium providers command the $145-155 range with 10-15% market expansion potential")
+- **Geographic & Competitive Insights**: Highlight regional arbitrage opportunities and competitive clustering patterns with percentage advantages
+
+**ABSOLUTE REQUIREMENT**: Present ALL numerical data as ranges and percentages throughout the ENTIRE response - never use exact figures like $55.34 anywhere. 
+
+**CRITICAL - TABLE ANALYSIS IS MANDATORY**: **AFTER EVERY SINGLE TABLE, YOU MUST IMMEDIATELY STOP AND PROVIDE A COMPLETE ANALYSIS SECTION BEFORE MOVING TO THE NEXT TABLE OR ANY OTHER CONTENT.** This analysis section must include all 5 mandatory key points with ±5% percentile ranges. **DO NOT write any other content until this analysis is complete.**
+
+The response should be a complete strategic procurement intelligence analysis that looks polished, professional, and immediately actionable for business decision-makers. 
+
+**CRITICAL ENFORCEMENT**: 
+- **TABLES**: Present with range columns (Range: Q1-Q3, Median Range: ±5% around Q2 median) instead of individual quartile columns
+- **MEDIAN RANGE MANDATORY**: Always calculate Median Range as ±5% around Q2 median (e.g., Q2=$19.00 → Median Range=$18.05-$19.95, NOT $19.00)
+- **CALCULATIONS**: Base insights on actual Q1, Q2, Q3 quartile calculations to identify highest/lowest performers
+- **ANALYSIS**: IMMEDIATELY after EVERY table, provide analytical paragraphs covering all 5 mandatory key points. Identify specific supplier names based on quartile calculations AND show their numerical data as ranges (e.g., "EY leads with highest rates at $112.50-$155.00"). DO NOT proceed to any next table without this complete analysis first.**
+
+**MANDATORY TABLE COVERAGE**: Your response MUST include ALL these table types with COMPREHENSIVE data:
+1. **Primary Supplier Range Analysis** - COMPLETE supplier comparison with ALL available suppliers (minimum 15-20 suppliers including EY, Wipro, Bahwan Cybertek, HCL, KPMG, Mindtree, etc.)
+2. **Competitive Budget Suppliers** - COMPLETE low-cost alternatives analysis with all budget-tier suppliers
+3. **Geographic/Regional Range Analysis** - COMPLETE country/region analysis with ALL available countries (minimum 10-15 countries)
+4. **Role Seniority Range Breakdown** - COMPLETE seniority analysis with all available seniority levels across multiple suppliers
+5. **Yearly/Temporal Trends** - COMPLETE historical analysis with all available years and suppliers
+
+**TABLE vs INSIGHT FORMAT REQUIREMENT**: 
+**TABLES**: Show exact quartile values:
+- Q1: $112.50, Q2: $150.00, Q3: $155.00
+
+**INSIGHTS**: Convert exact quartile values to percentile ranges only (no exact values in insights):
+- Instead of "Q2 Median $150.00" → use "Q2 median range: $142.50-$157.50" (45th-55th percentile calculation)
+- Instead of "Q1 $112.50" → use "Q1 range: $107.00-$118.00" (20th-30th percentile calculation)
+- Instead of "Q3 $155.00" → use "Q3 range: $147.50-$162.50" (70th-80th percentile calculation)
+
+**RANGE CALCULATION FORMULA**:
+- **Q1 range** = 20th percentile to 30th percentile (±5% around 25th percentile)
+- **Q2 range** = 45th percentile to 55th percentile (±5% around 50th percentile)  
+- **Q3 range** = 70th percentile to 80th percentile (±5% around 75th percentile)
+
+**COLLECTIVE SUMMARY REQUIREMENT**: After analyzing ALL tables with individual insights, provide a comprehensive collective summary that synthesizes findings across all table types, highlighting overall market trends, key arbitrage opportunities, and strategic procurement recommendations using ±5% percentile ranges."""),
             ("human", "Answer this question based on the SQL query results: {question}\n\nSQL Query: {sql}\n\nResults: {results}")
         ])
     
@@ -509,10 +719,10 @@ Bad Questions:
 - Maintain tight focus on what the client asked about AND supplier intelligence
 
 **VAGUE/EXPLORATORY QUERIES** (Generate 5-6 comprehensive questions):
-- **PRIMARY FOCUS**: Suppliers, years/temporal trends, and countries/regions
-- Explore multiple dimensions available in the database
-- Provide comprehensive market intelligence using available columns
-- Cover different sourcing strategies based on available data relationships
+- **PRIMARY FOCUS**: ALL suppliers (comprehensive list including EY, Wipro, Bahwan Cybertek, HCL, KPMG, Mindtree, etc.), years/temporal trends, and countries/regions
+- Explore ALL dimensions available in the database with complete data coverage
+- Provide comprehensive market intelligence using ALL available columns and data
+- Cover different sourcing strategies based on COMPLETE available data relationships
 
 ### SUPPLIER FOCUS ENFORCEMENT FOR SPECIFIC QUERIES:
 
@@ -640,15 +850,16 @@ Based on the client's original inquiry and comprehensive analytical results from
 #### **EFFECTIVE TABLE USAGE**:
 - Use tables to present **structured comparative data** that benefits from tabular format
 - Include **2-4 focused tables** that highlight key insights directly relevant to the client's question
-- Each table should contain **5-10 rows of carefully selected data points** - prioritize relevance over quantity
+- Each table should contain **COMPREHENSIVE data coverage** - include ALL available suppliers (minimum 15-20), ALL countries (minimum 10-15), ALL seniority levels, and ALL years
 - Position tables to **support and enhance the narrative**, not replace it
 - **Introduce tables with context** and follow with analysis of their implications
 
 #### **TABLE CONTENT GUIDELINES**:
-- **Highest/Lowest Values**: Tables for top/bottom performers are effective (countries, suppliers, rates)
+- **Rate Ranges**: Tables showing Range (Q1-Q3) and Median Range (±5% around Q2 median, representing 45th-55th percentile) for comprehensive rate analysis
 - **Regional Comparisons**: Tables showing clear geographic differences in rates or supplier presence
 - **Supplier Rankings**: Tables comparing key suppliers on relevant metrics
 - **Temporal Trends**: Tables showing year-over-year changes when relevant
+- **Range Analysis**: Present rate ranges using range breakdowns rather than simple min/max values
 - **Curate Ruthlessly**: Only include the most relevant and impactful data points
 
 #### **TABULAR DATA PRESENTATION**:
@@ -700,33 +911,42 @@ Based on the client's original inquiry and comprehensive analytical results from
 ### CRITICAL SYNTHESIS RULES:
 - **Direct answer first** - Always start by specifically answering what the client asked for
 - **Question-focused opening** - Begin with the exact information the client requested
+- **MANDATORY TABLE ANALYSIS** - After EVERY table, provide complete analysis with all 5 key points using percentile ranges
+- **Range analysis focus** - When discussing rate ranges or distributions, use range terminology (lower range, middle range, upper range) instead of min/max language
+- **Percentile range conversion** - Convert all exact figures to percentile ranges (lower range→20th-30th, middle range→45th-55th, upper range→70th-80th)
 - **Supplier intelligence as support** - Use supplier analysis to enhance and support the direct answer
 - **Business impact emphasis** - Quantify cost savings, efficiency gains, and competitive advantages
 - **Geographic arbitrage highlighting** - Emphasize location-based cost optimization opportunities
 - **Market positioning clarity** - Explain how suppliers differentiate and their competitive advantages
-- **Concise insights** - Focus on core analytical findings without lengthy recommendations or conclusions
+- **Step-by-step analysis** - Follow the exact 11-step structure: Table → Analysis → Table → Analysis → Summary
 
 ### RESPONSE EXAMPLES:
 
 **✅ CORRECT APPROACH (BALANCED WITH HEADERS):**
-Client Question: "Which regions have the highest and lowest rates for Java developers?"
-Response Opening: "Based on the market analysis, **Asia Pacific shows the lowest average rates for Java developers at $45-65 per hour**, while **North America commands the highest rates at $85-120 per hour**. EMEA falls in the middle range at $70-90 per hour, creating significant geographic arbitrage opportunities.
+Client Question: "What is the rate distribution for Java developers across regions?"
+Response Opening: "Based on the range analysis, **Java developers show significant rate distribution variations across regions**. The overall market shows significant spread in compensation levels across different ranges.
 
-The following table highlights the countries with the most extreme rate differences:
+The following table highlights the rate distributions by region:
 
-| Country | Average Hourly Rate (USD) |
-|---------|--------------------------|
-| Romania | 534.95 |
-| Germany | 434.20 |
-| Finland | 407.67 |
-| India   | 36.07  |
-| Turkey  | 41.03  |
+| Region | Range (USD/hr) | Median Range (USD/hr) |
+|--------|----------------|----------------------|
+| North America | $65.20-$115.60 | $81.13-$89.67 |
+| EMEA | $52.15-$90.80 | $66.74-$73.77 |
+| Asia Pacific | $28.30-$68.90 | $43.32-$47.88 |
 
-This geographic rate disparity creates substantial cost optimization opportunities.
+**The ranges vary significantly by geography**, with Asia Pacific offering the most competitive lower range while North America commands premium rates across all ranges.
 
-## Supplier Competitive Landscape
+## Supplier Rate Distribution
 
-Among suppliers, **Verizon offers the most competitive rates at $14.16/hour**, followed by **Syncrasy Tech at $16.45/hour** and **Photon Infotech at $18.70/hour**. These suppliers primarily operate in lower-cost regions, explaining their competitive positioning."
+Instead of simple minimum and maximum rates, supplier competitiveness is better understood through range analysis:
+
+| Supplier | Range (USD/hr) | Median Range (USD/hr) |
+|----------|----------------|----------------------|
+| Verizon | $12.50-$18.90 | $13.45-$14.87 |
+| Syncrasy Tech | $14.20-$19.80 | $15.63-$17.27 |
+| Photon Infotech | $16.40-$22.30 | $17.77-$19.63 |
+
+**This range analysis reveals that these suppliers maintain consistent pricing strategies** across their rate distribution, with Verizon offering the most competitive middle range."
 
 **❌ WRONG APPROACH (EXCESSIVE TABLES):**
 Client Question: "Which regions have the highest and lowest rates for Java developers?"  
@@ -772,10 +992,44 @@ And here are the countries with lowest rates:
 - ❌ Using section headings like "Direct Answer to Client's Inquiry:" - start directly with the analysis
 - ❌ Creating excessive tables with redundant or low-value data points
 - ❌ Presenting tables without narrative context and follow-up analysis
+- ❌ Using simple min/max values instead of comprehensive range analysis for rate distributions
 
-### OUTPUT FORMAT:
-Provide a comprehensive procurement intelligence synthesis that BEGINS by directly answering the client's original question, then expands into supplier-focused market analysis. Use specific company names and market positioning to create actionable procurement intelligence. Balance narrative text with strategic tables (2-4 focused tables with 5-10 rows each) that highlight key insights. Use markdown headers (##) to divide major sections of your analysis. DO NOT include strategic recommendations sections, conclusions, or section headings - start directly with the analysis and keep the response focused on analytical insights only."""),
-            ("human", "### CLIENT'S ORIGINAL SOURCING INQUIRY:\n{user_query}\n\n### COMPREHENSIVE MARKET INTELLIGENCE RESULTS:\n{analytical_results}\n\nSynthesize ALL analytical results into a comprehensive market intelligence analysis. **CRITICAL**: Start directly with your analysis - NO section headings or titles. Begin immediately by answering the client's original question with specific findings, then provide supplier-focused insights and market intelligence as supporting analysis. Balance narrative text with strategic tables that highlight key insights. Use markdown headers (##) to divide major sections of your analysis. No conclusion, section headings, or textual explanation of the data at the end.")
+### MANDATORY COMPREHENSIVE ANALYSIS FORMAT:
+
+**CRITICAL REQUIREMENT**: You MUST follow this EXACT step-by-step structure:
+
+**STEP 1**: Present Primary Supplier Quartile Table
+**STEP 2**: IMMEDIATELY provide analysis using this template:
+```
+**Primary Supplier Analysis:**
+**Highest/Lowest Range Analysis**: [Identify highest/lowest ranges using lower range, middle range, upper range terminology]
+**Median Rate Leaders/Followers**: [Identify highest/lowest middle range positions]
+**Competitive Clustering Analysis**: [Top/mid/budget tier analysis using range terminology]
+**Supporting Data Evidence**: [Reference specific range values without exact numbers]
+**Strategic Opportunities**: [Procurement insights using percentile ranges (20th-30th, 45th-55th, 70th-80th)]
+```
+
+**STEP 3**: Present Competitive Budget Suppliers Table
+**STEP 4**: IMMEDIATELY provide same analysis template for budget suppliers
+
+**STEP 5**: Present Geographic/Regional Table  
+**STEP 6**: IMMEDIATELY provide same analysis template for geographic data
+
+**STEP 7**: Present Role Seniority Table
+**STEP 8**: IMMEDIATELY provide same analysis template for seniority data
+
+**STEP 9**: Present Yearly/Temporal Trends Table (if available)
+**STEP 10**: IMMEDIATELY provide same analysis template for temporal data
+
+**STEP 11**: Comprehensive Collective Summary
+
+**CRITICAL TABLE FORMAT REQUIREMENT**: 
+- **TABLES**: Must show ranges instead of individual quartiles (Range: $112.50-$155.00, Median Range: $142.50-$157.50 calculated as ±5% around median value)
+- **MEDIAN RANGE CALCULATION**: For Median Range column, calculate ±5% around the Q2 median value (e.g., if Q2=$150.00, show Median Range as $142.50-$157.50)
+- **INSIGHTS**: Identify specific suppliers by name based on actual quartile calculations AND show numerical data as ranges (e.g., "EY leads with the highest upper range positioning at $147.50-$162.50")
+
+**ABSOLUTE REQUIREMENT**: DO NOT move to the next table without completing the analysis of the current table. Tables show ranges, insights identify specific suppliers with their range values and use range terminology."""),
+                          ("human", "### CLIENT'S ORIGINAL SOURCING INQUIRY:\n{user_query}\n\n### COMPREHENSIVE MARKET INTELLIGENCE RESULTS:\n{analytical_results}\n\nSynthesize ALL analytical results following the MANDATORY 11-STEP STRUCTURE. **CRITICAL**: \n\n**COMPREHENSIVE DATA REQUIREMENT**: Ensure ALL available data is analyzed. Tables must include ALL suppliers (minimum 15-20 including EY, Wipro, Bahwan Cybertek, HCL, KPMG, Mindtree, etc.), ALL countries/regions (minimum 10-15), and ALL available years. Do NOT limit to subset data.\n\n**TABLE FORMAT**: Present tables with range columns (Range: Q1-Q3, Median Range: ±5% around Q2 median value) instead of individual Q1, Q2, Q3 columns. **MEDIAN RANGE MUST BE CALCULATED**: For Median Range column, calculate ±5% around the Q2 median value (e.g., if Q2=$150.00, show Median Range as $142.50-$157.50, NOT as single value $150.00).\n\n**ANALYSIS FORMAT**: In insights sections, identify specific suppliers by name based on actual quartile calculations AND show numerical data as ranges (e.g., 'EY leads with the highest upper range positioning at $147.50-$162.50'). Use range terminology but include the actual range values for identified suppliers.\n\nYou MUST present each table with range format showing COMPLETE data coverage and IMMEDIATELY follow it with the complete analysis template covering all 5 key points using specific supplier names with their range values. End with a comprehensive collective summary.")
         ])
     
     def _create_flexible_query_generation_prompt(self) -> ChatPromptTemplate:
@@ -804,19 +1058,24 @@ Provide a comprehensive procurement intelligence synthesis that BEGINS by direct
 7. **RATE RELATED QUERIES**: If the user asks for rates, you MUST use the hourly rate column (like hourly_rate_in_usd) and not the bill rate column (like bill_rate_hourly).
 
 ### QUERY TYPES TO PREFER:
-- Aggregated values (AVG, SUM, COUNT of groups)
-- Comparisons between categories (GROUP BY with aggregations)
+- **RANGE ANALYSIS (PRIMARY)**: Range (Q1-Q3) and Median Range (45th-55th percentile) calculations for ALL rate-related queries
+- Comparisons between categories using quartiles (GROUP BY with PERCENTILE_CONT functions)
 - Rankings or top/bottom N results
-- **SUPPLIER/VENDOR ANALYSIS**: Comparative analysis across suppliers/vendors/partners (high priority)
-- **YEARWISE TRENDS**: Year-over-year analysis for the past 2-3 years (2022-2024) where applicable
-- Geographical comparisons (countries, regions)
-- Role-based analysis and comparisons
+- **SUPPLIER/VENDOR ANALYSIS**: Comparative analysis across suppliers/vendors/partners using quartiles (high priority)
+- **YEARWISE TRENDS**: Year-over-year quartile analysis for the past 2-3 years (2022-2024) where applicable
+- Geographical comparisons using quartile distributions (countries, regions)
+- Role-based quartile analysis and comparisons
 - **AVOID**: Industry/sector analysis unless explicitly requested by user
+- **REPLACE AVG WITH QUARTILES**: When user asks for "rates", generate quartile queries instead of simple averages
 
 ### QUERY TYPES TO AVOID (unless explicitly requested):
 - Individual value frequencies (value, COUNT(*) GROUP BY value)
 - Distribution queries that return many individual data points
 - Queries that return long lists of individual values with their counts
+- **MIN/MAX RATE QUERIES**: NEVER generate MIN() and MAX() queries for rate analysis - use quartiles instead
+- **SIMPLE AVERAGE RATE QUERIES**: AVOID basic AVG(hourly_rate_in_usd) queries - use quartiles for better insights
+- Simple minimum and maximum value queries for pricing data
+- Basic aggregation queries that don't provide distribution insights
 
 ### ENTITY FOCUS EXAMPLES:
 
@@ -855,37 +1114,94 @@ Bad Query (returns ALL SAP roles, not just developers):
 
 ### EXAMPLE SCENARIOS:
 
-Question: What is the average hourly rate for Developers in India?
-Good Queries:
-- SELECT AVG(hourly_rate_in_usd) FROM public."IT_Professional_Services" WHERE country_of_work = 'IND' AND normalized_role_title = 'Developer/Programmer'
-- SELECT AVG(hourly_rate_in_usd) FROM public."IT_Professional_Services" WHERE country_of_work = 'IND' AND role_title_group = 'Application Design & Programming/Deployment'
+Question: What are the hourly rates for Developers in India?
+✅ PREFERRED Quartile Queries (INSTEAD OF SIMPLE AVERAGES):
+- SELECT 
+    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
+    PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
+    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
+  FROM public."IT_Professional_Services" 
+  WHERE country_of_work = 'IND' AND normalized_role_title = 'Developer/Programmer'
 
-Question: How does the hourly rate for Developers in India compare to other countries?
-Good Queries:
+❌ AVOID Simple Average Query:
+- SELECT AVG(hourly_rate_in_usd) FROM public."IT_Professional_Services" WHERE country_of_work = 'IND' AND normalized_role_title = 'Developer/Programmer'
+
+Question: How do the hourly rates for Developers compare across countries?
+✅ PREFERRED Quartile Queries:
+- SELECT 
+    country_of_work,
+    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
+    PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
+    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
+  FROM public."IT_Professional_Services" 
+  WHERE normalized_role_title = 'Developer/Programmer'
+  GROUP BY country_of_work 
+  ORDER BY Q2_Median DESC
+
+❌ AVOID Simple Average Query:
 - SELECT country_of_work, AVG(hourly_rate_in_usd) as avg_rate FROM public."IT_Professional_Services" WHERE normalized_role_title = 'Developer/Programmer' GROUP BY country_of_work ORDER BY avg_rate DESC
-- SELECT country_of_work, AVG(hourly_rate_in_usd) as avg_rate FROM public."IT_Professional_Services" WHERE role_title_group = 'Application Design & Programming/Deployment' GROUP BY country_of_work ORDER BY avg_rate DESC
-- SELECT AVG(hourly_rate_in_usd) as india_avg FROM public."IT_Professional_Services" WHERE country_of_work = 'IND' AND normalized_role_title = 'Developer/Programmer'
-- SELECT AVG(hourly_rate_in_usd) as usa_avg FROM public."IT_Professional_Services" WHERE country_of_work = 'IND' AND normalized_role_title = 'Developer/Programmer'
+
+### QUARTILE CALCULATION EXAMPLES:
+
+Question: What is the rate distribution for Developers?
+Good Quartile Queries:
+- SELECT 
+    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
+    PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
+    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
+  FROM public."IT_Professional_Services" 
+  WHERE normalized_role_title = 'Developer/Programmer'
+- SELECT 
+    country_of_work,
+    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
+    PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
+    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
+  FROM public."IT_Professional_Services" 
+  WHERE normalized_role_title = 'Developer/Programmer'
+  GROUP BY country_of_work
+
+Question: What are the rate ranges by supplier for SAP developers?
+✅ CORRECT Quartile Query (INSTEAD OF MIN/MAX):
+- SELECT 
+    supplier_company,
+    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
+    PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
+    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
+  FROM public."IT_Professional_Services" 
+  WHERE role_specialization = 'SAP' AND normalized_role_title LIKE '%Developer%'
+  GROUP BY supplier_company
+  ORDER BY Q2_Median DESC
+
+❌ WRONG Query (NEVER USE MIN/MAX):
+- SELECT 
+    supplier_company,
+    MIN(hourly_rate_in_usd) as min_rate,
+    MAX(hourly_rate_in_usd) as max_rate
+  FROM public."IT_Professional_Services" 
+  WHERE role_specialization = 'SAP' AND normalized_role_title LIKE '%Developer%'
+  GROUP BY supplier_company
 
 ### QUERY GENERATION GUIDELINES:
 1. Use appropriate column names from the schema (e.g., hourly_rate_in_usd, country_of_work, normalized_role_title)
 2. Filter by relevant values mentioned in the question (e.g., 'IND' for India, 'Developer' for developers)
-3. **CRITICAL - MAINTAIN ENTITY FOCUS**: If user mentions specific entities (roles, specializations), ALL queries must filter to include ONLY those entities. Never generate broad queries that return unrelated roles.
+3. **CRITICAL - COMPREHENSIVE DATA COVERAGE**: Generate queries that return ALL available data points without arbitrary limits. Include ALL suppliers, ALL countries, ALL years available in the database.
+4. **CRITICAL - MAINTAIN ENTITY FOCUS**: If user mentions specific entities (roles, specializations), ALL queries must filter to include ONLY those entities. Never generate broad queries that return unrelated roles.
 
 **COMPOUND ENTITY RULE**: For requests like "SAP Developer", "Java Consultant", or "Senior Manager", filter by BOTH the specialization (e.g., role_specialization = 'SAP') AND the role type (e.g., role_title LIKE '%Developer%'). Do NOT filter only by specialization and return all roles within that category.
-4. Generate different query types (averages, counts, comparisons, grouping) BUT avoid frequency distributions
-5. **CRITICAL - TABLE NAMING**: Always use schema-qualified and quoted table names like `public."TableName"` to avoid PostgreSQL case-sensitivity issues. NEVER use unquoted table names.
-6. Use proper PostgreSQL syntax with correct table references
-7. Include meaningful descriptions that explain what each query does
-8. **COLUMN PRIORITY**: When there are multiple columns that could answer the question, prefer columns marked as [MUST_HAVE] over others, then [IMPORTANT] columns, then [MANDATORY] columns. For example, prefer "hourly_rate_in_usd [MUST_HAVE]" over "bill_rate_hourly" when user asks for rates.
-9. **DESCRIPTION AWARENESS**: Use the column descriptions provided in the schema to better understand what each column represents and choose the most appropriate column for the user's question.
-10. **AGGREGATED FOCUS**: Focus on queries that produce aggregated insights rather than individual value distributions.
-11. **SUPPLIER ANALYSIS PRIORITY**: When generating queries for business analysis, prioritize supplier/vendor/partner comparisons and analysis. This provides more actionable business insights than industry analysis.
-12. **YEARWISE TRENDS PRIORITY**: Include year-over-year analysis for the past 2-3 years (2022-2024) where applicable to show temporal trends and changes.
-13. **AVOID INDUSTRY ANALYSIS**: Do NOT generate industry/sector analysis queries unless the user explicitly requests industry insights.
-14. **EXACT VALUES FROM EXPLORATION**: If the schema contains "COLUMN EXPLORATION RESULTS" with actual database values, you MUST use those exact values without any expansion, interpretation, or modification. For example, if you see "BI Developer" in the exploration results, use exactly "BI Developer" in your WHERE clause, NOT "Business Intelligence Developer".
+5. **MANDATORY QUARTILE USAGE FOR ALL RATE QUERIES**: When users ask for "rates", "pricing", or "costs", you MUST generate quartile queries instead of simple averages. NEVER generate basic AVG(), MIN(), or MAX() functions for rate analysis. Use PERCENTILE_CONT(0.25), PERCENTILE_CONT(0.50), and PERCENTILE_CONT(0.75) functions for ALL rate-related queries to provide distribution insights.
+6. Generate different query types (averages, counts, comparisons, grouping, quartiles) BUT avoid frequency distributions
+7. **CRITICAL - TABLE NAMING**: Always use schema-qualified and quoted table names like `public."TableName"` to avoid PostgreSQL case-sensitivity issues. NEVER use unquoted table names.
+8. Use proper PostgreSQL syntax with correct table references
+9. Include meaningful descriptions that explain what each query does
+10. **COLUMN PRIORITY**: When there are multiple columns that could answer the question, prefer columns marked as [MUST_HAVE] over others, then [IMPORTANT] columns, then [MANDATORY] columns. For example, prefer "hourly_rate_in_usd [MUST_HAVE]" over "bill_rate_hourly" when user asks for rates.
+11. **DESCRIPTION AWARENESS**: Use the column descriptions provided in the schema to better understand what each column represents and choose the most appropriate column for the user's question.
+12. **AGGREGATED FOCUS**: Focus on queries that produce aggregated insights rather than individual value distributions.
+13. **SUPPLIER ANALYSIS PRIORITY**: When generating queries for business analysis, prioritize supplier/vendor/partner comparisons and analysis. This provides more actionable business insights than industry analysis.
+14. **YEARWISE TRENDS PRIORITY**: Include year-over-year analysis for the past 2-3 years (2022-2024) where applicable to show temporal trends and changes.
+15. **AVOID INDUSTRY ANALYSIS**: Do NOT generate industry/sector analysis queries unless the user explicitly requests industry insights.
+16. **EXACT VALUES FROM EXPLORATION**: If the schema contains "COLUMN EXPLORATION RESULTS" with actual database values, you MUST use those exact values without any expansion, interpretation, or modification. For example, if you see "BI Developer" in the exploration results, use exactly "BI Developer" in your WHERE clause, NOT "Business Intelligence Developer".
 
-15. **CRITICAL - AVOID LIKE WHEN EXACT VALUES EXIST**: When "COLUMN EXPLORATION RESULTS" section provides exact values for a column, you MUST use exact equality (=) operators, NOT LIKE patterns. Only use LIKE patterns when no exact values are available in the exploration results for the relevant concept.
+17. **CRITICAL - AVOID LIKE WHEN EXACT VALUES EXIST**: When "COLUMN EXPLORATION RESULTS" section provides exact values for a column, you MUST use exact equality (=) operators, NOT LIKE patterns. Only use LIKE patterns when no exact values are available in the exploration results for the relevant concept.
 
 ### EXACT MATCH PRIORITY RULES:
 - ✅ **PREFERRED**: `WHERE role_specialization = 'SAP'` (when 'SAP' is found in exploration results)
@@ -898,18 +1214,35 @@ Return a valid JSON object with a queries array. Each query should have sql, des
 Example:
 {{"queries": [{{"sql": "SELECT AVG(hourly_rate_in_usd) FROM public.\"IT_Professional_Services\" WHERE country_of_work = 'IND'", "description": "Average hourly rate for India", "type": "average"}}]}}
 
+**CRITICAL**: Ensure NO queries use MIN() or MAX() functions for rate analysis. Replace with quartile queries using PERCENTILE_CONT functions.
+
 Do not include any explanatory text, markdown formatting, or code blocks outside the JSON."""),
             ("human", """USER QUESTION: {question}
 
-INSTRUCTIONS: Generate 1-5 contextually relevant SQL queries that will help answer this question. Use the actual column names and values from the database schema. Focus on queries that directly address what the user is asking for with aggregated insights, NOT individual value frequencies or distributions.
+INSTRUCTIONS: Generate 1-5 contextually relevant SQL queries that will help answer this question. Use the actual column names and values from the database schema. 
+
+**CRITICAL RATE QUERY INSTRUCTION**: When the user asks for "rates", "pricing", or "costs", you MUST generate quartile queries using PERCENTILE_CONT functions instead of simple AVG() queries. This provides much better distribution insights than basic averages.
+
+Focus on queries that directly address what the user is asking for with aggregated insights, NOT individual value frequencies or distributions.
 
 CRITICAL: If the user mentions specific entities (roles, specializations, job types), ALL queries must filter to include ONLY those specific entities. Do NOT generate broad queries that return unrelated roles.
 
 COMPOUND ENTITY FILTERING: For compound requests like "SAP Developer", "Java Consultant", or "Senior Manager", filter by BOTH parts - the specialization AND the role type. Never filter only by specialization and return all roles within that category.
 
+RANGE PRIORITY: For ALL rate-related questions, prioritize range analysis (Range and Median Range) over simple averages to provide comprehensive distribution insights.
+
 SUPPLIER ANALYSIS PRIORITY: Prioritize supplier/vendor/partner analysis over industry analysis. Generate queries that compare suppliers, vendors, or partners unless the user explicitly requests industry analysis.
 
+GEOGRAPHIC ANALYSIS PRIORITY: Include geographic/regional range analysis for rate questions. Generate country/region-based Range and Median Range comparisons to show geographic arbitrage opportunities.
+
 YEARWISE TRENDS PRIORITY: Include year-over-year analysis for the past 2-3 years (2022-2024) where applicable to show temporal trends and changes in the data.
+
+COMPREHENSIVE COVERAGE REQUIREMENT: For rate questions, generate diverse query types including:
+- Primary supplier quartile analysis (ALL available suppliers - minimum 15-20 suppliers)
+- Budget/competitive supplier alternatives (COMPLETE budget tier analysis)
+- Geographic/regional quartile breakdowns (ALL available countries/regions - minimum 10-15 locations)
+- Role seniority quartile comparisons (ALL seniority levels across multiple suppliers)
+- Temporal trend analysis with quartiles (ALL available years with comprehensive supplier coverage)
 
 FLEXIBILITY: Generate exactly as many queries as needed - if one high-quality query is sufficient for a specific question, generate just one. For complex analytical questions, generate multiple diverse queries.""")
         ]) 
