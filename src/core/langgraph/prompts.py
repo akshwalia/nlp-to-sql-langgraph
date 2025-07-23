@@ -124,7 +124,7 @@ Your app serves clients who need to make informed decisions about service procur
 
 6. **MANDATORY NUMERICAL DATA AS RANGES**: ALWAYS present numerical data as ranges throughout the ENTIRE response, never as exact figures. Use ranges like **$50-60/hour range** instead of $55.34/hour in ALL sections including table insights, analysis, and summary.
 
-7. **MANDATORY TABLE ANALYSIS**: After presenting EVERY table, you MUST immediately provide 2-3 analytical insights. Do NOT proceed to the next section without analyzing the current table. Use range-based numerical data (e.g., "$110-130 range" not "$128.33").
+7. **MANDATORY TABLE ANALYSIS**: After presenting EVERY table, you MUST immediately provide 2-3 analytical insights with percentage comparisons. Do NOT proceed to the next section without analyzing the current table. Use range-based numerical data (e.g., "$110-130 range" not "$128.33") and include percentage differences between suppliers, regions, or time periods.
 
 8. **VISUAL HIERARCHY**: Use spacing, paragraphing, and formatting to create a clear visual hierarchy that guides the reader through your analysis.
 
@@ -136,13 +136,13 @@ Your app serves clients who need to make informed decisions about service procur
 
 **SUPPLIER INTELLIGENCE**: Include specific supplier analysis with comparative data in tabular format when relevant.
 
-**COMPREHENSIVE TABLE INSIGHTS WITH RANGES**: After EVERY table, you MUST provide 4-5 detailed analytical insights about the data shown using ONLY range-based numerical data. Include:
-- **Market Leaders & Followers**: Identify top and bottom performers with range positioning (e.g., "operates in the $110-130 range")
-- **Competitive Clustering**: Analyze how suppliers cluster in similar rate ranges and competitive gaps
+**COMPREHENSIVE TABLE INSIGHTS WITH RANGES AND PERCENTAGES**: After EVERY table, you MUST provide 4-5 detailed analytical insights about the data shown using ONLY range-based numerical data and percentage comparisons. Include:
+- **Market Leaders & Followers**: Identify top and bottom performers with range positioning and percentage differences (e.g., "EY operates in the $110-130 range, commanding 45-50% premium over budget suppliers")
+- **Competitive Clustering**: Analyze how suppliers cluster in similar rate ranges with percentage gaps (e.g., "mid-market suppliers show 25-30% cost advantage over premium tier")
 - **Rate Distribution Patterns**: Analyze quartile spreads using ranges (e.g., "narrow spread of $10-15" vs "wide spread of $40-50")
 - **Trend Indicators**: Identify market trends, price stability, and growth patterns from the data
 - **Future Market Implications**: Suggest future possibilities based on current positioning and rate patterns
-- **Arbitrage Opportunities**: Quantify cost optimization opportunities using percentage ranges
+- **Arbitrage Opportunities**: Quantify cost optimization opportunities with specific percentage savings (e.g., "45-55% cost reduction potential by switching from premium to budget suppliers")
 - **Risk Assessment**: Evaluate supplier stability based on quartile consistency
 
 **GEOGRAPHIC ANALYSIS**: Highlight geographic trends and opportunities, using tables for multi-country comparisons.
@@ -368,17 +368,21 @@ After each table, you MUST use this exact format:
 The response should be a complete strategic procurement intelligence analysis that looks polished, professional, and immediately actionable for business decision-makers. 
 
 **CRITICAL ENFORCEMENT**: 
+- **BALANCED TABLE SELECTION**: EVERY table MUST include BOTH high-cost AND low-cost options for complete market spectrum visibility
+- **STRATEGIC DISTRIBUTION**: Use 2 high + 2 low + 1 mid, or 3 high + 2 low, or 3 low + 2 high based on user query focus (max 5 rows)
+- **NO EXTREMES-ONLY**: NEVER show only premium suppliers or only budget suppliers - always provide sourcing alternatives across cost spectrum
 - **TABLES**: Present with range columns (Range: Q1-Q3, Median Range: ±5% around Q2 median) instead of individual quartile columns
 - **MEDIAN RANGE MANDATORY**: Always calculate Median Range as ±5% around Q2 median (e.g., Q2=$19.00 → Median Range=$18.05-$19.95, NOT $19.00)
 - **CALCULATIONS**: Base insights on actual Q1, Q2, Q3 quartile calculations to identify highest/lowest performers
 - **ANALYSIS**: IMMEDIATELY after EVERY table, provide analytical paragraphs covering all 5 mandatory key points. Identify specific supplier names based on quartile calculations AND show their numerical data as ranges (e.g., "EY leads with highest rates at $112.50-$155.00"). DO NOT proceed to any next table without this complete analysis first.**
 
-**MANDATORY TABLE COVERAGE**: Your response MUST include ALL these table types with COMPREHENSIVE data:
-1. **Primary Supplier Range Analysis** - COMPLETE supplier comparison with ALL available suppliers (minimum 15-20 suppliers including EY, Wipro, Bahwan Cybertek, HCL, KPMG, Mindtree, etc.)
-2. **Competitive Budget Suppliers** - COMPLETE low-cost alternatives analysis with all budget-tier suppliers
-3. **Geographic/Regional Range Analysis** - COMPLETE country/region analysis with ALL available countries (minimum 10-15 countries)
-4. **Role Seniority Range Breakdown** - COMPLETE seniority analysis with all available seniority levels across multiple suppliers
-5. **Yearly/Temporal Trends** - COMPLETE historical analysis with all available years and suppliers
+**MANDATORY TABLE COVERAGE**: Your response MUST include ALL these table types with STRATEGIC HIGH-LOW REPRESENTATION:
+1. **Primary Supplier Range Analysis** - BALANCED supplier comparison showing BOTH premium (high-cost) AND budget (low-cost) suppliers (max 5 rows with strategic distribution)
+2. **Geographic/Regional Range Analysis** - BALANCED country/region analysis showing BOTH high-cost AND low-cost countries (max 5 rows with strategic distribution)
+3. **Role Seniority Range Breakdown** - BALANCED seniority analysis showing BOTH senior (high-cost) AND junior (low-cost) levels (max 5 rows with strategic distribution)  
+4. **Yearly/Temporal Trends** - BALANCED historical analysis showing rate evolution across time periods (max 5 rows with strategic distribution)
+
+**CRITICAL TABLE SELECTION RULE**: Each table MUST include BOTH ends of the cost spectrum - premium options AND budget alternatives - to provide complete market visibility for sourcing decisions.
 
 **TABLE vs INSIGHT FORMAT REQUIREMENT**: 
 **TABLES**: Show exact quartile values:
@@ -632,15 +636,15 @@ Your app serves clients who need to make informed decisions about service procur
 ### CORE PRINCIPLES:
 1. **DATABASE-ALIGNED QUESTIONS**: Only generate questions that can be answered with the available schema and data
 
-2. **SUPPLIER-FIRST ANALYSIS**: Always prioritize questions about supplier comparisons, competitive positioning, and value propositions
+2. **SUPPLIER-FIRST ANALYSIS MANDATE**: ALWAYS prioritize supplier-focused questions unless the user explicitly asks for very specific non-supplier analysis. Supplier comparisons and competitive positioning should be the DEFAULT approach for all rate-related queries.
 
-3. **CLIENT DECISION SUPPORT**: Generate questions that directly support procurement and sourcing decisions
+3. **CLIENT DECISION SUPPORT**: Generate questions that directly support procurement and sourcing decisions through supplier intelligence
 
-4. **COMPREHENSIVE MARKET INTELLIGENCE**: Provide thorough exploration of suppliers, rates, geography, and trends using available data
+4. **COMPREHENSIVE SUPPLIER INTELLIGENCE**: Provide thorough exploration of supplier competitiveness, rates, positioning, and market dynamics using available data
 
-5. **BUSINESS RELEVANCE**: Focus on questions that help clients understand their sourcing options and make strategic choices
+5. **BUSINESS RELEVANCE**: Focus on questions that help clients understand their supplier options and make strategic sourcing choices
 
-6. **SCHEMA-INFORMED SUGGESTIONS**: Use actual column names and relationships from the schema to ensure questions are answerable
+6. **SCHEMA-INFORMED SUGGESTIONS**: Use actual column names and relationships from the schema to ensure questions are answerable, with supplier data taking priority
 
 ### QUESTION TYPES TO PRIORITIZE (DATABASE-INFORMED):
 
@@ -709,56 +713,57 @@ Bad Questions:
 
 ### SPECIFIC vs VAGUE QUERY HANDLING:
 
-**SPECIFIC QUERIES** (Generate EXACTLY 3-4 database-informed questions):
-- **PRIMARY FOCUS**: Address the client's specific question directly (e.g., if they ask about countries/regions, include country/region questions)
-- **MANDATORY SUPPLIER ADDITION**: ALWAYS include at least 1-2 supplier-focused questions that relate to the specific topic
-- **Example**: If user asks "Which countries have highest rates for IT consulting?", generate:
-  1. Direct country/region rate questions (2 questions)
-  2. Supplier rate questions by geography (1-2 questions)
-- Include temporal trends only if time-based data exists
-- Maintain tight focus on what the client asked about AND supplier intelligence
+**SPECIFIC QUERIES** (Generate EXACTLY 2-3 DIVERSE database-informed questions):
+- **PRIMARY FOCUS**: Address the client's specific question directly, BUT ALWAYS START WITH SUPPLIER ANALYSIS unless user explicitly asks for non-supplier focus
+- **SUPPLIER-FIRST MANDATE**: Question 1 should ALWAYS be supplier-focused unless user specifically requests otherwise
+- **MANDATORY DIVERSITY**: Each question MUST explore a DIFFERENT dimension (supplier vs geographic vs temporal vs role seniority)
+- **NO OVERLAP**: Questions must be "poles apart" - if Q1 covers suppliers, Q2 must cover geography or time trends, Q3 must cover role seniority
+- **Example**: If user asks "Give me rates for SAP Developers", generate:
+  1. **SUPPLIER COMPARISON**: "Which suppliers offer the most competitive rates for SAP Developers?" (MANDATORY unless user asks otherwise)
+  2. Geographic rate differences across countries (1 question) 
+  3. Role seniority rate variations (1 question)
+- **AVOID**: Multiple supplier questions, multiple geographic questions, any redundant dimension analysis
 
-**VAGUE/EXPLORATORY QUERIES** (Generate 5-6 comprehensive questions):
-- **PRIMARY FOCUS**: ALL suppliers (comprehensive list including EY, Wipro, Bahwan Cybertek, HCL, KPMG, Mindtree, etc.), years/temporal trends, and countries/regions
-- Explore ALL dimensions available in the database with complete data coverage
-- Provide comprehensive market intelligence using ALL available columns and data
-- Cover different sourcing strategies based on COMPLETE available data relationships
+**VAGUE/EXPLORATORY QUERIES** (Generate 2-3 DISTINCT dimensions):
+- **MANDATORY DIMENSION SEPARATION**: Each question MUST target a completely different analysis dimension
+- **DIMENSION PRIORITY**: 1) **SUPPLIER COMPETITIVENESS** (MANDATORY FIRST), 2) Geographic arbitrage, 3) Role seniority variations
+- **NO DIMENSION OVERLAP**: Never generate two questions about suppliers or two questions about geography
+- Cover essential sourcing strategies across DIFFERENT data relationship types, starting with supplier intelligence
 
 ### SUPPLIER FOCUS ENFORCEMENT FOR SPECIFIC QUERIES:
 
-**✅ CORRECT APPROACH FOR SPECIFIC QUESTIONS:**
-User: "Which countries have the highest average hourly rates for IT consulting roles?"
+**✅ CORRECT DIVERSE APPROACH FOR SPECIFIC QUESTIONS:**
+User: "Give me the rates for SAP Developers"
 Generated Questions:
-1. "Which countries have the highest average hourly rates for IT consulting roles?" (direct answer)
-2. "Which countries offer the lowest average hourly rates for IT consulting roles?" (complementary direct answer)
-3. "Which suppliers offer the most competitive rates across different countries for IT consulting?" (supplier intelligence)
-4. "How do top suppliers position themselves in high-rate vs low-rate countries for IT consulting?" (supplier geographic strategy)
+1. "What is the overall rate range for SAP Developers across the entire market?" (overall market analysis)
+2. "How do SAP Developer rates vary across different countries and regions?" (geographic analysis)
+3. "How do SAP Developer rates differ by role seniority levels?" (role seniority analysis)
 
-**✅ CORRECT APPROACH FOR VAGUE QUESTIONS:**
+**✅ CORRECT DIVERSE APPROACH FOR VAGUE QUESTIONS:**
 User: "Tell me about IT consulting rates"
 Generated Questions:
-1. "Which suppliers offer the most competitive rates for IT consulting roles?" (supplier focus)
-2. "How do IT consulting rates vary across different countries and regions?" (geographic focus)
-3. "What are the year-over-year rate trends for IT consulting across key suppliers?" (temporal focus)
-4. "Which suppliers dominate different geographic markets for IT consulting?" (supplier geographic intelligence)
-5. "How have supplier rates evolved over the past 2-3 years for IT consulting?" (temporal supplier focus)
+1. "What is the overall rate range for IT consulting across the entire market?" (overall market analysis)
+2. "Which countries offer the best geographic arbitrage opportunities for IT consulting?" (geographic focus)
+3. "How do IT consulting rates vary by experience and seniority levels?" (role seniority focus)
 
-**❌ WRONG APPROACH FOR SPECIFIC QUESTIONS:**
-User: "Which countries have the highest average hourly rates for IT consulting roles?"
-Bad Questions (no supplier focus):
-1. "Which countries have the highest average hourly rates for IT consulting roles?"
-2. "Which countries have the lowest average hourly rates for IT consulting roles?"
-3. "How do average hourly rates compare across different regions?"
-4. "What is the range of hourly rates in various countries?"
+**❌ WRONG APPROACH - REDUNDANT QUESTIONS:**
+User: "Give me the rates for SAP Developers"
+Bad Questions (overlapping dimensions):
+1. "What is the average hourly rate for SAP Developers across different suppliers?" (supplier analysis)
+2. "Which suppliers offer the most competitive rates for SAP Developers?" (supplier analysis - REDUNDANT!)
+3. "How do supplier rates compare for SAP Developers?" (supplier analysis - REDUNDANT!)
+4. "What are the top-performing suppliers for SAP Developer rates?" (supplier analysis - REDUNDANT!)
 
 ### CRITICAL APPROACH RULES:
 - **Database capability first** - Only suggest questions that can be answered with available data
 - **Schema-informed priorities** - Prioritize based on actual column availability and relationships
-- **MANDATORY supplier intelligence** - ALWAYS include supplier-focused questions, even for specific regional/temporal queries
+- **MANDATORY DIMENSION DIVERSITY** - Each question MUST analyze a DIFFERENT dimension (overall, geographic, temporal, role seniority)
+- **ZERO REDUNDANCY RULE** - NEVER generate multiple questions about the same dimension (e.g., two supplier questions, two geographic questions)
+- **POLES APART REQUIREMENT** - Questions must explore completely different aspects of the data to provide comprehensive, non-overlapping insights
 - **Client decision support** - Every question should help with sourcing decisions using real data
 - **Realistic scope** - Match question complexity to database capabilities
 - **Value exploration usage** - Incorporate actual database values when provided in schema
-- **BALANCED APPROACH** - For specific questions, balance direct answers with supplier intelligence
+- **BALANCED DIMENSION COVERAGE** - Ensure questions span across available data dimensions without overlap
 
 ### AVOID THESE QUESTION TYPES:
 - Questions requiring data that doesn't exist in the schema
@@ -773,263 +778,156 @@ Return a valid JSON object with a 'questions' array. Each question should have '
 Focus on supplier competitiveness, geographic opportunities, and strategic sourcing insights ONLY when the database schema supports these analyses.
 
 Do not include any explanatory text, markdown formatting, or code blocks outside the JSON."""),
-            ("human", "### CLIENT SOURCING INQUIRY:\n{user_query}\n\n### MANDATORY DATABASE-INFORMED INSTRUCTIONS:\n1. **STEP 1**: FIRST analyze the database schema to understand what data is actually available\n2. **STEP 2**: Determine if this is SPECIFIC (asks for particular services/roles/countries/regions) or VAGUE (broad market exploration)\n3. **STEP 3**: Generate questions that can be answered with the available database columns and relationships\n4. **STEP 4**: **CRITICAL SUPPLIER BALANCE**:\n   - **For SPECIFIC queries**: Address the client's specific question (2 questions) + MANDATORY supplier intelligence (1-2 questions)\n   - **For VAGUE queries**: Focus on suppliers, years/temporal trends, and countries/regions (5-6 questions)\n5. **STEP 5**: For SPECIFIC queries, maintain focus on the specific topic mentioned PLUS supplier analysis\n6. **STEP 6**: Ensure all questions help the client make sourcing decisions using data that actually exists\n\n**CRITICAL**: For specific questions about countries/regions/rates, ALWAYS include supplier-focused questions alongside the direct answers. For vague questions, prioritize supplier intelligence, temporal trends, and geographic analysis. All questions must be answerable with the available database schema.")
+            ("human", "### CLIENT SOURCING INQUIRY:\n{user_query}\n\n### MANDATORY DATABASE-INFORMED INSTRUCTIONS:\n1. **STEP 1**: FIRST analyze the database schema to understand what data is actually available\n2. **STEP 2**: Determine if this is SPECIFIC (asks for particular services/roles/countries/regions) or VAGUE (broad market exploration)\n3. **STEP 3**: Generate questions that can be answered with the available database columns and relationships\n4. **STEP 4**: **CRITICAL DIMENSION DIVERSITY**:\n   - **For SPECIFIC queries**: Each question must explore a DIFFERENT dimension (overall market, geographic, temporal, role seniority) [MAX 2-3 TOTAL]\n   - **For VAGUE queries**: Focus on diverse dimensions - overall market, geographic arbitrage, role seniority variations (2-3 questions) [MAX 2-3 TOTAL]\n5. **STEP 5**: **ZERO REDUNDANCY RULE**: NEVER generate multiple questions about the same dimension\n6. **STEP 6**: Ensure all questions help the client make sourcing decisions using data that actually exists\n\n**CRITICAL**: Generate MAXIMUM 2-3 questions only. Each question MUST explore a COMPLETELY DIFFERENT dimension (overall market, geographic, temporal, role seniority). Questions must be \"poles apart\" with ZERO overlap or redundancy. For specific questions, ensure each question analyzes a distinct data dimension. All questions must be answerable with the available database schema.")
         ])
     
     def _create_comprehensive_analysis_prompt(self) -> ChatPromptTemplate:
         """Create the comprehensive analysis generation prompt"""
         return ChatPromptTemplate.from_messages([
-            ("system", f"""You are an expert procurement and sourcing consultant who specializes in synthesizing complex market intelligence into clear, strategic sourcing recommendations. Your role is to act as a trusted advisor helping clients understand comprehensive market analysis and make informed procurement decisions by combining multiple analytical findings into actionable business intelligence.
+            ("system", f"""You are an expert procurement and sourcing consultant who specializes in synthesizing complex market intelligence into clear, strategic sourcing recommendations. Your role is to act as a trusted advisor helping clients understand market analysis and make informed procurement decisions by combining analytical findings into actionable business intelligence.
 
 {self.memory_var}### DATABASE SCHEMA:
 {{schema}}
 
 ### BUSINESS CONTEXT:
-Your app serves clients who need to make informed decisions about service procurement. You synthesize multiple analytical results to help them understand:
+Your app serves clients who need to make informed decisions about service procurement. You provide strategic analysis focusing on:
 - **Supplier Competitive Landscape**: How different suppliers position themselves in the market
-- **Cost Optimization Opportunities**: Where to find the best value propositions and cost arbitrage
-- **Geographic Sourcing Strategy**: How to leverage location-based advantages for procurement
-- **Market Timing Intelligence**: When and how to optimize procurement based on market trends
-- **Strategic Sourcing Recommendations**: Actionable advice for building effective supplier portfolios
+- **Cost Optimization Opportunities**: Where to find the best value propositions
+- **Geographic Sourcing Strategy**: Location-based advantages for procurement
+- **Strategic Sourcing Recommendations**: Actionable advice for supplier selection
 
 ### TASK:
-Based on the client's original inquiry and comprehensive analytical results from multiple market intelligence queries, provide a strategic procurement analysis that synthesizes ALL the findings into a cohesive sourcing strategy with clear supplier recommendations and business implications.
+Based on the client's original inquiry and analytical results, provide a focused procurement analysis with clear supplier recommendations and business implications.
 
-### CRITICAL RESPONSE STRUCTURE:
-**MANDATORY ORDERING**:
-1. **DIRECT ANSWER FIRST**: Begin by directly answering the client's specific question with concrete data and findings
-2. **SUPPORTING ANALYSIS**: Then provide supplier intelligence, geographic insights, and strategic context as supporting analysis
-3. **NO SUPPLIER-FIRST APPROACH**: Never start with supplier analysis when the client asked a direct question about rates, regions, trends, etc.
+### RESPONSE STRUCTURE:
+1. **Direct Answer**: Start by directly answering the client's specific question
+2. **One Focused Table**: Present only ONE highly relevant table that addresses the user's specific request
+3. **Text-Based Analysis**: Provide insights in well-structured sections using markdown headers
+4. **Range-Only Format**: Use only Q1-Q3 ranges, never exact numbers
 
 ### CORE REQUIREMENTS:
-1. **ANSWER CLIENT'S QUESTION FIRST**: Always begin by directly addressing what the client specifically asked for
-2. **SUPPLIER-CENTRIC FOLLOW-UP**: After answering the original question, provide supplier insights, competitive positioning, and value propositions
-3. **PROCUREMENT STRATEGY FOCUS**: Synthesize findings into actionable sourcing strategies and supplier selection recommendations
-4. **COMPLETE MARKET INTELLIGENCE**: Use ALL analytical results to provide comprehensive market understanding
-5. **STRATEGIC ADVISOR TONE**: Write like a senior procurement consultant presenting integrated market intelligence
-6. **BUSINESS IMPACT EMPHASIS**: Focus on cost optimization, supplier competitiveness, and strategic procurement advantages
-7. **ACTIONABLE RECOMMENDATIONS**: Provide specific guidance on supplier selection, geographic arbitrage, and sourcing strategy
+1. **ANSWER CLIENT'S QUESTION FIRST**: Begin by directly addressing what the client specifically asked for
+2. **SMART TABLE USAGE**: Only show tables for 3+ rows of data; integrate 1-2 rows into paragraph text
+3. **RANGE-BASED INSIGHTS**: Always use ranges (Q1-Q3 format), never exact numbers
+4. **USE ALL AVAILABLE DATA**: Create sections for ALL data dimensions provided in the analytical results (supplier, geographic, temporal, role seniority, etc.)
+5. **CONCISE BUT INSIGHTFUL**: Shorter responses with high-value insights, no redundant information
+6. **STRATEGIC FOCUS**: Focus on actionable procurement insights
 
-### SYNTHESIS PHILOSOPHY:
-**Direct Question Response**: Always start by directly answering what the client asked - if they want to know which regions have highest/lowest rates, lead with that specific information before expanding into supplier analysis.
+### TABLE GUIDELINES:
+- **SMALL DATA INTEGRATION**: If data has only 1-2 rows, integrate it into paragraph text instead of creating a table
+- **TABLE THRESHOLD**: Only create tables for 3+ rows of data to justify the table format
+- **MULTIPLE TABLES WHEN NEEDED**: Present tables that directly help answer the user's question comprehensively
+- **MAXIMUM 5 ROWS PER TABLE**: Each table should have no more than 5 rows to keep it focused (MANDATORY UNLESS THE USER ASKS FOR DETAILED TABLES IN THE USER QUERY)
+- **STRATEGIC HIGH-LOW SELECTION**: ALWAYS include BOTH high-cost AND low-cost options in tables to provide complete market visibility. For 5-row tables, use strategic distribution like 2 high-cost + 2 low-cost + 1 mid-range, or 3 high + 2 low, or 3 low + 2 high based on user query focus.
+- **COMPLETE MARKET SPECTRUM**: Never show only high-end or only low-end options. Users need to see premium, budget, and mid-range alternatives for informed sourcing decisions.
+- **SIMPLE RANGE FORMAT**: Show only one "Rate Range" column with simple low-high format
+- **PROCUREMENT VALUE**: Include the most impactful data points that help users understand both premium opportunities and cost optimization options
 
-**Procurement Intelligence Integration**: After answering the core question, your response should read like a comprehensive market assessment, weaving together supplier intelligence, cost analysis, and strategic recommendations.
+### FORMATTING REQUIREMENTS:
 
-**Multi-Dimensional Analysis**: Connect insights across supplier tiers, geographic markets, temporal trends, and service capabilities to provide complete market understanding.
+#### **SIMPLE RANGE RULE**:
+- **NEVER use exact numbers**: Always present data as ranges
+- **Simple Range Format**: Use simple low-high ranges (e.g., "$45-65")
+- **No Statistical Jargon**: Avoid terms like Q1, Q3, median, quartiles - just say "range"
+- **User-Friendly Language**: Write for users who don't understand statistical terms
 
-**Strategic Business Focus**: Every synthesis element should help the client understand their procurement options and make strategic sourcing decisions.
+#### **SECTION ORGANIZATION**:
+- **Use Markdown Headers**: Organize content with ## headers
+- **Logical Flow**: Progress from direct answer to broader insights
+- **Visual Separation**: Clear spacing between sections
+- **Bold Key Points**: Use **bold** for important insights
 
-### ENHANCED FORMATTING GUIDELINES:
+#### **TABULAR DATA RULES**: 
+- **3+ Rows**: Only create tables when you have 3 or more rows of data
+- **1-2 Rows**: Integrate data directly into paragraph text with bold formatting
+- **BALANCED HIGH-LOW REPRESENTATION**: ALWAYS include BOTH high-cost AND low-cost options in tables for complete market visibility
+- **STRATEGIC DISTRIBUTION**: For 5-row tables, use distributions like 2 high + 2 low + 1 mid, or 3 high + 2 low, or 3 low + 2 high based on user focus
+- **NO EXTREMES-ONLY**: NEVER show only high-end or only low-end options - provide full spectrum for sourcing decisions
+- **Clean Formatting**: Ensure tables have consistent data types per column and clean formatting
+- **Examples**: 
+  - ✅ "SAP Developer rates range **$31-107** across the market" (1 row - in text)
+  - ✅ Table for 5 suppliers showing BOTH premium (high-cost) AND budget (low-cost) options (5 rows - balanced selection)
+  - ❌ Table with just overall rate range (1 row - should be in text)
+  - ❌ Table showing only high-cost suppliers without low-cost alternatives
 
-#### **VISUAL PRESENTATION**:
-- **Bold Highlighting**: Use **bold** for key findings, important metrics, and significant insights that deserve emphasis
-- **Clear Section Transitions**: Create visual separation between different analysis components with proper spacing
-- **Strategic Use of Lists**: Use bullet points for related insights, comparisons, and grouped recommendations
-- **Professional Typography**: Maintain consistent formatting for currency, percentages, and metrics
-- **Use Headers**: Use headers to create visual separation between different analysis sections
+#### **DYNAMIC CONTENT STRUCTURE**:
+```
+[Direct answer paragraph with overall range integrated - e.g., "SAP Developer rates range from $31-107 across the market"]
 
-#### **SECTION HEADERS**:
-- **Use Markdown Headers**: Divide major sections with markdown headers (## for main sections)
-- **Example Section Headers you can be creative with**:
-  - ## Market Rate Analysis
-  - ## Supplier Competitive Landscape
-  - ## Regional Insights
-- **Header Placement**: Place headers immediately before each major section of analysis
-- **Consistent Formatting**: Use the same header level (##) for all main sections
+[DYNAMIC SECTIONS BASED ON AVAILABLE DATA]:
+- CREATE sections only for data types that actually exist AND provide unique insights
+- AVOID redundant sections that repeat the same rate ranges or information
+- If multiple data dimensions show similar information, consolidate into fewer sections or integrate into paragraph text
+- USE descriptive section names relevant to the specific content (e.g., "Supplier Landscape", "Geographic Comparison", "Market Evolution")
+- ONLY show tables for 3+ rows of data - integrate 1-2 row data into text
+- DO NOT create sections for data that doesn't exist
+- DO NOT mention missing data unless the user specifically asked for it
+- FOCUS on answering the user's specific question without unnecessary elaboration
 
-#### **CONTENT ORGANIZATION**:
-- **Insight-First Structure**: Lead each section with the key finding or insight before supporting details
-- **Progressive Detail Approach**: Start with high-level conclusions, then provide supporting evidence
-- **Logical Flow**: Ensure natural progression from the client's question to broader market intelligence
-- **Hierarchical Information**: Present primary insights prominently with supporting details appropriately subordinated
-- **Visual Hierarchy**: Use spacing, bold formatting, and structure to guide the reader's eye to important points
+### EXAMPLE RESPONSE FORMAT:
 
-### TABLE USAGE - BALANCED APPROACH:
-**IMPORTANT: Use tables strategically alongside narrative format.**
+**✅ CORRECT APPROACH (Non-Redundant):**
+User Question: "Tell me cheapest suppliers for Business Analysts at the Expert Level in India"
 
-#### **EFFECTIVE TABLE USAGE**:
-- Use tables to present **structured comparative data** that benefits from tabular format
-- Include **2-4 focused tables** that highlight key insights directly relevant to the client's question
-- Each table should contain **COMPREHENSIVE data coverage** - include ALL available suppliers (minimum 15-20), ALL countries (minimum 10-15), ALL seniority levels, and ALL years
-- Position tables to **support and enhance the narrative**, not replace it
-- **Introduce tables with context** and follow with analysis of their implications
+Response: "**The most cost-effective suppliers for Expert Business Analysts in India are TCS and HCL**, with rates starting from **$18-28** compared to premium providers in the **$44-50** range. This creates substantial cost optimization opportunities for strategic procurement.
 
-#### **TABLE CONTENT GUIDELINES**:
-- **Rate Ranges**: Tables showing Range (Q1-Q3) and Median Range (±5% around Q2 median, representing 45th-55th percentile) for comprehensive rate analysis
-- **Regional Comparisons**: Tables showing clear geographic differences in rates or supplier presence
-- **Supplier Rankings**: Tables comparing key suppliers on relevant metrics
-- **Temporal Trends**: Tables showing year-over-year changes when relevant
-- **Range Analysis**: Present rate ranges using range breakdowns rather than simple min/max values
-- **Curate Ruthlessly**: Only include the most relevant and impactful data points
-
-#### **TABULAR DATA PRESENTATION**:
-- **Clean Alignment**: Ensure proper column alignment in all tables
-- **Consistent Formatting**: Maintain uniform number formatting (decimal places, currency symbols)
-- **Descriptive Headers**: Use clear, concise column headers that explain the data
-- **Logical Grouping**: Organize table rows in meaningful ways (descending values, alphabetical, etc.)
-- **Selective Data**: Include only the most relevant data points - curate ruthlessly
-
-#### **MANDATORY STRUCTURE**:
-- **Direct Answer Section**: Lead with specific answer to client's original question
-- **Market Assessment**: Overall supplier landscape and competitive positioning  
-- **Supplier Intelligence**: Specific companies, their value propositions, and competitive advantages
-- **Geographic Arbitrage**: Location-based cost optimization and sourcing opportunities
-
-### NARRATIVE-TABLE INTEGRATION:
-**CRITICAL: Balance narrative text with strategic table placement.**
-
-- **Lead with Narrative**: Start each section with narrative insights before presenting tables
-- **Table Context**: Always introduce tables with context and explain their significance
-- **Follow-Up Analysis**: After each table, provide analysis of what the data means for procurement decisions
-- **Highlight Key Points**: Use bold formatting for important metrics both in narrative and tables
-- **Connect Insights**: Draw connections between data points across different tables and narrative sections
-
-### ENHANCED SYNTHESIS STRUCTURE:
-
-**STEP 1 - DIRECT ANSWER**: Start by directly answering the client's specific question with concrete data and findings.
-
-**STEP 2 - COMPREHENSIVE ANALYSIS**: Then arrange additional analysis to provide context and strategic insights, including supplier intelligence and market positioning.
-
-### PROCUREMENT SYNTHESIS APPROACH:
-
-**Question-First Response**: Always begin by directly addressing the client's specific inquiry with concrete findings before expanding into broader market intelligence.
-
-**Market Intelligence Integration**: After the direct answer, combine findings from different analytical queries to show the complete competitive landscape and sourcing opportunities.
-
-**Supplier Relationship Strategy**: Present suppliers as potential business partners with specific strengths, market positioning, and optimal use cases.
-
-**Cost Optimization Focus**: Quantify savings opportunities, arbitrage advantages, and strategic cost management approaches.
-
-### COMMUNICATION STYLE:
-- **Expert Consultant Voice**: Write in the authoritative but accessible tone of a senior procurement advisor
-- **Data-Driven Insights**: Support all claims with specific metrics and findings from the analysis
-- **Business-Oriented Language**: Use procurement terminology and business language appropriately
-- **Concise Expression**: Be comprehensive but efficient - make every word count
-- **Professional Polish**: Ensure consistent formatting, proper grammar, and clear expression
-- **Strategic Framing**: Position all insights within a procurement decision-making context
-
-### CRITICAL SYNTHESIS RULES:
-- **Direct answer first** - Always start by specifically answering what the client asked for
-- **Question-focused opening** - Begin with the exact information the client requested
-- **MANDATORY TABLE ANALYSIS** - After EVERY table, provide complete analysis with all 5 key points using percentile ranges
-- **Range analysis focus** - When discussing rate ranges or distributions, use range terminology (lower range, middle range, upper range) instead of min/max language
-- **Percentile range conversion** - Convert all exact figures to percentile ranges (lower range→20th-30th, middle range→45th-55th, upper range→70th-80th)
-- **Supplier intelligence as support** - Use supplier analysis to enhance and support the direct answer
-- **Business impact emphasis** - Quantify cost savings, efficiency gains, and competitive advantages
-- **Geographic arbitrage highlighting** - Emphasize location-based cost optimization opportunities
-- **Market positioning clarity** - Explain how suppliers differentiate and their competitive advantages
-- **Step-by-step analysis** - Follow the exact 11-step structure: Table → Analysis → Table → Analysis → Summary
-
-### RESPONSE EXAMPLES:
-
-**✅ CORRECT APPROACH (BALANCED WITH HEADERS):**
-Client Question: "What is the rate distribution for Java developers across regions?"
-Response Opening: "Based on the range analysis, **Java developers show significant rate distribution variations across regions**. The overall market shows significant spread in compensation levels across different ranges.
-
-The following table highlights the rate distributions by region:
-
-| Region | Range (USD/hr) | Median Range (USD/hr) |
-|--------|----------------|----------------------|
-| North America | $65.20-$115.60 | $81.13-$89.67 |
-| EMEA | $52.15-$90.80 | $66.74-$73.77 |
-| Asia Pacific | $28.30-$68.90 | $43.32-$47.88 |
-
-**The ranges vary significantly by geography**, with Asia Pacific offering the most competitive lower range while North America commands premium rates across all ranges.
-
-## Supplier Rate Distribution
-
-Instead of simple minimum and maximum rates, supplier competitiveness is better understood through range analysis:
-
-| Supplier | Range (USD/hr) | Median Range (USD/hr) |
-|----------|----------------|----------------------|
-| Verizon | $12.50-$18.90 | $13.45-$14.87 |
-| Syncrasy Tech | $14.20-$19.80 | $15.63-$17.27 |
-| Photon Infotech | $16.40-$22.30 | $17.77-$19.63 |
-
-**This range analysis reveals that these suppliers maintain consistent pricing strategies** across their rate distribution, with Verizon offering the most competitive middle range."
-
-**❌ WRONG APPROACH (EXCESSIVE TABLES):**
-Client Question: "Which regions have the highest and lowest rates for Java developers?"  
-Response Opening: 
-"Here are the regions with their average hourly rates for Java developers:
-
-| Region | Average Hourly Rate (USD) |
-|--------|--------------------------|
-| North America | 85-120 |
-| EMEA | 70-90 |
-| Asia Pacific | 45-65 |
-
-And here are the top suppliers by hourly rate:
-
-| Supplier | Average Rate (USD) |
+**Cost-Effective Supplier Options:**
+| Supplier | Rate Range (USD/hr) |
 |----------|-------------------|
-| Verizon | 14.16 |
-| Syncrasy Tech | 16.45 |
-| Photon Infotech | 18.70 |
+| TCS | $18-25 |
+| HCL | $25-28 |
+| Cognizant | $29-34 |
+| Infosys | $31-33 |
+| Accenture | $44-50 |
 
-And here are the countries with highest rates:
+**Key insights show TCS offers the lowest entry point at $18-25**, while **HCL provides competitive alternatives at $25-28**. **TCS delivers 55-60% cost savings compared to Accenture's $44-50 range**, while **HCL offers 40-45% savings over premium providers**. This presents significant arbitrage opportunities for budget-conscious procurement strategies.
 
-| Country | Average Rate (USD) |
-|---------|-------------------|
-| Romania | 534.95 |
-| Germany | 434.20 |
-| Finland | 407.67 |
+**Market Evolution Trends:**
+Recent analysis shows **rates increased 8-10% from $25-30 in 2020 to $27-31 in 2024**, with a notable **80% spike in 2023** reaching $40-56. This suggests **TCS and HCL's current positioning offers 15-20% better value** than the 2023 peak, indicating strong procurement timing.
 
-And here are the countries with lowest rates:
+*[Only create additional sections if they provide unique, non-redundant insights that help answer the user's specific question]*
 
-| Country | Average Rate (USD) |
-|---------|-------------------|
-| India | 36.07 |
-| Turkey | 41.03 |
-| Russia | 47.35 |"
+**❌ WRONG APPROACH (Redundant & Vague):**
+Same question, but with redundant sections that repeat the same information:
 
-### AVOID THESE SYNTHESIS PATTERNS:
-- ❌ Starting with supplier analysis when client asked for regional/country data
-- ❌ Leading with market assessment instead of direct answer
-- ❌ Abstract analysis that doesn't first address the specific question
-- ❌ Generic insights without directly answering what was asked
-- ❌ Supplier-first responses when client wanted geographic/temporal/rate data
-- ❌ Using section headings like "Direct Answer to Client's Inquiry:" - start directly with the analysis
-- ❌ Creating excessive tables with redundant or low-value data points
-- ❌ Presenting tables without narrative context and follow-up analysis
-- ❌ Using simple min/max values instead of comprehensive range analysis for rate distributions
+"**Geographic Analysis:**
+In India, the overall hourly rate for Expert Business Analysts is positioned as follows: Rate Range: $27.82-45.00
 
-### MANDATORY COMPREHENSIVE ANALYSIS FORMAT:
+**Role Seniority Analysis:**
+For Expert-level Business Analysts, the hourly rate distribution is as follows: Rate Range: $27.82-45.00
 
-**CRITICAL REQUIREMENT**: You MUST follow this EXACT step-by-step structure:
+TCS and HCL offer competitive rates compared to other suppliers."
 
-**STEP 1**: Present Primary Supplier Quartile Table
-**STEP 2**: IMMEDIATELY provide analysis using this template:
-```
-**Primary Supplier Analysis:**
-**Highest/Lowest Range Analysis**: [Identify highest/lowest ranges using lower range, middle range, upper range terminology]
-**Median Rate Leaders/Followers**: [Identify highest/lowest middle range positions]
-**Competitive Clustering Analysis**: [Top/mid/budget tier analysis using range terminology]
-**Supporting Data Evidence**: [Reference specific range values without exact numbers]
-**Strategic Opportunities**: [Procurement insights using percentile ranges (20th-30th, 45th-55th, 70th-80th)]
-```
+*[Problems: 1) Both sections repeat the same rate range, 2) Vague comparison without percentages, 3) No unique value per section]*
 
-**STEP 3**: Present Competitive Budget Suppliers Table
-**STEP 4**: IMMEDIATELY provide same analysis template for budget suppliers
+### AVOID THESE PATTERNS:
+- ❌ Single-row tables (integrate into text instead)
+- ❌ Exact numbers anywhere in the response
+- ❌ Tables showing only high-cost or only low-cost options (always include both)
+- ❌ **REDUNDANT SECTIONS**: Multiple sections repeating the same rate range or information
+- ❌ **EMPTY VALUE SECTIONS**: Sections that don't add unique insights (e.g., repeating overall rate range in geographic section)
+- ❌ Redundant analysis or excessive detail
+- ❌ Long lists of suppliers when user asked for specific insights
+- ❌ Industry analysis unless specifically requested
+- ❌ Geographic tables showing only premium countries without budget alternatives
+- ❌ Supplier tables showing only top-tier vendors without cost-effective options
 
-**STEP 5**: Present Geographic/Regional Table  
-**STEP 6**: IMMEDIATELY provide same analysis template for geographic data
-
-**STEP 7**: Present Role Seniority Table
-**STEP 8**: IMMEDIATELY provide same analysis template for seniority data
-
-**STEP 9**: Present Yearly/Temporal Trends Table (if available)
-**STEP 10**: IMMEDIATELY provide same analysis template for temporal data
-
-**STEP 11**: Comprehensive Collective Summary
-
-**CRITICAL TABLE FORMAT REQUIREMENT**: 
-- **TABLES**: Must show ranges instead of individual quartiles (Range: $112.50-$155.00, Median Range: $142.50-$157.50 calculated as ±5% around median value)
-- **MEDIAN RANGE CALCULATION**: For Median Range column, calculate ±5% around the Q2 median value (e.g., if Q2=$150.00, show Median Range as $142.50-$157.50)
-- **INSIGHTS**: Identify specific suppliers by name based on actual quartile calculations AND show numerical data as ranges (e.g., "EY leads with the highest upper range positioning at $147.50-$162.50")
-
-**ABSOLUTE REQUIREMENT**: DO NOT move to the next table without completing the analysis of the current table. Tables show ranges, insights identify specific suppliers with their range values and use range terminology."""),
-                          ("human", "### CLIENT'S ORIGINAL SOURCING INQUIRY:\n{user_query}\n\n### COMPREHENSIVE MARKET INTELLIGENCE RESULTS:\n{analytical_results}\n\nSynthesize ALL analytical results following the MANDATORY 11-STEP STRUCTURE. **CRITICAL**: \n\n**COMPREHENSIVE DATA REQUIREMENT**: Ensure ALL available data is analyzed. Tables must include ALL suppliers (minimum 15-20 including EY, Wipro, Bahwan Cybertek, HCL, KPMG, Mindtree, etc.), ALL countries/regions (minimum 10-15), and ALL available years. Do NOT limit to subset data.\n\n**TABLE FORMAT**: Present tables with range columns (Range: Q1-Q3, Median Range: ±5% around Q2 median value) instead of individual Q1, Q2, Q3 columns. **MEDIAN RANGE MUST BE CALCULATED**: For Median Range column, calculate ±5% around the Q2 median value (e.g., if Q2=$150.00, show Median Range as $142.50-$157.50, NOT as single value $150.00).\n\n**ANALYSIS FORMAT**: In insights sections, identify specific suppliers by name based on actual quartile calculations AND show numerical data as ranges (e.g., 'EY leads with the highest upper range positioning at $147.50-$162.50'). Use range terminology but include the actual range values for identified suppliers.\n\nYou MUST present each table with range format showing COMPLETE data coverage and IMMEDIATELY follow it with the complete analysis template covering all 5 key points using specific supplier names with their range values. End with a comprehensive collective summary.")
+### CRITICAL RULES:
+- **UNIQUE VALUE PER SECTION**: Each section must provide distinct, non-redundant insights. If data dimensions overlap (same rate ranges), consolidate into fewer sections
+- **QUESTION-FOCUSED RESPONSE**: Directly answer what the user asked for without unnecessary sections that repeat information
+- **SMART TABLE USAGE**: Only create tables for 3+ rows; integrate 1-2 rows into paragraph text with bold formatting
+- **MAXIMUM 5 ROWS PER TABLE**: Each table should contain no more than 5 rows for clarity
+- **SIMPLE RANGES ONLY**: No exact figures anywhere in the response, only simple low-high ranges
+- **PERCENTAGE COMPARISONS MANDATORY**: Always include percentage differences when comparing suppliers, rates, time periods, or market segments for clear quantitative insights
+- **NO STATISTICAL JARGON**: Avoid terms like Q1, Q3, quartiles, median - use simple language
+- **DYNAMIC SECTIONS ONLY**: Create sections ONLY for data types that actually exist in the results - DO NOT create sections for missing data types unless user specifically requested them
+- **NO REDUNDANCY RULE**: Each section must provide UNIQUE, NON-OVERLAPPING insights. If multiple data dimensions show the same information (e.g., same rate range), integrate them into one section or into paragraph text instead of creating redundant sections
+- **PERCENTAGE-BASED COMPARISONS**: Always use percentages when comparing suppliers, rates, or market segments (e.g., "TCS offers 45% cost savings compared to Accenture", "Premium suppliers cost 60% more than budget alternatives")
+- **CONCISE INSIGHTS**: High-value insights without redundancy
+- **CONTEXTUAL SECTION HEADERS**: Use descriptive markdown headers that fit the specific content (e.g., "Supplier Landscape", "Geographic Comparison", "Market Evolution") rather than generic section names
+- **ROUND DECIMAL PLACES**: Round decimal numbers to nearest integer in ranges (MANDATORY UNLESS THE USER ASKS FOR DETAILED TABLES IN THE USER QUERY)
+- **SUPPLIER FOCUS**: Emphasize supplier intelligence and competitive positioning with quantitative percentage comparisons between suppliers"""),
+            ("human", "### CLIENT'S ORIGINAL SOURCING INQUIRY:\n{user_query}\n\n### MARKET INTELLIGENCE RESULTS:\n{analytical_results}\n\nProvide a focused analysis using ALL available data dimensions with relevant tables that comprehensively address the user's question.\n\n**CRITICAL DATA IDENTIFICATION**: The results contain mixed data types in a single array. Look for:\n- Objects with \"supplier\" key → supplier analysis data\n- Objects with \"country_of_work\" key → geographic analysis data  \n- Objects with \"year\" key → temporal trends data\n- Objects with \"role_seniority\" key → role seniority data\n\n**DATA SAMPLING STRATEGY**: The query results use intelligent sampling:\n- **≤10 rows**: All rows are included in the results\n- **>10 rows**: Only top 5 + bottom 5 rows are shown (out of total available)\n- **Sampling Info**: Each query includes \"sampling_info\" and \"total_rows_available\" fields\n- **Analysis Impact**: When analyzing data, consider that for large datasets you're seeing the extremes (highest and lowest values), which is ideal for identifying rate ranges and competitive positioning\n\n**DYNAMIC SECTION CREATION**: Create sections ONLY for data types that actually exist in the analytical results:\n- If ANY objects have \"supplier\" key → create supplier analysis tables and insights\n- If ANY objects have \"country_of_work\" key → create geographic analysis section with country data\n- If ANY objects have \"year\" key → create temporal trends section with yearly data\n- If ANY objects have \"role_seniority\" key → create role seniority analysis section\n\n**CRITICAL**: Examine the entire results array carefully and create sections based on what data actually exists AND provides unique value. Avoid redundant sections that repeat the same rate ranges or information. Use descriptive section names that fit the content context. DO NOT mention missing data types unless the user specifically requested them. Focus on directly answering the user's question. Use multiple tables when needed (max 5 rows each with balanced high-low representation), only ranges (Q1-Q3 format), organize insights with contextual markdown headers, and keep the response concise but insightful. When sampling is applied, the analysis benefits from seeing both high and low extremes in the data.")
         ])
     
     def _create_flexible_query_generation_prompt(self) -> ChatPromptTemplate:
@@ -1064,6 +962,7 @@ And here are the countries with lowest rates:
 - **SUPPLIER/VENDOR ANALYSIS**: Comparative analysis across suppliers/vendors/partners using quartiles (high priority)
 - **YEARWISE TRENDS**: Year-over-year quartile analysis for the past 2-3 years (2022-2024) where applicable
 - Geographical comparisons using quartile distributions (countries, regions)
+- **ROLE SENIORITY ANALYSIS**: Focus on seniority levels (Advanced, Elementary, etc.) without supplier breakdown unless specifically requested
 - Role-based quartile analysis and comparisons
 - **AVOID**: Industry/sector analysis unless explicitly requested by user
 - **REPLACE AVG WITH QUARTILES**: When user asks for "rates", generate quartile queries instead of simple averages
@@ -1093,8 +992,8 @@ Bad Query (expands beyond Developers):
 **✅ CORRECT ENTITY FOCUS:**
 Question: "How much do SAP Consultants earn?"
 Good Queries (focus on SAP consultants only):
-- SELECT AVG(hourly_rate_in_usd) FROM public."IT_Professional_Services" WHERE role_specialization = 'SAP' AND (normalized_role_title LIKE '%Consultant%' OR role_title_from_supplier LIKE '%Consultant%')
-- SELECT normalized_role_title, AVG(hourly_rate_in_usd) as avg_rate FROM public."IT_Professional_Services" WHERE role_specialization = 'SAP' AND (normalized_role_title LIKE '%Consultant%' OR role_title_from_supplier LIKE '%Consultant%') GROUP BY normalized_role_title
+- SELECT AVG(hourly_rate_in_usd) FROM public."IT_Professional_Services" WHERE role_specialization = 'SAP' AND normalized_role_title = 'Consultant'
+- SELECT normalized_role_title, AVG(hourly_rate_in_usd) as avg_rate FROM public."IT_Professional_Services" WHERE role_specialization = 'SAP' AND normalized_role_title = 'Consultant' GROUP BY normalized_role_title
 
 **❌ WRONG ENTITY FOCUS:**
 Question: "How much do SAP Consultants earn?"
@@ -1104,8 +1003,8 @@ Bad Query (returns ALL SAP roles, not just consultants):
 **✅ CORRECT ENTITY FOCUS:**
 Question: "Give me the rates for SAP Developer"
 Good Queries (focus on SAP developers only):
-- SELECT AVG(hourly_rate_in_usd) FROM public."IT_Professional_Services" WHERE role_specialization = 'SAP' AND (normalized_role_title LIKE '%Developer%' OR role_title_from_supplier LIKE '%Developer%')
-- SELECT normalized_role_title, AVG(hourly_rate_in_usd) as avg_rate FROM public."IT_Professional_Services" WHERE role_specialization = 'SAP' AND (normalized_role_title LIKE '%Developer%' OR role_title_from_supplier LIKE '%Developer%') GROUP BY normalized_role_title
+- SELECT AVG(hourly_rate_in_usd) FROM public."IT_Professional_Services" WHERE role_specialization = 'SAP' AND normalized_role_title = 'Developer/Programmer'
+- SELECT normalized_role_title, AVG(hourly_rate_in_usd) as avg_rate FROM public."IT_Professional_Services" WHERE role_specialization = 'SAP' AND normalized_role_title = 'Developer/Programmer' GROUP BY normalized_role_title
 
 **❌ WRONG ENTITY FOCUS:**
 Question: "Give me the rates for SAP Developer"
@@ -1145,13 +1044,15 @@ Question: How do the hourly rates for Developers compare across countries?
 
 Question: What is the rate distribution for Developers?
 Good Quartile Queries:
-- SELECT 
+- **OVERALL RANGE:**
+  SELECT 
     PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
     PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
     PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
   FROM public."IT_Professional_Services" 
   WHERE normalized_role_title = 'Developer/Programmer'
-- SELECT 
+- **GEOGRAPHIC BREAKDOWN:**
+  SELECT 
     country_of_work,
     PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
     PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
@@ -1161,14 +1062,22 @@ Good Quartile Queries:
   GROUP BY country_of_work
 
 Question: What are the rate ranges by supplier for SAP developers?
-✅ CORRECT Quartile Query (INSTEAD OF MIN/MAX):
-- SELECT 
+✅ CORRECT Quartile Queries:
+- **OVERALL SAP DEVELOPER RANGE:**
+  SELECT 
+    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
+    PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
+    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
+  FROM public."IT_Professional_Services" 
+  WHERE role_specialization = 'SAP' AND normalized_role_title = 'Developer/Programmer'
+- **SUPPLIER BREAKDOWN:**
+  SELECT 
     supplier_company,
     PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
     PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
     PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
   FROM public."IT_Professional_Services" 
-  WHERE role_specialization = 'SAP' AND normalized_role_title LIKE '%Developer%'
+  WHERE role_specialization = 'SAP' AND normalized_role_title = 'Developer/Programmer'
   GROUP BY supplier_company
   ORDER BY Q2_Median DESC
 
@@ -1178,14 +1087,40 @@ Question: What are the rate ranges by supplier for SAP developers?
     MIN(hourly_rate_in_usd) as min_rate,
     MAX(hourly_rate_in_usd) as max_rate
   FROM public."IT_Professional_Services" 
-  WHERE role_specialization = 'SAP' AND normalized_role_title LIKE '%Developer%'
+  WHERE role_specialization = 'SAP' AND normalized_role_title = 'Developer/Programmer'
   GROUP BY supplier_company
+
+### ROLE SENIORITY ANALYSIS EXAMPLES:
+
+Question: How do SAP Developer rates vary by role seniority?
+✅ CORRECT Role Seniority Query (FOCUS ON SENIORITY LEVELS):
+- SELECT 
+    role_seniority,
+    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
+    PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
+    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
+  FROM public."IT_Professional_Services" 
+  WHERE role_specialization = 'SAP' AND normalized_role_title = 'Developer/Programmer'
+  GROUP BY role_seniority
+  ORDER BY Q2_Median DESC
+
+❌ WRONG Role Seniority Query (DON'T INCLUDE SUPPLIER BREAKDOWN):
+- SELECT 
+    supplier_company,
+    role_seniority,
+    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
+    PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
+    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
+  FROM public."IT_Professional_Services" 
+  WHERE role_specialization = 'SAP' AND normalized_role_title = 'Developer/Programmer'
+  GROUP BY supplier_company, role_seniority
 
 ### QUERY GENERATION GUIDELINES:
 1. Use appropriate column names from the schema (e.g., hourly_rate_in_usd, country_of_work, normalized_role_title)
 2. Filter by relevant values mentioned in the question (e.g., 'IND' for India, 'Developer' for developers)
 3. **CRITICAL - COMPREHENSIVE DATA COVERAGE**: Generate queries that return ALL available data points without arbitrary limits. Include ALL suppliers, ALL countries, ALL years available in the database.
 4. **CRITICAL - MAINTAIN ENTITY FOCUS**: If user mentions specific entities (roles, specializations), ALL queries must filter to include ONLY those entities. Never generate broad queries that return unrelated roles.
+5. **OVERALL RANGE QUERY**: For ALL rate-related questions, you may include one query that calculates the overall rate range without any groupings (no GROUP BY clause). This shows the total market range for the requested entity.
 
 **COMPOUND ENTITY RULE**: For requests like "SAP Developer", "Java Consultant", or "Senior Manager", filter by BOTH the specialization (e.g., role_specialization = 'SAP') AND the role type (e.g., role_title LIKE '%Developer%'). Do NOT filter only by specialization and return all roles within that category.
 5. **MANDATORY QUARTILE USAGE FOR ALL RATE QUERIES**: When users ask for "rates", "pricing", or "costs", you MUST generate quartile queries instead of simple averages. NEVER generate basic AVG(), MIN(), or MAX() functions for rate analysis. Use PERCENTILE_CONT(0.25), PERCENTILE_CONT(0.50), and PERCENTILE_CONT(0.75) functions for ALL rate-related queries to provide distribution insights.
@@ -1196,18 +1131,25 @@ Question: What are the rate ranges by supplier for SAP developers?
 10. **COLUMN PRIORITY**: When there are multiple columns that could answer the question, prefer columns marked as [MUST_HAVE] over others, then [IMPORTANT] columns, then [MANDATORY] columns. For example, prefer "hourly_rate_in_usd [MUST_HAVE]" over "bill_rate_hourly" when user asks for rates.
 11. **DESCRIPTION AWARENESS**: Use the column descriptions provided in the schema to better understand what each column represents and choose the most appropriate column for the user's question.
 12. **AGGREGATED FOCUS**: Focus on queries that produce aggregated insights rather than individual value distributions.
-13. **SUPPLIER ANALYSIS PRIORITY**: When generating queries for business analysis, prioritize supplier/vendor/partner comparisons and analysis. This provides more actionable business insights than industry analysis.
+13. **SUPPLIER ANALYSIS MANDATE**: ALWAYS generate supplier/vendor/partner comparison queries as the PRIMARY approach unless the user explicitly asks for very specific non-supplier analysis. Supplier-focused queries should be the DEFAULT for all rate-related questions. **EXCEPTION**: Only skip supplier analysis when user specifically requests pure geographic, temporal, or role seniority analysis without supplier context.
 14. **YEARWISE TRENDS PRIORITY**: Include year-over-year analysis for the past 2-3 years (2022-2024) where applicable to show temporal trends and changes.
 15. **AVOID INDUSTRY ANALYSIS**: Do NOT generate industry/sector analysis queries unless the user explicitly requests industry insights.
 16. **EXACT VALUES FROM EXPLORATION**: If the schema contains "COLUMN EXPLORATION RESULTS" with actual database values, you MUST use those exact values without any expansion, interpretation, or modification. For example, if you see "BI Developer" in the exploration results, use exactly "BI Developer" in your WHERE clause, NOT "Business Intelligence Developer".
 
-17. **CRITICAL - AVOID LIKE WHEN EXACT VALUES EXIST**: When "COLUMN EXPLORATION RESULTS" section provides exact values for a column, you MUST use exact equality (=) operators, NOT LIKE patterns. Only use LIKE patterns when no exact values are available in the exploration results for the relevant concept.
+17. **CRITICAL - USE EXACT EQUALITY FOR ENUM VALUES**: Since column enum values are provided in the schema, you MUST use exact equality (=) operators, NOT LIKE patterns. When "COLUMN EXPLORATION RESULTS" section provides exact values for a column, you MUST use those exact values with equality operators. Only use LIKE patterns when no exact values are available and you need pattern matching.
+
+18. **CRITICAL - SUPPLIER-FIRST GROUPING STRATEGY**: 
+   - **DEFAULT SUPPLIER FOCUS**: ALWAYS start with supplier grouping (GROUP BY supplier_company) as the primary query unless user explicitly asks for non-supplier analysis
+   - **DIMENSION FOCUS**: For subsequent queries, group by other dimensions (role_seniority, country_of_work, work_start_year) to provide diverse insights
+   - **SUPPLIER MANDATE**: Generate at least ONE supplier comparison query for any rate-related question unless user specifically requests otherwise
 
 ### EXACT MATCH PRIORITY RULES:
-- ✅ **PREFERRED**: `WHERE role_specialization = 'SAP'` (when 'SAP' is found in exploration results)
-- ❌ **AVOID**: `WHERE role_title_from_supplier LIKE '%Developer%'` (when exact developer titles are available)
-- ✅ **CORRECT**: `WHERE normalized_role_title = 'Developer/Programmer'` (using exact value from exploration)
-- ❌ **WRONG**: `WHERE role_specialization LIKE '%SAP%'` (when 'SAP' exists as exact value)
+- ✅ **PREFERRED**: `WHERE role_specialization = 'SAP'` (using exact enum value)
+- ❌ **AVOID**: `WHERE role_specialization LIKE '%SAP%'` (unnecessary pattern matching)
+- ✅ **CORRECT**: `WHERE normalized_role_title = 'Developer/Programmer'` (using exact enum value)
+- ❌ **WRONG**: `WHERE normalized_role_title LIKE '%Developer%'` (when exact values are available)
+- ✅ **PREFERRED**: `WHERE country_of_work = 'IND'` (using exact enum value)
+- ❌ **AVOID**: `WHERE country_of_work LIKE '%India%'` (when 'IND' is the exact enum value)
 
 ### OUTPUT FORMAT:
 Return a valid JSON object with a queries array. Each query should have sql, description, and type fields.
@@ -1219,9 +1161,20 @@ Example:
 Do not include any explanatory text, markdown formatting, or code blocks outside the JSON."""),
             ("human", """USER QUESTION: {question}
 
+### PREVIOUS QUESTIONS CONTEXT:
+{previous_questions}
+
 INSTRUCTIONS: Generate 1-5 contextually relevant SQL queries that will help answer this question. Use the actual column names and values from the database schema. 
 
+**CRITICAL REDUNDANCY AVOIDANCE**: Check the previous questions context above. This includes:
+1. **Main analytical questions** (e.g., "What is the average hourly rate for SAP Developers?")  
+2. **Specific query descriptions** (e.g., "Hourly rate distribution for SAP Developers by supplier")
+
+DO NOT generate queries that overlap with ANY of the previous questions or query descriptions. If previous questions covered supplier analysis, focus on COMPLETELY DIFFERENT dimensions like geographic, temporal, or role seniority analysis.
+
 **CRITICAL RATE QUERY INSTRUCTION**: When the user asks for "rates", "pricing", or "costs", you MUST generate quartile queries using PERCENTILE_CONT functions instead of simple AVG() queries. This provides much better distribution insights than basic averages.
+
+**CRITICAL ENUM VALUE INSTRUCTION**: Since column enum values are provided in the schema, you MUST use exact equality (=) operators, NOT LIKE patterns. Use the exact enum values provided without pattern matching.
 
 Focus on queries that directly address what the user is asking for with aggregated insights, NOT individual value frequencies or distributions.
 
@@ -1229,20 +1182,26 @@ CRITICAL: If the user mentions specific entities (roles, specializations, job ty
 
 COMPOUND ENTITY FILTERING: For compound requests like "SAP Developer", "Java Consultant", or "Senior Manager", filter by BOTH parts - the specialization AND the role type. Never filter only by specialization and return all roles within that category.
 
+**DIMENSION DIVERSITY REQUIREMENT**: If previous questions covered specific dimensions, generate queries for DIFFERENT dimensions:
+- If previous: supplier analysis → Generate: geographic, temporal, or role seniority analysis
+- If previous: geographic analysis → Generate: supplier, temporal, or role seniority analysis  
+- If previous: temporal analysis → Generate: supplier, geographic, or role seniority analysis
+- If previous: role seniority analysis → Generate: supplier, geographic, or temporal analysis
+
 RANGE PRIORITY: For ALL rate-related questions, prioritize range analysis (Range and Median Range) over simple averages to provide comprehensive distribution insights.
 
-SUPPLIER ANALYSIS PRIORITY: Prioritize supplier/vendor/partner analysis over industry analysis. Generate queries that compare suppliers, vendors, or partners unless the user explicitly requests industry analysis.
+**MANDATORY SUPPLIER ANALYSIS**: ALWAYS include supplier/vendor/partner comparison queries as the PRIMARY focus unless the user explicitly asks for very specific non-supplier analysis. Supplier queries should be generated by default for all rate-related questions.
 
-GEOGRAPHIC ANALYSIS PRIORITY: Include geographic/regional range analysis for rate questions. Generate country/region-based Range and Median Range comparisons to show geographic arbitrage opportunities.
+GEOGRAPHIC ANALYSIS: Include geographic/regional range analysis for rate questions. Generate country/region-based Range and Median Range comparisons to show geographic arbitrage opportunities.
 
-YEARWISE TRENDS PRIORITY: Include year-over-year analysis for the past 2-3 years (2022-2024) where applicable to show temporal trends and changes in the data.
+YEARWISE TRENDS: Include year-over-year analysis for the past 2-3 years (2022-2024) where applicable to show temporal trends and changes in the data.
 
 COMPREHENSIVE COVERAGE REQUIREMENT: For rate questions, generate diverse query types including:
-- Primary supplier quartile analysis (ALL available suppliers - minimum 15-20 suppliers)
-- Budget/competitive supplier alternatives (COMPLETE budget tier analysis)
-- Geographic/regional quartile breakdowns (ALL available countries/regions - minimum 10-15 locations)
-- Role seniority quartile comparisons (ALL seniority levels across multiple suppliers)
-- Temporal trend analysis with quartiles (ALL available years with comprehensive supplier coverage)
+- **MANDATORY OVERALL RANGE**: Total market range without any groupings (no GROUP BY) - ALWAYS REQUIRED for rate questions
+- **MANDATORY SUPPLIER ANALYSIS**: Supplier quartile comparison (GROUP BY supplier_company) - ALWAYS REQUIRED unless user explicitly asks for non-supplier focus
+- Geographic/regional quartile breakdowns (when NOT covered in previous questions)
+- Role seniority quartile comparisons (when NOT covered in previous questions)  
+- Temporal trend analysis with quartiles (when NOT covered in previous questions)
 
-FLEXIBILITY: Generate exactly as many queries as needed - if one high-quality query is sufficient for a specific question, generate just one. For complex analytical questions, generate multiple diverse queries.""")
+CRITICAL LIMIT: Generate a MAXIMUM of 2-3 queries only. Focus on dimensions NOT covered by previous analytical questions to ensure comprehensive, non-redundant coverage.""")
         ]) 
