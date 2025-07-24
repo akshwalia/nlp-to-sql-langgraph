@@ -12,7 +12,7 @@ class SQLGeneratorState(TypedDict):
     results: List[Dict]
     error: Optional[str]
     response: str
-    validation_attempts: int
+
     
     # Simplified classification fields
     is_conversational: bool

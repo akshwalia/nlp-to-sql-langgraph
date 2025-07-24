@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple, Optional
+from typing import Any, Dict, Optional
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.runnables import RunnableConfig
@@ -26,7 +26,7 @@ class GraphManager:
         graph.add_node("route_query", self._route_query_node)
         graph.add_node("handle_conversational", self._handle_conversational_node)
         graph.add_node("generate_sql", self._generate_sql_node)
-        graph.add_node("validate_sql", self._validate_sql_node)
+
         graph.add_node("generate_response", self._generate_response_node)
         graph.add_node("handle_error", self._handle_error_node)
         
@@ -49,24 +49,7 @@ class GraphManager:
         )
         
         # Standard workflow edges
-        graph.add_conditional_edges(
-            "generate_sql",
-            self._should_validate,
-            {
-                "validate": "validate_sql",
-                "respond": "generate_response",
-                "error": "handle_error"
-            }
-        )
-        graph.add_conditional_edges(
-            "validate_sql",
-            self._validation_result,
-            {
-                "success": "generate_response",
-                "retry": "generate_sql",
-                "error": "handle_error"
-            }
-        )
+        graph.add_edge("generate_sql", "generate_response")
         
         # Analytical workflow edges
         graph.add_conditional_edges(
@@ -102,12 +85,7 @@ class GraphManager:
             "workflow_type": "analytical"
         }
     
-    async def _validate_sql_node(self, state: SQLGeneratorState, config: RunnableConfig) -> SQLGeneratorState:
-        """Validate generated SQL"""
-        return {
-            **state,
-            "error": "SQL validation failed"
-        }
+
     
     async def _generate_response_node(self, state: SQLGeneratorState, config: RunnableConfig) -> SQLGeneratorState:
         """Generate final response based on SQL and results"""
@@ -143,50 +121,7 @@ class GraphManager:
             "response": f"I encountered an error: {state.get('error', 'Unknown error')}"
         }
     
-    def _should_validate(self, state: SQLGeneratorState) -> str:
-        """Determine if SQL should be validated"""
-        if state.get("error"):
-            return "error"
-        elif state.get("sql"):
-            return "validate"
-        else:
-            return "error"
-    
-    def _validation_result(self, state: SQLGeneratorState) -> str:
-        """Determine the result of validation"""
-        if state.get("error") and state["validation_attempts"] < 2:
-            return "retry"
-        elif state.get("error"):
-            return "error"
-        else:
-            return "success"
-    
-    def _validate_sql(self, sql: str) -> Tuple[bool, Optional[str]]:
-        """Basic SQL validation - this would need to be implemented with actual validation logic"""
-        # This is a placeholder - in the actual implementation, 
-        # you would validate the SQL against the database schema
-        try:
-            # Basic syntax checks
-            if not sql or not sql.strip():
-                return False, "Empty SQL query"
-            
-            # Check for basic SQL structure
-            sql_upper = sql.upper()
-            if not any(keyword in sql_upper for keyword in ['SELECT', 'INSERT', 'UPDATE', 'DELETE']):
-                return False, "SQL must contain a valid command (SELECT, INSERT, UPDATE, DELETE)"
-            
-            # Check for balanced parentheses
-            if sql.count('(') != sql.count(')'):
-                return False, "Unbalanced parentheses in SQL"
-            
-            # Check for basic semicolon issues
-            if sql.count(';') > 1:
-                return False, "Multiple statements not allowed"
-            
-            return True, None
-            
-        except Exception as e:
-            return False, f"SQL validation error: {str(e)}"
+
     
     def _extract_response_content(self, response) -> str:
         """Extract content from LLM response"""

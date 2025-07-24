@@ -1,7 +1,7 @@
 import json
 import logging
 import re
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any
 from langchain_core.language_models import BaseLanguageModel
 from .prompts import PromptsManager
 from .memory import MemoryManager
@@ -738,65 +738,7 @@ Do not include any explanatory text, markdown formatting, or code blocks outside
             "source": "llm_fallback"
         }
     
-    def validate_sql(self, sql: str) -> Tuple[bool, Optional[str]]:
-        """Validate SQL query for basic syntax and structure"""
-        try:
-            # Basic validation checks
-            if not sql or not sql.strip():
-                return False, "Empty SQL query"
-            
-            # Remove comments and extra whitespace
-            sql_clean = re.sub(r'--.*$', '', sql, flags=re.MULTILINE)
-            sql_clean = re.sub(r'/\*.*?\*/', '', sql_clean, flags=re.DOTALL)
-            sql_clean = sql_clean.strip()
-            
-            if not sql_clean:
-                return False, "SQL query contains only comments"
-            
-            # Check for basic SQL structure
-            sql_upper = sql_clean.upper()
-            valid_starts = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'WITH']
-            
-            if not any(sql_upper.startswith(start) for start in valid_starts):
-                return False, "SQL must start with a valid command (SELECT, INSERT, UPDATE, DELETE, WITH)"
-            
-            # Check for balanced parentheses
-            if sql_clean.count('(') != sql_clean.count(')'):
-                return False, "Unbalanced parentheses in SQL"
-            
-            # Check for balanced quotes
-            single_quotes = sql_clean.count("'")
-            if single_quotes % 2 != 0:
-                return False, "Unbalanced single quotes in SQL"
-            
-            double_quotes = sql_clean.count('"')
-            if double_quotes % 2 != 0:
-                return False, "Unbalanced double quotes in SQL"
-            
-            # Check for multiple statements (should be single statement)
-            statements = [stmt.strip() for stmt in sql_clean.split(';') if stmt.strip()]
-            if len(statements) > 1:
-                return False, "Multiple SQL statements not allowed"
-            
-            # Check for basic FROM clause in SELECT statements
-            if sql_upper.startswith('SELECT'):
-                if 'FROM' not in sql_upper:
-                    return False, "SELECT statement must include FROM clause"
-            
-            # Check for basic VALUES clause in INSERT statements
-            if sql_upper.startswith('INSERT'):
-                if 'VALUES' not in sql_upper and 'SELECT' not in sql_upper:
-                    return False, "INSERT statement must include VALUES clause or SELECT statement"
-            
-            # Check for WHERE clause in UPDATE/DELETE statements
-            if sql_upper.startswith(('UPDATE', 'DELETE')):
-                if 'WHERE' not in sql_upper:
-                    return False, "UPDATE/DELETE statements should include WHERE clause for safety"
-            
-            return True, None
-            
-        except Exception as e:
-            return False, f"SQL validation error: {str(e)}"
+
     
     def _extract_response_content(self, response) -> str:
         """Extract content from LLM response"""
@@ -957,15 +899,7 @@ Do not include any explanatory text, markdown formatting, or code blocks outside
         
         return any(keyword in question_lower for keyword in time_keywords)
     
-    def refresh_schema_context(self, db_analyzer) -> bool:
-        """Refresh the schema context from database"""
-        try:
-            self.prepare_schema_context(db_analyzer)
-            self.example_patterns = self.generate_example_patterns(db_analyzer)
-            return True
-        except Exception as e:
-            print(f"Error refreshing schema context: {e}")
-            return False
+
 
     def generate_example_patterns(self, db_analyzer) -> str:
         """Generate example SQL patterns based on database schema"""

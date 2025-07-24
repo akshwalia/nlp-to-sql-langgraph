@@ -168,10 +168,7 @@ class SmartSQLGenerator:
         """Generate SQL query from natural language question"""
         return await self.sql_generation_manager.generate_sql(question, self.db_analyzer)
     
-    @observe_function("sql_fix")
-    def fix_sql(self, sql: str, error: str) -> Dict[str, Any]:
-        """Fix SQL query based on error message"""
-        return self.sql_generation_manager.fix_sql(sql, error)
+    
     
 
     
@@ -505,9 +502,7 @@ class SmartSQLGenerator:
         """Get paginated results"""
         return self.session_context_manager.get_paginated_results(table_id, page, page_size)
     
-    def refresh_schema_context(self) -> bool:
-        """Refresh schema context"""
-        return self.sql_generation_manager.refresh_schema_context(self.db_analyzer)
+
     
 
     
