@@ -15,8 +15,7 @@ class SessionContextManager:
             "important_values": {},
             "last_query_result": None,
             "entity_mentions": {},
-            "text_responses": [],  # Store text responses
-            "multi_query_results": []  # Store results from multiple queries
+            "text_responses": []  # Store text responses
         }
         
         # Data store for paginated results
@@ -288,8 +287,7 @@ class SessionContextManager:
             "important_values": {},
             "last_query_result": None,
             "entity_mentions": {},
-            "text_responses": [],
-            "multi_query_results": []
+            "text_responses": []
         }
         self.paginated_results = {}
     

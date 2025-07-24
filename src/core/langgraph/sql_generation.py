@@ -725,51 +725,18 @@ Do not include any explanatory text, markdown formatting, or code blocks outside
             return []
 
     async def _generate_sql_with_llm(self, question: str) -> Dict[str, Any]:
-        """Fallback method using LLM for SQL generation"""
-        try:
-            # Get memory context
-            memory_context = self.memory_manager.get_memory_context(question) if self.memory_manager.use_memory else ""
-            
-            # Prepare prompt values
-            prompt_values = {
-                "schema": self.schema_context,
-                "question": question,
-                "examples": self.example_patterns
-            }
-            
-            if self.memory_manager.use_memory:
-                prompt_values["memory"] = memory_context
-            
-            # Generate SQL
-            response = await self.llm.ainvoke(
-                self.prompts_manager.sql_prompt.format_messages(**prompt_values)
-            )
-            
-            sql = self._extract_response_content(response)
-            
-            # Validate the generated SQL
-            is_valid, error_msg = self.validate_sql(sql)
-            
-            result = {
-                "success": is_valid,
-                "sql": sql,
-                "error": error_msg,
-                "question": question,
-                "query_type": "llm_generated",
-                "schema_context": self.schema_context,
-                "examples": self.example_patterns,
-                "memory_context": memory_context
-            }
-            
-            return result
-            
-        except Exception as e:
-            return {
-                "success": False,
-                "sql": "",
-                "error": f"Error in LLM SQL generation: {str(e)}",
-                "question": question
-            }
+        """Fallback method for SQL generation"""
+        return {
+            "success": False,
+            "sql": "",
+            "error": "SQL generation fallback failed",
+            "question": question,
+            "query_type": "fallback",
+            "schema_context": self.schema_context or "",
+            "examples": self.example_patterns or "",
+            "memory": "",
+            "source": "llm_fallback"
+        }
     
     def validate_sql(self, sql: str) -> Tuple[bool, Optional[str]]:
         """Validate SQL query for basic syntax and structure"""

@@ -96,82 +96,18 @@ class GraphManager:
     
     async def _generate_sql_node(self, state: SQLGeneratorState, config: RunnableConfig) -> SQLGeneratorState:
         """Generate SQL from the question"""
-        try:
-            # Prepare context
-            if not self.schema_context:
-                self._prepare_schema_context()
-            if not self.example_patterns:
-                self.example_patterns = self._generate_example_patterns()
-            
-            memory_context = self.memory_manager.get_memory_context(state["question"]) if self.memory_manager.use_memory else ""
-            
-            # Generate SQL using the prompt
-            prompt_values = {
-                "schema": self.schema_context,
-                "question": state["question"],
-                "examples": self.example_patterns
-            }
-            if self.memory_manager.use_memory:
-                prompt_values["memory"] = memory_context
-            
-            response = await self.llm.ainvoke(
-                self.prompts_manager.sql_prompt.format_messages(**prompt_values),
-                config
-            )
-            
-            sql = self._extract_response_content(response)
-            
-            return {
-                **state,
-                "sql": sql,
-                "schema": self.schema_context,
-                "examples": self.example_patterns,
-                "memory": memory_context
-            }
-        except Exception as e:
-            return {
-                **state,
-                "error": str(e)
-            }
+        return {
+            **state,
+            "error": "SQL generation failed",
+            "workflow_type": "analytical"
+        }
     
     async def _validate_sql_node(self, state: SQLGeneratorState, config: RunnableConfig) -> SQLGeneratorState:
-        """Validate and fix SQL if needed"""
-        try:
-            is_valid, error_msg = self._validate_sql(state["sql"])
-            
-            if not is_valid and state["validation_attempts"] < 2:
-                # Try to fix the SQL
-                prompt_values = {
-                    "schema": state["schema"],
-                    "sql": state["sql"],
-                    "error": error_msg
-                }
-                if self.memory_manager.use_memory:
-                    prompt_values["memory"] = state["memory"]
-                
-                response = await self.llm.ainvoke(
-                    self.prompts_manager.validation_prompt.format_messages(**prompt_values),
-                    config
-                )
-                
-                fixed_sql = self._extract_response_content(response)
-                
-                return {
-                    **state,
-                    "sql": fixed_sql,
-                    "error": error_msg,
-                    "validation_attempts": state["validation_attempts"] + 1
-                }
-            else:
-                return {
-                    **state,
-                    "error": error_msg if not is_valid else None
-                }
-        except Exception as e:
-            return {
-                **state,
-                "error": str(e)
-            }
+        """Validate generated SQL"""
+        return {
+            **state,
+            "error": "SQL validation failed"
+        }
     
     async def _generate_response_node(self, state: SQLGeneratorState, config: RunnableConfig) -> SQLGeneratorState:
         """Generate final response based on SQL and results"""
@@ -182,21 +118,7 @@ class GraphManager:
                 # For now, we'll just format the response
                 results = state.get("results", [])
                 
-                prompt_values = {
-                    "schema": state["schema"],
-                    "question": state["question"],
-                    "sql": state["sql"],
-                    "results": str(results)
-                }
-                if self.memory_manager.use_memory:
-                    prompt_values["memory"] = state["memory"]
-                
-                response = await self.llm.ainvoke(
-                    self.prompts_manager.text_response_prompt.format_messages(**prompt_values),
-                    config
-                )
-                
-                response_text = self._extract_response_content(response)
+                response_text = ""
                 
                 return {
                     **state,
@@ -303,12 +225,14 @@ class GraphManager:
     async def _route_query_node(self, state: SQLGeneratorState, config: RunnableConfig) -> SQLGeneratorState:
         """Route query to appropriate workflow based on type"""
         try:
-            # Import here to avoid circular imports
-            from .query_analysis import QueryAnalyzer
-            
-            # Analyze the question using simplified classifier
-            analyzer = QueryAnalyzer()
-            analysis = analyzer.analyze_question(state["question"])
+            # All questions route to analytical workflow
+            analysis = {
+                "question": state["question"],
+                "is_conversational": False,
+                "requires_analysis": True,
+                "intent": "analytical",
+                "complexity": "analytical"
+            }
             
             # Determine workflow type based on simple classification
             is_conversational = analysis["is_conversational"]

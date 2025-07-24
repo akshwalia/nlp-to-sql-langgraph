@@ -1773,7 +1773,7 @@ class AnalyticalManager:
             except json.JSONDecodeError:
                 pass
             
-            # Look for questions pattern (legacy support)
+            # Look for questions pattern
             json_pattern = r'\{.*"questions".*\}'
             match = re.search(json_pattern, response_text, re.DOTALL)
             

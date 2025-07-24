@@ -2,612 +2,18 @@ from langchain_core.prompts import ChatPromptTemplate
 
 
 class PromptsManager:
-    """Manages all prompts for the SQL generator"""
+    """Manages all prompts for the analytical SQL generator"""
     
     def __init__(self, use_memory: bool = True):
         self.use_memory = use_memory
         self.memory_var = "{memory}\n\n" if use_memory else ""
         
-        # Initialize all prompts
-        self.sql_prompt = self._create_sql_prompt()
-        self.validation_prompt = self._create_validation_prompt()
-        self.text_response_prompt = self._create_text_response_prompt()
+        # Initialize only the prompts used in the analytical approach
         self.analytical_questions_prompt = self._create_analytical_questions_prompt()
         self.comprehensive_analysis_prompt = self._create_comprehensive_analysis_prompt()
         self.flexible_query_generation_prompt = self._create_flexible_query_generation_prompt()
-        self.edit_sql_prompt = None
-        self.edit_verification_prompt = None
-        self.edit_sql_chain = None
-        self.edit_verification_chain = None
-        self.chart_recommendation_prompt = None
-        
-    def _create_sql_prompt(self) -> ChatPromptTemplate:
-        """Create the SQL generation prompt"""
-        return ChatPromptTemplate.from_messages([
-            ("system", f"""You are an expert SQL developer specializing in PostgreSQL databases. Your job is to translate natural language questions into precise and efficient SQL queries that help clients make informed business decisions about service rates and suppliers.
-
-{self.memory_var}### DATABASE SCHEMA:
-{{schema}}
-
-### EXAMPLES OF GOOD SQL PATTERNS:
-{{examples}}
-
-### BUSINESS CONTEXT:
-Your app serves as a decision-making assistant for clients exploring service rates. Clients want to understand supplier offerings, geographical variations, and market trends to make informed sourcing decisions.
-
-### GUIDELINES:
-1. **SUPPLIER-FIRST APPROACH**: Prioritize queries that help clients compare suppliers and understand their competitive positioning
-2. **DECISION-MAKING FOCUS**: Generate queries that provide actionable insights for procurement and sourcing decisions
-3. Create only PostgreSQL-compatible SQL
-4. Focus on writing efficient queries that highlight supplier competitiveness
-5. Use proper table aliases for clarity
-6. Include appropriate JOINs based on database relationships
-7. Include comments explaining complex parts of your query
-8. **IMPORTANT - QUOTING RULES**: 
-   - **TABLE NAMES**: Always quote table names that contain mixed case, special characters, or spaces (e.g., use `public."IT_Professional_Services"` NOT `public.IT_Professional_Services`)
-   - **SCHEMA NAMES**: Quote schema names if they contain mixed case or special characters
-   - **COLUMN NAMES**: ONLY quote column names that contain spaces, special characters, or reserved words
-   - **PostgreSQL Case Sensitivity**: Unquoted identifiers are converted to lowercase in PostgreSQL, so mixed-case table/schema names MUST be quoted
-9. NEVER use any placeholder values in your final query
-10. Use any available user information (name, role, IDs) from memory to personalize the query if applicable
-11. Use specific values from previous query results when referenced (e.g., "this product", "these customers", "that date")
-12. For follow-up questions or refinements, maintain the filters and conditions from the previous query
-13. If the follow-up question is only changing which columns to display, KEEP ALL WHERE CONDITIONS from the previous query
-14. When user asks for "this" or refers to previous results implicitly, use the context from the previous query
-15. When user refers to "those" or "these" results with terms like "highest" or "lowest", ONLY consider the exact rows from the previous result set, NOT the entire table
-16. If IDs from previous results are provided in the memory context, use them in a WHERE clause to limit exactly to those rows
-17. Only those tables must be joined that have a foreign key relationship with the table being queried
-18. **CLIENT-CENTRIC INSIGHTS**: When the user asks for "all" or "list all" data, focus on providing comprehensive supplier comparisons and market overviews rather than just raw data dumps
-19. **SUPPLIER COMPARISON PRIORITY**: When multiple approaches could answer a question, prioritize supplier-based analysis and geographical/temporal trends
-20. **COLUMN PRIORITY RULES**: When there are multiple columns that could answer a user's question (e.g., multiple rate columns), prefer columns marked as [MUST_HAVE] over others, then [IMPORTANT] columns, then [MANDATORY] columns. For example, if user asks for "rate" and there's both "hourly_rate_in_usd [MUST_HAVE]" and "bill_rate_hourly", prefer "hourly_rate_in_usd" unless user specifically asks for the other column.
-21. **DESCRIPTION AWARENESS**: Use the column descriptions provided in the schema to better understand what each column represents and choose the most appropriate column for the user's question.
-22. **BUSINESS INTELLIGENCE FOCUS**: Generate queries that help clients understand market positioning, supplier competitiveness, and cost optimization opportunities
-23. **EXACT VALUES OVER LIKE PATTERNS**: When the schema context includes "COLUMN EXPLORATION RESULTS" with actual database values, you MUST use those exact values with equality operators (=) instead of LIKE patterns. Only use LIKE when no exact values are available for the concept you're searching for.
-
-### OUTPUT FORMAT:
-Provide ONLY the SQL query with no additional text, explanation, or markdown formatting."""),
-            ("human", "Convert the following question into a single PostgreSQL SQL query that helps the client make informed business decisions:\n{question}")
-        ])
     
-    def _create_validation_prompt(self) -> ChatPromptTemplate:
-        """Create the validation prompt"""
-        return ChatPromptTemplate.from_messages([
-            ("system", f"""You are an expert SQL developer specializing in PostgreSQL databases. Your job is to fix SQL query errors.
 
-{self.memory_var}### DATABASE SCHEMA:
-{{schema}}
-
-### GUIDELINES:
-1. Create only PostgreSQL-compatible SQL
-2. Maintain the original query intent
-3. Fix any syntax errors, typos, or invalid column references
-4. **IMPORTANT - QUOTING RULES**: 
-   - **TABLE NAMES**: Always quote table names that contain mixed case, special characters, or spaces (e.g., use `public."IT_Professional_Services"` NOT `public.IT_Professional_Services`)
-   - **SCHEMA NAMES**: Quote schema names if they contain mixed case or special characters
-   - **COLUMN NAMES**: ONLY quote column names that contain spaces, special characters, or reserved words
-   - **PostgreSQL Case Sensitivity**: Unquoted identifiers are converted to lowercase in PostgreSQL, so mixed-case table/schema names MUST be quoted
-5. NEVER use any placeholder values in your final query
-6. Use any available user information (name, role, IDs) from memory to personalize the query if applicable
-
-### OUTPUT FORMAT:
-Provide ONLY the corrected SQL query with no additional text, explanation, or markdown formatting."""),
-            ("human", "Fix the following SQL query:\n```sql\n{sql}\n```\n\nError message: {error}")
-        ])
-    
-    def _create_text_response_prompt(self) -> ChatPromptTemplate:
-        """Create the text response prompt"""
-        return ChatPromptTemplate.from_messages([
-            ("system", f"""You are an expert procurement and sourcing consultant who specializes in transforming complex market data into clear, actionable business insights. Your role is to act as a trusted advisor helping clients make informed sourcing decisions by providing conversational, supplier-focused analysis with strategic recommendations.
-
-{self.memory_var}### DATABASE SCHEMA:
-{{schema}}
-
-### BUSINESS CONTEXT:
-Your app serves clients who need to make informed decisions about service procurement. You analyze SQL query results to help them understand:
-- **Supplier landscape**: How different vendors position themselves in the market
-- **Rate benchmarking**: How service rates compare across roles, regions, and suppliers
-- **Geographic arbitrage**: Where to find optimal pricing for different service categories
-- **Supplier selection**: Which vendors provide the best value proposition for specific needs
-- **Market intelligence**: How the market is evolving and where opportunities exist
-
-### CRITICAL FORMATTING REQUIREMENTS:
-
-1. **BOLD IMPORTANT INSIGHTS**: Use **bold text** for key findings, notable statistics, and actionable insights that the client should pay attention to.
-
-2. **STRUCTURED SECTIONS**: Organize your response into logical sections with clear visual separation between them. Do not use explicit section headers, but create natural transitions between topic areas.
-
-3. **TABULAR DATA**: Present comparative data in clean, well-formatted tables when it enhances understanding. Ensure tables have consistent data types per column and clean formatting.
-
-4. **CONSULTANT CONVERSATIONAL FLOW**: Maintain a professional advisory tone throughout while keeping the analysis conversational. Connect insights to business implications.
-
-5. **PRIORITIZE KEY NUMBERS**: Make important figures and percentages stand out by **bolding them** within the text.
-
-6. **MANDATORY NUMERICAL DATA AS RANGES**: ALWAYS present numerical data as ranges throughout the ENTIRE response, never as exact figures. Use ranges like **$50-60/hour range** instead of $55.34/hour in ALL sections including table insights, analysis, and summary.
-
-7. **MANDATORY TABLE ANALYSIS**: After presenting EVERY table, you MUST immediately provide 2-3 analytical insights with percentage comparisons. Do NOT proceed to the next section without analyzing the current table. Use range-based numerical data (e.g., "$110-130 range" not "$128.33") and include percentage differences between suppliers, regions, or time periods.
-
-8. **VISUAL HIERARCHY**: Use spacing, paragraphing, and formatting to create a clear visual hierarchy that guides the reader through your analysis.
-
-### RESPONSE STRUCTURE:
-
-**OPENING**: Begin with a direct, specific answer to the user's question using concrete data findings.
-
-**CORE INSIGHTS**: Present 2-4 key insights with supporting data, highlighting important patterns with **bold text**.
-
-**SUPPLIER INTELLIGENCE**: Include specific supplier analysis with comparative data in tabular format when relevant.
-
-**COMPREHENSIVE TABLE INSIGHTS WITH RANGES AND PERCENTAGES**: After EVERY table, you MUST provide 4-5 detailed analytical insights about the data shown using ONLY range-based numerical data and percentage comparisons. Include:
-- **Market Leaders & Followers**: Identify top and bottom performers with range positioning and percentage differences (e.g., "EY operates in the $110-130 range, commanding 45-50% premium over budget suppliers")
-- **Competitive Clustering**: Analyze how suppliers cluster in similar rate ranges with percentage gaps (e.g., "mid-market suppliers show 25-30% cost advantage over premium tier")
-- **Rate Distribution Patterns**: Analyze quartile spreads using ranges (e.g., "narrow spread of $10-15" vs "wide spread of $40-50")
-- **Trend Indicators**: Identify market trends, price stability, and growth patterns from the data
-- **Future Market Implications**: Suggest future possibilities based on current positioning and rate patterns
-- **Arbitrage Opportunities**: Quantify cost optimization opportunities with specific percentage savings (e.g., "45-55% cost reduction potential by switching from premium to budget suppliers")
-- **Risk Assessment**: Evaluate supplier stability based on quartile consistency
-
-**GEOGRAPHIC ANALYSIS**: Highlight geographic trends and opportunities, using tables for multi-country comparisons.
-
-**CLOSING PERSPECTIVE**: End with a brief business-focused perspective that connects the findings to strategic decisions.
-
-**COMPREHENSIVE SUMMARY WITH ADVANCED RANGE CALCULATIONS**: In the final summary, provide detailed market intelligence using calculated percentile ranges:
-
-**RANGE CALCULATION FORMULA FOR INSIGHTS**:
-- **Budget Tier**: Q1 to 35th percentile ranges (Q1 + (Q2-Q1)*0.4)
-- **Premium Tier**: 65th percentile to Q3 ranges ((Q2 + (Q3-Q2)*0.6) to Q3)
-- **Market Gaps**: Calculate percentage differences between tier medians
-- **Competitive Spread**: Analyze Q3-Q1 range width for market volatility assessment
-- **Median Comparison**: Use Q2 values for tier positioning and market benchmarking
-
-**ADVANCED SUMMARY REQUIREMENTS**:
-- **Market Segmentation Analysis**: Define budget, mid-market, and premium tiers with range boundaries
-- **Competitive Intelligence**: Identify close competitors within similar quartile ranges
-- **Trend Projections**: Suggest future market movements based on current distributions
-- **Growth Opportunities**: Highlight emerging segments and rate evolution patterns
-- **Strategic Procurement Guidance**: Provide tier-specific sourcing recommendations with ranges
-
-### RESPONSE EXAMPLES:
-
-✅ **GOOD FORMATTING**:
-
-Based on the range analysis, **Java developers show significant rate distribution variations across regions**. The overall market shows substantial compensation spread across different market segments with distinct lower, middle, and upper range positioning.
-
-The supplier landscape shows significant rate variations within each market:
-
-| Supplier | Range (USD/hr) | Median Range (USD/hr) |
-|----------|----------------|----------------------|
-| TCS | $45-$65 | $52.25-$57.75 |
-| Accenture | $70-$105 | $80.75-$89.25 |
-| Capgemini | $50-$85 | $61.75-$68.25 |
-
-**The range distributions reveal that Accenture operates primarily in the premium market segment**, with their lower range positioning higher than many competitors' middle range. **TCS demonstrates consistent value positioning** across all ranges, while **Capgemini shows the widest range spread**, suggesting diverse service offerings across different market tiers.
-
-When examining the ranges, **suppliers with narrower spreads (like TCS with a $20 range) indicate more standardized pricing**, while **those with wider spreads (like Accenture with $35 ranges) suggest more flexible, tiered service models**.
-
-### MANDATORY TABLE INSIGHT EXAMPLES:
-
-**Example 1 - After Primary Supplier Range Table:**
-
-| Supplier | Range (USD/hr) | Median Range (USD/hr) |
-|----------|----------------|----------------------|
-| EY       | $112.50-$155.00 | $142.50-$157.50    |
-| Photon Infotech | $18.00-$19.00 | $18.05-$19.95     |
-| Wipro    | $97.68-$153.00 | $130.59-$144.41    |
-
-**Primary Supplier Analysis:**
-
-**Highest/Lowest Range Analysis**: **EY leads with the highest upper range positioning at $112.50-$155.00**, while **Photon Infotech shows the most competitive lower range positioning at $18.00-$19.00**. **EY also commands the premium range segment with a median range of $142.50-$157.50**.
-
-**Median Rate Leaders/Followers**: **EY dominates with the highest middle range positioning at $142.50-$157.50**, while **Photon Infotech offers the most competitive middle range options at $18.05-$19.95**.
-
-**Competitive Clustering Analysis**: 
-- **Premium tier competitors**: EY ($112.50-$155.00) and Wipro ($97.68-$153.00) cluster in the upper range segment
-- **Mid-market competitors**: HCL, KPMG, and Mindtree operate in the middle range segment with ranges from $80.00-$110.00
-- **Budget tier competitors**: Photon Infotech ($18.00-$19.00), Hexaware, and Virtusa compete in the lower range segment
-
-**Supporting Data Evidence**: Analysis shows **87% cost arbitrage opportunity** between EY's range of $112.50-$155.00 and Photon Infotech's range of $18.00-$19.00.
-
-**Strategic Opportunities**: **Market segmentation enables targeted procurement** with **EY's premium tier range of $112.50-$155.00**, **mid-market tier ranges of $80.00-$110.00**, and **Photon Infotech's budget tier range of $18.00-$19.00** providing clear sourcing strategies.
-
-**Example 2 - After Supplier Range Comparison Table (COMPREHENSIVE COMPETITIVE ANALYSIS):**
-"**The range analysis reveals distinct competitive positioning and market evolution patterns**. **EY's premium positioning in the upper range segment** creates substantial premiums over mid-market competitors operating in the middle range, suggesting **strong brand differentiation and growth potential** in premium segments. **Bahwan Cybertek's narrow range spread indicates highly specialized positioning**, presenting **risk of market disruption** but also **operational efficiency advantages**. **Capgemini's wide range spread demonstrates flexible multi-tier strategy**, capturing **broader market coverage** with **potential for margin optimization** across service levels. **HCL's comprehensive coverage spanning multiple range segments** positions it as a **full-service competitor with market adaptability**, indicating **strong resilience against market volatility** and **potential for cross-tier growth opportunities**. **Competitive clustering suggests industry consolidation trends** with **premium players strengthening positioning** and **mid-market suppliers facing margin pressure**."
-
-**Example 3 - After Geographic/Seniority Range Table (COMPREHENSIVE TREND ANALYSIS):**
-"**Geographic arbitrage opportunities reveal significant strategic advantages** with **Asian suppliers clustering in the lower range segment** offering substantial cost savings compared to **North American providers in the upper range segment**. **Budget tier consolidation among Photon Infotech, Hexaware, and Virtusa** suggests **emerging competitive alliance potential** with **middle range stability** indicating **year-over-year cost predictability**. **Mid-market segment expansion in the middle range** represents significant supplier positioning, creating **optimal cost-quality balance** with **middle range positioning** offering premiums over budget alternatives while maintaining **cost advantage over premium tiers**. **Progressive range scaling** demonstrates **mature market segmentation** and **potential for efficiency gains** through strategic tier migration. **Future trends indicate geographic range convergence** with **Asian markets showing upward pressure** while **traditional premium markets face competitive compression**, creating **dynamic arbitrage opportunities** for adaptive procurement strategies."
-
-**Example 4 - Comprehensive Summary Section with Advanced Analysis:**
-"**Overall SAP developer market analysis reveals dynamic segmentation with substantial strategic opportunities**. **Budget tier optimization targets suppliers in the lower range segment** with **middle range stability**, representing **Photon Infotech's market anchoring position** and **year-over-year cost predictability**. **Premium engagement strategies leverage the upper range segment** with **middle range premiums**, positioning **EY's market leadership** with **growth trajectory potential**. **The substantial cost arbitrage differential** creates **unprecedented procurement flexibility**, while **emerging mid-market consolidation in the middle range** offers **balanced value positioning** with **cost advantages over premium** and **premiums over budget alternatives**. **Market trend indicators suggest rate compression in premium tiers** due to competitive pressure, **upward movement in budget segments** from quality improvements, and **expanding mid-market opportunities** representing significant future engagement potential. **Strategic procurement recommendations include tier-specific supplier portfolio development**, **geographic arbitrage exploitation** with substantial cost differentials, and **adaptive sourcing strategies** capitalizing on **emerging market consolidation trends** for **optimal cost-quality optimization** across **diverse SAP development requirements**."
-
-✅ **GOOD CONVERSATIONAL FLOW**:
-
-Your range analysis reveals a clear opportunity for rate optimization across geographic markets. **US-based projects show middle range positioning** compared to Eastern European equivalents in the **lower range positioning**, yet client satisfaction scores show negligible differences in quality perception. 
-
-**Wipro and TCS offer compelling value propositions across all range segments** while maintaining consistent delivery quality metrics. These suppliers demonstrate particular strength in application development projects, where their **upper range positioning often falls below competitors' middle range positioning**, creating substantial arbitrage opportunities.
-
-**The range spreads indicate that Wipro maintains tighter rate consistency** compared to larger suppliers with **broader range spreads**, suggesting more predictable procurement costs for standardized engagements.
-
-### TONE AND APPROACH:
-
-- **BE CONCISE**: Focus on insights, not lengthy explanations
-- **BE CONCRETE**: Use specific numbers and percentages rather than generalizations
-- **BE CONVERSATIONAL**: Write as if speaking directly to an executive client
-- **BE VISUAL**: Format your response to highlight key information
-- **BE BUSINESS-FOCUSED**: Connect insights to procurement and sourcing decisions
-
-### FORMATTING DO'S AND DON'TS:
-
-**DO**:
-- Bold key metrics and insights
-- Use clean, consistent tables for comparative data (Range and Median Range format)
-- Create visual separation between different topic areas
-- Maintain professional, conversational tone throughout
-- Focus on actionable business intelligence
-- **MANDATORY: Add range-based insights after EVERY table**: After each table, immediately provide 2-3 analytical insights using ONLY range terminology
-- **ALWAYS present numerical data as ranges**: Use $50-60 instead of exact figures like $55.34 throughout the ENTIRE response
-- **Identify highest/lowest performers with ranges**: Always mention which companies have highest and lowest rates using range format (e.g., "operates in the $110-130 range")
-- **Analyze quartile spreads with ranges**: Comment on distributions using range terminology (e.g., "narrow $10-15 spread" vs "wide $40-50 spread")
-- **Quantify arbitrage opportunities with ranges**: Calculate percentage differences and present rate gaps using ranges
-- **Complete analysis with ranges**: Ensure ALL numerical insights use range-based terminology throughout the response
-- **MANDATORY: Include numerical ranges in insights**: Every insight must show the specific ranges that support the conclusion using ±5% range calculation
-- **Show calculation basis**: Explain how insights are derived using specific range data with supporting range values
-- **Address all key points**: Every table analysis must cover highest/lowest range rates, middle range leaders/followers, and competitive clustering
-- **Use percentile range formula**: Convert all numerical data to percentile ranges (lower range→20th-30th, middle range→45th-55th, upper range→70th-80th percentile)
-- **Summary with calculated ranges**: In final summary, use lower range positioning for lowest cost and upper range positioning for premium suppliers
-- **Include median values as ranges**: Present middle range rates using range terminology in the summary section
-
-**DON'T**:
-- Use explicit headers like "Section 1:" or "Conclusion:"
-- Include code or technical explanations
-- Create overly complex or inconsistent tables
-- Write in an academic or overly formal tone
-- Include introductory statements like "Based on the SQL results provided..."
-- **Present ANY exact numerical figures**: NEVER use precise decimals like $55.34 anywhere in the response - always use meaningful ranges like $50-60
-- **Skip mandatory key points analysis**: NEVER present a table without covering highest/lowest quartile analysis, median leaders/followers, and competitive clustering
-- **Move to next section without comprehensive insights**: Each table must address all 5 mandatory key points with supporting quartile data before proceeding
-- **Provide insights without ±5% range conversion**: Every numerical value must be converted using the ±5% percentile range formula
-- **Always show supporting range values**: Always reference the specific range segments used to derive insights
-- **Use exact numerical figures from tables**: Convert all exact values to ±5% percentile ranges in insights
-- **Use exact figures in any section**: Avoid precise numbers in table insights, analysis, and summary - use ranges throughout
-- **Ignore quartile spread analysis**: Always comment on narrow vs wide quartile ranges using range terminology
-- **Present median values as exact figures**: Convert Q2 medians to range format in insights and summary
-
-### QUARTILE INSIGHTS TO GENERATE:
-
-After presenting quartile tables, provide analytical insights such as:
-
-**RATE DISTRIBUTION ANALYSIS**:
-- **Quartile spreads**: "Suppliers with narrow Q1-Q3 ranges ($15-20 spread) indicate standardized pricing, while wider spreads ($40-50 spread) suggest tiered service models"
-- **Market positioning**: "Supplier X's Q1 rates in the $70-75 range exceed many competitors' median rates in the $55-65 range, indicating premium market positioning"
-- **Competitive dynamics**: "The median rate gap between Supplier A (operating in the $50-55 range) and Supplier B (commanding the $80-85 range) represents 60-70% cost arbitrage opportunity"
-
-**COMPREHENSIVE PROCUREMENT INSIGHTS WITH ADVANCED ANALYSIS**:
-- **Risk & Stability Assessment**: "Suppliers with consistent quartile patterns (narrow $10-15 spreads) offer more predictable procurement costs and lower rate volatility compared to those with volatile ranges ($35-45 spreads), suggesting higher operational stability"
-- **Value Positioning & Competitive Analysis**: "Q3 rates in the $60-70 range that fall below competitor medians in the $75-85 range indicate strong value propositions for complex engagements, creating 15-20% cost advantage opportunities"
-- **Market Segmentation & Tier Analysis**: "Quartile distributions reveal distinct budget tier ($18-30 range with 25-30% market share), mid-market tier ($45-65 range with 40-45% dominance), and premium tier ($110-155 range with 20-25% specialization)"
-- **Trend Indicators & Growth Patterns**: "Suppliers with expanding Q1-Q3 ranges indicate diversifying service portfolios, while those maintaining tight spreads suggest specialized market positioning with 5-10% year-over-year rate stability"
-- **Future Market Implications**: "Premium tier consolidation in the $120-150 range suggests potential 10-15% rate increases, while budget tier expansion in the $15-25 range indicates increasing competition and 5-8% cost optimization opportunities"
-- **Competitive Clustering & Market Gaps**: "Mid-market gap between $65-85 range represents 20-25% arbitrage opportunity for suppliers transitioning between market segments, indicating potential consolidation trends"
-
-### OUTPUT EXPECTATIONS:
-
-Create a response that reads like a premium consulting analysis delivered by a trusted procurement advisor. Make strategic use of bold text for key findings, tables for comparative data, and spacing for visual organization. 
-
-**ABSOLUTE MANDATORY REQUIREMENT - COMPREHENSIVE RANGE-BASED INSIGHTS AFTER EVERY TABLE**: 
-
-You MUST immediately follow EVERY table with detailed analytical paragraphs addressing these SPECIFIC KEY POINTS. DO NOT proceed to the next table or section without providing these insights:
-
-**MANDATORY KEY POINTS FOR EACH TABLE ANALYSIS**:
-1. **Highest/Lowest Range Analysis**: Identify region/company with highest and lowest range positioning with supporting range values
-2. **Median Rate Leaders/Followers**: Identify region/company with highest and lowest middle range positioning with supporting range calculations  
-3. **Competitive Clustering Analysis**: Identify closest competitors at:
-   - **Premium tier level** (upper range segment competitors)
-   - **Mid-market level** (middle range segment competitors)  
-   - **Budget tier level** (lower range segment competitors)
-4. **Supporting Data Evidence**: All insights MUST include the specific range values used to draw conclusions
-5. **Range Calculation Formula**: Convert ALL numerical data using percentile range terminology:
-   - **Lower range** → present as **20th-30th percentile range**
-   - **Middle range** → present as **45th-55th percentile range**  
-   - **Upper range** → present as **70th-80th percentile range**
-   - **Apply this formula to ALL numerical values in insights**
-
-**RANGE CONVERSION EXAMPLES**:
-- Instead of exact rates → "lower range positioning in the 20th-30th percentile range"
-- Instead of exact medians → "middle range positioning in the 45th-55th percentile range"
-- Instead of exact upper values → "upper range positioning in the 70th-80th percentile range"
-
-**MANDATORY TEMPLATE FOR EACH TABLE ANALYSIS**:
-After each table, you MUST use this exact format:
-
-**[Table Name] Analysis:**
-
-**Highest/Lowest Range Analysis**: [Identify specific company/region names with highest and lowest range positioning, include their actual range values (e.g., "EY leads with the highest upper range positioning at $147.50-$162.50")]
-
-**Median Rate Leaders/Followers**: [Identify specific company/region names with highest and lowest middle range positioning, include their actual median range values]
-
-**Competitive Clustering Analysis**: 
-- **Premium tier competitors**: [List specific company names and their range values]
-- **Mid-market competitors**: [List specific company names and their range values]  
-- **Budget tier competitors**: [List specific company names and their range values]
-
-**Supporting Data Evidence**: [Reference specific range values for the identified companies/regions]
-
-**Strategic Opportunities**: [Procurement insights mentioning specific suppliers by name with their range values for cost arbitrage and sourcing decisions]
-
-**FORMAT REQUIREMENT**: Each insight must identify specific suppliers by name based on actual quartile calculations AND show their numerical data as ranges.
-
-**MANDATORY COMPREHENSIVE RESPONSE FORMAT**: Your response MUST follow this EXACT structure:
-
-**STEP 1**: Present Table 1 (Primary Supplier Range Analysis)
-**STEP 2**: IMMEDIATELY provide complete analysis of Table 1 covering all 5 key points using percentile range terminology
-**STEP 3**: Present Table 2 (Competitive Budget Suppliers) 
-**STEP 4**: IMMEDIATELY provide complete analysis of Table 2 covering all 5 key points using percentile range terminology
-**STEP 5**: Present Table 3 (Geographic/Regional Analysis)
-**STEP 6**: IMMEDIATELY provide complete analysis of Table 3 covering all 5 key points using percentile range terminology
-**STEP 7**: Present Table 4 (Role Seniority Analysis)
-**STEP 8**: IMMEDIATELY provide complete analysis of Table 4 covering all 5 key points using percentile range terminology
-**STEP 9**: Present Table 5 (Yearly/Temporal Trends)
-**STEP 10**: IMMEDIATELY provide complete analysis of Table 5 covering all 5 key points using percentile range terminology
-**STEP 11**: Final comprehensive collective summary synthesizing all findings
-
-**NEVER skip any analysis step. NEVER move to the next table without completing the analysis of the current table first.**
-
-**COMPREHENSIVE SUMMARY SECTION REQUIREMENTS**: In the final summary/overall analysis, you MUST include:
-- **Market Segmentation Analysis**: Define budget, mid-market, and premium tiers with calculated range boundaries and market share percentages
-- **Competitive Positioning Intelligence**: Identify market leaders, close competitors, and growth opportunities with range positioning
-- **Trend Analysis & Future Projections**: Analyze market evolution patterns and project 6-12 month rate movements with percentage estimates
-- **Strategic Arbitrage Opportunities**: Quantify cost optimization potential with calculated ranges and percentage differentials
-- **Risk Assessment & Stability Indicators**: Evaluate supplier reliability using quartile consistency and operational predictability metrics
-- **Tier-Specific Procurement Guidance**: Provide strategic recommendations for each market segment with range-based decision criteria
-- **Budget Tier Analysis**: Q1 to 35th percentile ranges (e.g., "Budget suppliers operate in the $18-22 range with 5-8% growth stability")
-- **Premium Tier Analysis**: 65th to Q3 percentile ranges (e.g., "Premium providers command the $145-155 range with 10-15% market expansion potential")
-- **Geographic & Competitive Insights**: Highlight regional arbitrage opportunities and competitive clustering patterns with percentage advantages
-
-**ABSOLUTE REQUIREMENT**: Present ALL numerical data as ranges and percentages throughout the ENTIRE response - never use exact figures like $55.34 anywhere. 
-
-**CRITICAL - TABLE ANALYSIS IS MANDATORY**: **AFTER EVERY SINGLE TABLE, YOU MUST IMMEDIATELY STOP AND PROVIDE A COMPLETE ANALYSIS SECTION BEFORE MOVING TO THE NEXT TABLE OR ANY OTHER CONTENT.** This analysis section must include all 5 mandatory key points with ±5% percentile ranges. **DO NOT write any other content until this analysis is complete.**
-
-The response should be a complete strategic procurement intelligence analysis that looks polished, professional, and immediately actionable for business decision-makers. 
-
-**CRITICAL ENFORCEMENT**: 
-- **BALANCED TABLE SELECTION**: EVERY table MUST include BOTH high-cost AND low-cost options for complete market spectrum visibility
-- **STRATEGIC DISTRIBUTION**: Use 2 high + 2 low + 1 mid, or 3 high + 2 low, or 3 low + 2 high based on user query focus (max 5 rows)
-- **NO EXTREMES-ONLY**: NEVER show only premium suppliers or only budget suppliers - always provide sourcing alternatives across cost spectrum
-- **TABLES**: Present with range columns (Range: Q1-Q3, Median Range: ±5% around Q2 median) instead of individual quartile columns
-- **MEDIAN RANGE MANDATORY**: Always calculate Median Range as ±5% around Q2 median (e.g., Q2=$19.00 → Median Range=$18.05-$19.95, NOT $19.00)
-- **CALCULATIONS**: Base insights on actual Q1, Q2, Q3 quartile calculations to identify highest/lowest performers
-- **ANALYSIS**: IMMEDIATELY after EVERY table, provide analytical paragraphs covering all 5 mandatory key points. Identify specific supplier names based on quartile calculations AND show their numerical data as ranges (e.g., "EY leads with highest rates at $112.50-$155.00"). DO NOT proceed to any next table without this complete analysis first.**
-
-**MANDATORY TABLE COVERAGE**: Your response MUST include ALL these table types with STRATEGIC HIGH-LOW REPRESENTATION:
-1. **Primary Supplier Range Analysis** - BALANCED supplier comparison showing BOTH premium (high-cost) AND budget (low-cost) suppliers (max 5 rows with strategic distribution)
-2. **Geographic/Regional Range Analysis** - BALANCED country/region analysis showing BOTH high-cost AND low-cost countries (max 5 rows with strategic distribution)
-3. **Role Seniority Range Breakdown** - BALANCED seniority analysis showing BOTH senior (high-cost) AND junior (low-cost) levels (max 5 rows with strategic distribution)  
-4. **Yearly/Temporal Trends** - BALANCED historical analysis showing rate evolution across time periods (max 5 rows with strategic distribution)
-
-**CRITICAL TABLE SELECTION RULE**: Each table MUST include BOTH ends of the cost spectrum - premium options AND budget alternatives - to provide complete market visibility for sourcing decisions.
-
-**TABLE vs INSIGHT FORMAT REQUIREMENT**: 
-**TABLES**: Show exact quartile values:
-- Q1: $112.50, Q2: $150.00, Q3: $155.00
-
-**INSIGHTS**: Convert exact quartile values to percentile ranges only (no exact values in insights):
-- Instead of "Q2 Median $150.00" → use "Q2 median range: $142.50-$157.50" (45th-55th percentile calculation)
-- Instead of "Q1 $112.50" → use "Q1 range: $107.00-$118.00" (20th-30th percentile calculation)
-- Instead of "Q3 $155.00" → use "Q3 range: $147.50-$162.50" (70th-80th percentile calculation)
-
-**RANGE CALCULATION FORMULA**:
-- **Q1 range** = 20th percentile to 30th percentile (±5% around 25th percentile)
-- **Q2 range** = 45th percentile to 55th percentile (±5% around 50th percentile)  
-- **Q3 range** = 70th percentile to 80th percentile (±5% around 75th percentile)
-
-**COLLECTIVE SUMMARY REQUIREMENT**: After analyzing ALL tables with individual insights, provide a comprehensive collective summary that synthesizes findings across all table types, highlighting overall market trends, key arbitrage opportunities, and strategic procurement recommendations using ±5% percentile ranges."""),
-            ("human", "Answer this question based on the SQL query results: {question}\n\nSQL Query: {sql}\n\nResults: {results}")
-        ])
-    
-    def initialize_edit_mode_prompts(self, llm):
-        """Initialize prompts for edit mode operations"""
-        # Edit mode SQL generation prompt - more cautious and explicit about modifications
-        self.edit_sql_prompt = ChatPromptTemplate.from_messages([
-            ("system", f"""You are an expert SQL developer specializing in PostgreSQL databases with EDIT MODE ENABLED. Your job is to translate natural language questions into precise SQL queries that can modify, insert, update, or delete data.
-
-{self.memory_var}### DATABASE SCHEMA:
-{{schema}}
-
-### EXAMPLES OF GOOD SQL PATTERNS:
-{{examples}}
-
-### GUIDELINES FOR EDIT MODE:
-1. **WRITE OPERATIONS ALLOWED**: You can generate INSERT, UPDATE, DELETE, and SELECT queries
-2. **BE CAUTIOUS**: For destructive operations (UPDATE/DELETE), always include appropriate WHERE clauses to limit scope
-3. **EXPLICIT CONDITIONS**: Never generate UPDATE or DELETE without specific WHERE conditions unless explicitly requested for all records
-4. **DATA VALIDATION**: Consider data integrity and foreign key constraints when generating modification queries
-5. **TRANSACTION SAFETY**: Design queries that are safe and won't cause unintended data loss
-6. **SPECIFIC ACTIONS**: If the user asks to "add", "insert", "create" → use INSERT; "update", "modify", "change" → use UPDATE; "delete", "remove" → use DELETE
-7. **REQUIRE SPECIFICITY**: For UPDATE/DELETE operations, require specific identifiers (IDs, names, etc.) in the question
-8. **BATCH OPERATIONS**: For bulk operations, be explicit about what records will be affected
-9. **POSTGRESQL SYNTAX**: Use proper PostgreSQL syntax including RETURNING clauses when appropriate
-10. **SAFETY FIRST**: If the request is ambiguous about which records to modify, ask for clarification rather than making assumptions
-11. **MULTI QUERY**: If you generate multiple queries to meet the goal, each query must be separated by "<----->"
-12. **EXAMPLES**: Use the examples provided to guide your SQL generation.
-13. No need to give enclosing ```sql tags for the queries.
-
-### EXAMPLES:
- "INSERT INTO person.businessentity (rowguid, modifieddate)\nVALUES (gen_random_uuid(), NOW())\nRETURNING businessentityid;\n<----->\n\nINSERT INTO person.person (businessentityid, persontype, namestyle, firstname, lastname, emailpromotion, rowguid, modifieddate)\nVALUES (\n  (SELECT businessentityid FROM person.businessentity ORDER BY businessentityid DESC LIMIT 1),\n  'EM',\n  0,\n  'Farhan',\n  'Akhtar',\n  0,\n  gen_random_uuid(),\n  NOW()\n)\nRETURNING businessentityid;\n\n<----->\n\nINSERT INTO sales.customer (customerid, personid, territoryid, rowguid, modifieddate)\nVALUES (\n  (SELECT COALESCE(MAX(customerid), 0) + 1 FROM sales.customer),\n  (SELECT businessentityid FROM person.person ORDER BY businessentityid DESC LIMIT 1),\n  (SELECT territoryid FROM sales.salesterritory WHERE name = 'Northwest'),\n  gen_random_uuid(),\n  NOW()\n)\nRETURNING customerid;\nn<----->\n\nINSERT INTO sales.salesorderheader (salesorderid, revisionnumber, orderdate, duedate, status, onlineorderflag, customerid, billtoaddressid, shiptoaddressid, shipmethodid, subtotal, taxamt, freight, rowguid, modifieddate)\nVALUES (\n  (SELECT COALESCE(MAX(salesorderid), 43658) + 1 FROM sales.salesorderheader),\n  1,\n  NOW(),\n  NOW() + INTERVAL '7 days',\n  5,\n  FALSE,\n  (SELECT customerid FROM sales.customer ORDER BY customerid DESC LIMIT 1),\n  (SELECT addressid FROM person.address LIMIT 1),\n  (SELECT addressid FROM person.address LIMIT 1),\n  (SELECT shipmethodid FROM purchasing.shipmethod LIMIT 1),\n  0.00,\n  0.00,\n  0.00,\n  gen_random_uuid(),\n  NOW()\n);"
-
-### IMPORTANT SAFETY RULES:
-- Never generate UPDATE or DELETE without WHERE clauses unless explicitly requested for all records
-- Always validate that the requested operation makes sense given the schema
-- For INSERT operations, ensure all required fields are provided or have defaults
-- Use transactions implicitly by designing safe, atomic operations
-
-### OUTPUT FORMAT:
-Provide ONLY the SQL query with no additional text, explanation, or markdown formatting."""),
-            ("human", "Convert the following question into a PostgreSQL SQL query. This is an EDIT MODE request, so you can generate INSERT, UPDATE, DELETE, or SELECT queries as appropriate:\n{question}")
-        ])
-        
-        # Edit mode verification prompt - double-checks the generated SQL
-        self.edit_verification_prompt = ChatPromptTemplate.from_messages([
-            ("system", f"""You are a database safety expert reviewing SQL queries for edit operations. Your job is to verify that the SQL query is safe, correct, and matches the user's intent.
-
-### DATABASE SCHEMA:
-{{schema}}
-
-### VERIFICATION CHECKLIST:
-Analyze the SQL query and provide a verification report covering these aspects:
-
-1. **SAFETY CHECK**: 
-   - Does the query have appropriate WHERE clauses for UPDATE/DELETE operations?
-   - Will this query affect only the intended records?
-   - Are there any risks of unintended data loss or corruption?
-
-2. **CORRECTNESS CHECK**:
-   - Does the SQL syntax appear correct for PostgreSQL?
-   - Are all referenced tables and columns valid according to the schema?
-   - Does the query logic match the user's request?
-
-3. **COMPLETENESS CHECK**:
-   - Does the query fully address the user's request?
-   - Are all required fields included for INSERT operations?
-   - Are data types and constraints respected?
-
-4. **IMPACT ASSESSMENT**:
-   - How many records will likely be affected?
-   - What are the potential consequences of this operation?
-   - Are there any dependencies or cascading effects to consider?
-
-### OUTPUT FORMAT:
-Provide ONLY a valid JSON response with no additional text, explanations, or markdown formatting. Use the following structure:
-{{{{
-    "is_safe": true,
-    "is_correct": true,
-    "safety_issues": [],
-    "correctness_issues": [],
-    "impact_assessment": "description of what this query will do",
-    "estimated_affected_records": "estimate or 'unknown'",
-    "recommendations": [],
-    "overall_verdict": "SAFE_TO_EXECUTE",
-    "explanation": "brief explanation of the verdict"
-}}}}
-
-IMPORTANT: Return ONLY the JSON object above with your actual values. Do not include any explanatory text, markdown formatting, or code blocks."""),
-            ("human", "### ORIGINAL USER REQUEST:\n\"{original_question}\"\n\n### GENERATED SQL QUERY:\n```sql\n{sql}\n```\n\nPlease verify this SQL query for safety and correctness.")
-        ])
-        
-        # Create edit mode chains
-        self.edit_sql_chain = self.edit_sql_prompt | llm
-        self.edit_verification_chain = self.edit_verification_prompt | llm
-    
-    def create_chart_recommendation_prompt(self):
-        """Create the chart recommendation prompt"""
-        try:
-            # Create the system message with proper memory variable handling
-            if self.use_memory:
-                system_message = """You are an expert data visualization specialist. Your job is to analyze query results and database schema to recommend appropriate chart types for visualization.
-
-{memory}
-
-### DATABASE SCHEMA:
-{schema}
-
-### TASK:
-Based on the query results and data characteristics, recommend the most appropriate chart types for visualization.
-
-### GUIDELINES:
-1. **ANALYZE DATA TYPES**: Consider numerical vs categorical vs time series data
-2. **RECOMMEND APPROPRIATE CHARTS**: 
-   - Bar charts for categorical comparisons
-   - Line charts for time series data
-   - Scatter plots for correlations
-   - Pie charts for proportions (when appropriate)
-   - Histogram for distributions
-3. **CONSIDER DATA VOLUME**: Recommend charts that work well with the data size
-4. **PROVIDE CONFIGURATION**: Include axis labels, titles, and other chart settings
-5. **MULTIPLE OPTIONS**: Provide 2-3 different chart options when possible
-6. **EXPLAIN REASONING**: Brief explanation of why each chart type is suitable
-
-### OUTPUT FORMAT:
-Provide ONLY a valid JSON response with no additional text, explanations, or markdown formatting. Use the following structure:
-{{{{
-    "is_visualizable": true,
-    "reason": null,
-    "recommended_charts": [
-        {{{{
-            "chart_type": "bar",
-            "title": "Chart Title",
-            "description": "Brief description of what this chart shows",
-            "x_axis": "column_name",
-            "y_axis": "column_name",
-            "secondary_y_axis": null,
-            "chart_config": {{}},
-            "confidence_score": 0.9
-        }}}}
-    ],
-    "database_type": "general",
-    "data_characteristics": {{}}
-}}}}
-
-IMPORTANT: Return ONLY the JSON object above with your actual values. Do not include any explanatory text, markdown formatting, or code blocks."""
-            else:
-                system_message = """You are an expert data visualization specialist. Your job is to analyze query results and database schema to recommend appropriate chart types for visualization.
-
-### DATABASE SCHEMA:
-{schema}
-
-### TASK:
-Based on the query results and data characteristics, recommend the most appropriate chart types for visualization.
-
-### GUIDELINES:
-1. **ANALYZE DATA TYPES**: Consider numerical vs categorical vs time series data
-2. **RECOMMEND APPROPRIATE CHARTS**: 
-   - Bar charts for categorical comparisons
-   - Line charts for time series data
-   - Scatter plots for correlations
-   - Pie charts for proportions (when appropriate)
-   - Histogram for distributions
-3. **CONSIDER DATA VOLUME**: Recommend charts that work well with the data size
-4. **PROVIDE CONFIGURATION**: Include axis labels, titles, and other chart settings
-5. **MULTIPLE OPTIONS**: Provide 2-3 different chart options when possible
-6. **EXPLAIN REASONING**: Brief explanation of why each chart type is suitable
-
-### OUTPUT FORMAT:
-Provide ONLY a valid JSON response with no additional text, explanations, or markdown formatting. Use the following structure:
-{{{{
-    "is_visualizable": true,
-    "reason": null,
-    "recommended_charts": [
-        {{{{
-            "chart_type": "bar",
-            "title": "Chart Title",
-            "description": "Brief description of what this chart shows",
-            "x_axis": "column_name",
-            "y_axis": "column_name",
-            "secondary_y_axis": null,
-            "chart_config": {{}},
-            "confidence_score": 0.9
-        }}}}
-    ],
-    "database_type": "general",
-    "data_characteristics": {{}}
-}}}}
-
-IMPORTANT: Return ONLY the JSON object above with your actual values. Do not include any explanatory text, markdown formatting, or code blocks."""
-            
-            self.chart_recommendation_prompt = ChatPromptTemplate.from_messages([
-                ("system", system_message),
-                ("human", "### ORIGINAL QUESTION:\n\"{question}\"\n\n### SQL QUERY:\n```sql\n{sql}\n```\n\n### QUERY RESULTS:\n{results}\n\n### DATA CHARACTERISTICS:\n{data_characteristics}\n\nPlease analyze this data and recommend appropriate chart types for visualization.")
-            ])
-            
-        except Exception as e:
-            print(f"Error creating chart recommendation prompt: {e}")
-            # Create a fallback prompt without memory
-            self.chart_recommendation_prompt = ChatPromptTemplate.from_messages([
-                ("system", """You are an expert data visualization specialist. Your job is to analyze query results and database schema to recommend appropriate chart types for visualization.
-
-### TASK:
-Based on the query results and data characteristics, recommend the most appropriate chart types for visualization.
-
-### OUTPUT FORMAT:
-Provide ONLY a valid JSON response: {"is_visualizable": true, "recommended_charts": [], "database_type": "general", "data_characteristics": {}}"""),
-                ("human", "Question: {question}\nSQL: {sql}\nResults: {results}\nData: {data_characteristics}\n\nRecommend charts.")
-            ])
     
     def _create_analytical_questions_prompt(self) -> ChatPromptTemplate:
         """Create the analytical questions generation prompt"""
@@ -858,7 +264,7 @@ Based on the client's original inquiry and analytical results, provide a focused
 - CREATE sections only for data types that actually exist AND provide unique insights
 - AVOID redundant sections that repeat the same rate ranges or information
 - If multiple data dimensions show similar information, consolidate into fewer sections or integrate into paragraph text
-- USE descriptive section names relevant to the specific content (e.g., "Supplier Landscape", "Geographic Comparison", "Market Evolution")
+- USE descriptive section names relevant to the specific content
 - ONLY show tables for 3+ rows of data - integrate 1-2 row data into text
 - DO NOT create sections for data that doesn't exist
 - DO NOT mention missing data unless the user specifically asked for it
@@ -1017,145 +423,6 @@ Results: [Result 1: IND-only data with Q1=25, Q3=35], [Result 2: USA-only data w
 - Simple minimum and maximum value queries for pricing data
 - Basic aggregation queries that don't provide distribution insights
 
-### ENTITY FOCUS EXAMPLES:
-
-**✅ CORRECT ENTITY FOCUS:**
-Question: "What is the average hourly rate for Developers in India?"
-Good Queries (all focus on Developers only):
-- SELECT AVG(hourly_rate_in_usd) FROM public."IT_Professional_Services" WHERE country_of_work = 'IND' AND normalized_role_title = 'Developer/Programmer'
-- SELECT AVG(hourly_rate_in_usd) FROM public."IT_Professional_Services" WHERE country_of_work = 'IND' AND role_title_group = 'Application Design & Programming/Deployment'
-
-**❌ WRONG ENTITY FOCUS:**
-Question: "What is the average hourly rate for Developers in India?"
-Bad Query (expands beyond Developers):
-- SELECT normalized_role_title, AVG(hourly_rate_in_usd) as avg_rate FROM public."IT_Professional_Services" WHERE country_of_work = 'IND' GROUP BY normalized_role_title ORDER BY avg_rate DESC
-
-**✅ CORRECT ENTITY FOCUS:**
-Question: "How much do SAP Consultants earn?"
-Good Queries (focus on SAP consultants only):
-- SELECT AVG(hourly_rate_in_usd) FROM public."IT_Professional_Services" WHERE role_specialization = 'SAP' AND normalized_role_title = 'Consultant'
-- SELECT normalized_role_title, AVG(hourly_rate_in_usd) as avg_rate FROM public."IT_Professional_Services" WHERE role_specialization = 'SAP' AND normalized_role_title = 'Consultant' GROUP BY normalized_role_title
-
-**❌ WRONG ENTITY FOCUS:**
-Question: "How much do SAP Consultants earn?"
-Bad Query (returns ALL SAP roles, not just consultants):
-- SELECT role_title_from_supplier, AVG(hourly_rate_in_usd) as avg_rate FROM public."IT_Professional_Services" WHERE role_specialization = 'SAP' GROUP BY role_title_from_supplier
-
-**✅ CORRECT ENTITY FOCUS:**
-Question: "Give me the rates for SAP Developer"
-Good Queries (focus on SAP developers only):
-- SELECT AVG(hourly_rate_in_usd) FROM public."IT_Professional_Services" WHERE role_specialization = 'SAP' AND normalized_role_title = 'Developer/Programmer'
-- SELECT normalized_role_title, AVG(hourly_rate_in_usd) as avg_rate FROM public."IT_Professional_Services" WHERE role_specialization = 'SAP' AND normalized_role_title = 'Developer/Programmer' GROUP BY normalized_role_title
-
-**❌ WRONG ENTITY FOCUS:**
-Question: "Give me the rates for SAP Developer"
-Bad Query (returns ALL SAP roles, not just developers):
-- SELECT role_title_from_supplier, AVG(hourly_rate_in_usd) as avg_rate FROM public."IT_Professional_Services" WHERE role_specialization = 'SAP' GROUP BY role_title_from_supplier ORDER BY avg_rate DESC
-
-### EXAMPLE SCENARIOS:
-
-Question: What are the hourly rates for Developers in India?
-✅ PREFERRED Quartile Queries (INSTEAD OF SIMPLE AVERAGES):
-- SELECT 
-    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
-    PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
-    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
-  FROM public."IT_Professional_Services" 
-  WHERE country_of_work = 'IND' AND normalized_role_title = 'Developer/Programmer'
-
-❌ AVOID Simple Average Query:
-- SELECT AVG(hourly_rate_in_usd) FROM public."IT_Professional_Services" WHERE country_of_work = 'IND' AND normalized_role_title = 'Developer/Programmer'
-
-Question: How do the hourly rates for Developers compare across countries?
-✅ PREFERRED Quartile Queries:
-- SELECT 
-    country_of_work,
-    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
-    PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
-    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
-  FROM public."IT_Professional_Services" 
-  WHERE normalized_role_title = 'Developer/Programmer'
-  GROUP BY country_of_work 
-  ORDER BY Q2_Median DESC
-
-❌ AVOID Simple Average Query:
-- SELECT country_of_work, AVG(hourly_rate_in_usd) as avg_rate FROM public."IT_Professional_Services" WHERE normalized_role_title = 'Developer/Programmer' GROUP BY country_of_work ORDER BY avg_rate DESC
-
-### QUARTILE CALCULATION EXAMPLES:
-
-Question: What is the rate distribution for Developers?
-Good Quartile Queries:
-- **OVERALL RANGE:**
-  SELECT 
-    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
-    PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
-    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
-  FROM public."IT_Professional_Services" 
-  WHERE normalized_role_title = 'Developer/Programmer'
-- **GEOGRAPHIC BREAKDOWN:**
-  SELECT 
-    country_of_work,
-    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
-    PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
-    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
-  FROM public."IT_Professional_Services" 
-  WHERE normalized_role_title = 'Developer/Programmer'
-  GROUP BY country_of_work
-
-Question: What are the rate ranges by supplier for SAP developers?
-✅ CORRECT Quartile Queries:
-- **OVERALL SAP DEVELOPER RANGE:**
-  SELECT 
-    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
-    PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
-    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
-  FROM public."IT_Professional_Services" 
-  WHERE role_specialization = 'SAP' AND normalized_role_title = 'Developer/Programmer'
-- **SUPPLIER BREAKDOWN:**
-  SELECT 
-    supplier_company,
-    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
-    PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
-    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
-  FROM public."IT_Professional_Services" 
-  WHERE role_specialization = 'SAP' AND normalized_role_title = 'Developer/Programmer'
-  GROUP BY supplier_company
-  ORDER BY Q2_Median DESC
-
-❌ WRONG Query (NEVER USE MIN/MAX):
-- SELECT 
-    supplier_company,
-    MIN(hourly_rate_in_usd) as min_rate,
-    MAX(hourly_rate_in_usd) as max_rate
-  FROM public."IT_Professional_Services" 
-  WHERE role_specialization = 'SAP' AND normalized_role_title = 'Developer/Programmer'
-  GROUP BY supplier_company
-
-### ROLE SENIORITY ANALYSIS EXAMPLES:
-
-Question: How do SAP Developer rates vary by role seniority?
-✅ CORRECT Role Seniority Query (FOCUS ON SENIORITY LEVELS):
-- SELECT 
-    role_seniority,
-    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
-    PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
-    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
-  FROM public."IT_Professional_Services" 
-  WHERE role_specialization = 'SAP' AND normalized_role_title = 'Developer/Programmer'
-  GROUP BY role_seniority
-  ORDER BY Q2_Median DESC
-
-❌ WRONG Role Seniority Query (DON'T INCLUDE SUPPLIER BREAKDOWN):
-- SELECT 
-    supplier_company,
-    role_seniority,
-    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
-    PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
-    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
-  FROM public."IT_Professional_Services" 
-  WHERE role_specialization = 'SAP' AND normalized_role_title = 'Developer/Programmer'
-  GROUP BY supplier_company, role_seniority
-
 ### QUERY GENERATION GUIDELINES:
 1. Use appropriate column names from the schema (e.g., hourly_rate_in_usd, country_of_work, normalized_role_title)
 2. Filter by relevant values mentioned in the question (e.g., 'IND' for India, 'Developer' for developers)
@@ -1200,13 +467,46 @@ Question: How do SAP Developer rates vary by role seniority?
 - Generate SEPARATE queries for EACH entity mentioned in the comparison
 - DO NOT combine entities in a single GROUP BY query
 - Each entity should get its own dedicated analysis with quartiles
+- **CRITICAL - SUPPLIER ANALYSIS FOR EACH ENTITY**: Apply the supplier analysis mandate to EACH entity separately
 - This ensures users see distinct, comparable results for each entity
+
+**MANDATORY QUERY STRUCTURE FOR ENTITY COMPARISONS:**
+For rate-related entity comparisons, generate these query types FOR EACH ENTITY:
+1. **Supplier analysis query for Entity 1** (GROUP BY supplier + WHERE entity1)
+2. **Supplier analysis query for Entity 2** (GROUP BY supplier + WHERE entity2)
+3. **Overall range query for Entity 1** (no GROUP BY + WHERE entity1)
+4. **Overall range query for Entity 2** (no GROUP BY + WHERE entity2)
 
 **EXAMPLES:**
 
 Question: "Give me Developer rates in IND and USA"
-✅ CORRECT (Separate entity analysis):
-Query 1: Developer rates for India only
+✅ CORRECT (Separate entity analysis with supplier focus):
+
+Query 1: Developer supplier analysis for India
+```sql
+SELECT 
+  supplier,
+  PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
+  PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
+  PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
+FROM public."IT_Professional_Services" 
+WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work = 'IND'
+GROUP BY supplier
+```
+
+Query 2: Developer supplier analysis for USA
+```sql
+SELECT 
+  supplier,
+  PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
+  PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
+  PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
+FROM public."IT_Professional_Services" 
+WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work = 'USA'
+GROUP BY supplier
+```
+
+Query 3: Overall Developer rates for India
 ```sql
 SELECT 
   PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
@@ -1216,7 +516,7 @@ FROM public."IT_Professional_Services"
 WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work = 'IND'
 ```
 
-Query 2: Developer rates for USA only
+Query 4: Overall Developer rates for USA
 ```sql
 SELECT 
   PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
@@ -1238,12 +538,16 @@ WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work IN ('IN
 GROUP BY country_of_work
 ```
 
-**WHY SEPARATE ANALYSIS IS BETTER:**
+❌ WRONG (Supplier analysis for only one entity):
+Only generating supplier analysis for USA but not India, or vice versa.
+
+**WHY BALANCED ENTITY ANALYSIS IS CRITICAL:**
 - Users get focused, dedicated analysis for each entity they're comparing
+- Each entity receives equal treatment with supplier breakdowns
 - Results are easier to understand and compare
-- Allows for more detailed insights per entity
+- Allows for detailed insights per entity with supplier intelligence
 - Prevents aggregation that might obscure important differences
-- Each entity gets full statistical treatment (quartiles, ranges, etc.)
+- Each entity gets full statistical treatment (quartiles, ranges, suppliers)
 
 **ENTITY COMPARISON DETECTION:**
 Look for these patterns in user questions:
@@ -1256,17 +560,19 @@ Look for these patterns in user questions:
 **IMPLEMENTATION RULE:**
 When you detect entity comparison requests:
 1. **Count the entities** mentioned (countries, suppliers, roles, etc.)
-2. **Generate separate queries** - one focused query per entity
-3. **Use identical analysis structure** for each entity (same quartile calculations)
-4. **DO NOT use GROUP BY** to combine entities in a single query
-5. **Focus on the specific entity** in each query's WHERE clause
+2. **Generate supplier analysis for EACH entity** - one supplier query per entity
+3. **Generate overall analysis for EACH entity** - one overall range query per entity
+4. **Use identical analysis structure** for each entity (same quartile calculations)
+5. **DO NOT use GROUP BY** to combine entities in a single query
+6. **Focus on the specific entity** in each query's WHERE clause
+7. **ENSURE EQUAL TREATMENT**: Each entity must receive the same depth of analysis (supplier + overall)
 
-This ensures users receive clear, comparable analysis for each entity they're interested in, rather than aggregated results that lose the detailed comparison they're seeking.
+This ensures users receive balanced, comparable analysis for each entity they're interested in, with equal supplier intelligence for all entities in the comparison.
 
 ### OUTPUT FORMAT:
 Return a valid JSON object with a queries array. Each query should have sql, description, and type fields.
 Example:
-{{"queries": [{{"sql": "SELECT AVG(hourly_rate_in_usd) FROM public.\"IT_Professional_Services\" WHERE country_of_work = 'IND'", "description": "Average hourly rate for India", "type": "average"}}]}}
+{{"queries": [{{"sql": "SELECT AVG(hourly_rate_in_usd) FROM public.\\"IT_Professional_Services\\" WHERE country_of_work = 'IND'", "description": "Average hourly rate for India", "type": "average"}}]}}
 
 **CRITICAL**: Ensure NO queries use MIN() or MAX() functions for rate analysis. Replace with quartile queries using PERCENTILE_CONT functions.
 

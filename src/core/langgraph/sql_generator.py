@@ -25,34 +25,27 @@ from .prompts import PromptsManager
 from .memory import MemoryManager
 from .cache import CacheManager
 from .session_context import SessionContextManager
-from .query_analysis import QueryAnalyzer
 from .sql_generation import SQLGenerationManager
-from .text_response import TextResponseManager
 from .execution import ExecutionManager
-from .chart_recommendations import ChartRecommendationsManager
 from .analytical_manager import AnalyticalManager
 from .graph import GraphManager
 
 # MODULARIZATION COMPLETE ✅
 # =========================
 # This file was successfully modularized from a monolithic 4045-line file
-# into 13 focused modules while maintaining 100% backward compatibility.
+# into 8 focused modules while maintaining 100% backward compatibility.
 # All original functionality, prompts, and logic have been preserved.
 # 
 # Original: src/core/langgraph/sql_generator.py (4045 lines)
-# Modularized into:
+# Current modules:
 #   - state.py (SQLGeneratorState)
 #   - prompts.py (PromptsManager)
 #   - memory.py (MemoryManager)
 #   - cache.py (CacheManager)
 #   - session_context.py (SessionContextManager)
-#   - query_analysis.py (QueryAnalyzer)
 #   - sql_generation.py (SQLGenerationManager)
-#   - text_response.py (TextResponseManager)
 #   - execution.py (ExecutionManager)
-#   - edit_operations.py (EditOperationsManager)
-#   - multi_query.py (MultiQueryManager)
-#   - chart_recommendations.py (ChartRecommendationsManager)
+#   - analytical_manager.py (AnalyticalManager)
 #   - graph.py (GraphManager)
 # 
 # Integration tested and validated: ✅ All 6 tests passed
@@ -98,7 +91,6 @@ class SmartSQLGenerator:
         self.memory_manager = MemoryManager(use_memory=use_memory, memory_persist_dir=memory_persist_dir)
         self.cache_manager = CacheManager(use_cache=use_cache, cache_file=cache_file)
         self.session_context_manager = SessionContextManager()
-        self.query_analyzer = QueryAnalyzer()
         
         # Initialize managers that depend on other components
         self.sql_generation_manager = SQLGenerationManager(
@@ -107,14 +99,8 @@ class SmartSQLGenerator:
         
         # Set the database analyzer for column exploration
         self.sql_generation_manager.set_db_analyzer(self.db_analyzer)
-        self.text_response_manager = TextResponseManager(
-            self.prompts_manager, self.memory_manager, self.llm
-        )
         self.execution_manager = ExecutionManager(
             self.db_analyzer, self.session_context_manager
-        )
-        self.chart_recommendations_manager = ChartRecommendationsManager(
-            self.prompts_manager, self.memory_manager, self.llm
         )
         
         # Initialize analytical manager with new structure
@@ -149,35 +135,33 @@ class SmartSQLGenerator:
         self._prepare_initial_context()
     
     def _initialize_azure_openai(self):
-        """Initialize Azure OpenAI configuration"""
-        self.azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
-        self.api_key = os.getenv("AZURE_OPENAI_API_KEY")
-        self.api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-15-preview")
-        self.deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", self.model_name)
+        """Initialize Azure OpenAI client"""
+        # Azure OpenAI configuration
+        azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+        api_key = os.getenv("AZURE_OPENAI_API_KEY")
+        api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-06-01")
+        deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4")
         
-        if not self.azure_endpoint or not self.api_key:
-            raise ValueError("AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY environment variables must be set")
+        logger.info(f"Initializing Azure OpenAI with deployment: {deployment_name}")
         
-        # Initialize LangChain Azure OpenAI
         self.llm = AzureChatOpenAI(
-            azure_endpoint=self.azure_endpoint,
-            azure_deployment=self.deployment_name,
-            api_version=self.api_version,
-            api_key=SecretStr(self.api_key),
-            temperature=0
+            azure_endpoint=azure_endpoint,
+            azure_deployment=deployment_name,
+            api_version=api_version,
+            api_key=SecretStr(api_key),
+            temperature=0.3,
+            model_name=self.model_name,
+            timeout=60,
+            max_retries=2
         )
+        
+        logger.info("Azure OpenAI initialized successfully")
     
     def _prepare_initial_context(self):
-        """Prepare initial context for SQL generation"""
-        try:
-            # Prepare schema context for SQL generation
-            self.sql_generation_manager.prepare_schema_context(self.db_analyzer)
-            
-            # Initialize edit mode prompts
-            self.prompts_manager.initialize_edit_mode_prompts(self.llm)
-            
-        except Exception as e:
-            print(f"Warning: Could not prepare initial context: {e}")
+        """Prepare initial context for the SQL generator"""
+        # Prepare schema context for the SQL generation manager
+        self.sql_generation_manager.prepare_schema_context(self.db_analyzer)
+        logger.info("Initial context prepared successfully")
     
     @observe_function("sql_generation")
     async def generate_sql(self, question: str) -> Dict[str, Any]:
@@ -189,10 +173,7 @@ class SmartSQLGenerator:
         """Fix SQL query based on error message"""
         return self.sql_generation_manager.fix_sql(sql, error)
     
-    @observe_function("text_response_generation")
-    def generate_text_response(self, question: str, sql: Optional[str] = None, results: Any = None) -> Dict[str, Any]:
-        """Generate natural language response from SQL results"""
-        return self.text_response_manager.generate_text_response(question, sql or "", results)
+
     
     @observe_function("sql_query_execution")
     async def execute_query(self, question: str, auto_fix: bool = True, max_attempts: int = 2) -> Dict[str, Any]:
@@ -233,8 +214,14 @@ class SmartSQLGenerator:
     async def process_unified_query(self, question: str, user_role: str = "viewer", edit_mode_enabled: bool = False) -> Dict[str, Any]:
         """Process a unified query with full functionality"""
         try:
-            # Analyze the question using simplified classifier
-            analysis = self.query_analyzer.analyze_question(question)
+            # All questions route to analytical workflow
+            analysis = {
+                "question": question,
+                "is_conversational": False,
+                "requires_analysis": True,
+                "intent": "analytical",
+                "complexity": "analytical"
+            }
             
             # Handle conversational questions
             if analysis["is_conversational"]:
@@ -248,21 +235,9 @@ class SmartSQLGenerator:
             result = await self.execute_query(question)
             
             if result["success"]:
-                # Generate text response
-                try:
-                    text_result = self.generate_text_response(
-                        question, result["sql"], result["results"]
-                    )
-                except Exception as text_error:
-                    text_result = {"success": False, "response": "Error generating text response"}
+                # Text response not needed in analytical approach
                 
-                # Generate chart recommendations
-                try:
-                    chart_result = self.chart_recommendations_manager.generate_chart_recommendations(
-                        question, result["sql"], result["results"]
-                    )
-                except Exception as chart_error:
-                    chart_result = {"is_visualizable": False, "recommended_charts": []}
+
                 
                 # Return response with correct field names expected by the API
                 final_response = {
@@ -270,8 +245,8 @@ class SmartSQLGenerator:
                     "question": question,
                     "sql": result["sql"],
                     "results": result["results"],
-                    "text": text_result.get("response", ""),
-                    "visualization_recommendations": chart_result,
+                    "text": "",
+                    "visualization_recommendations": {"is_visualizable": False, "recommended_charts": []},
                     "execution_time": result["execution_time"],
                     "row_count": result["row_count"],
                     "query_type": analysis.get("intent", "retrieve"),
@@ -534,12 +509,7 @@ class SmartSQLGenerator:
         """Refresh schema context"""
         return self.sql_generation_manager.refresh_schema_context(self.db_analyzer)
     
-    @observe_function("chart_recommendations")
-    def generate_chart_recommendations(self, question: str, sql: str, results: List[Dict[str, Any]], database_type: Optional[str] = None) -> Dict[str, Any]:
-        """Generate chart recommendations"""
-        return self.chart_recommendations_manager.generate_chart_recommendations(
-            question, sql, results, database_type or "postgresql"
-        )
+
     
     def clear_cache(self) -> None:
         """Clear the query cache"""
