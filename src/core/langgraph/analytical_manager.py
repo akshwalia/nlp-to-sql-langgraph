@@ -40,6 +40,118 @@ class AnalyticalManager:
         
         logger.info("AnalyticalManager initialized")
     
+    def _has_meaningful_range(self, result_row: Dict) -> bool:
+        """
+        Check if a result row has a meaningful range (Q3 - Q1 > threshold)
+        
+        Args:
+            result_row: Dictionary containing Q1, Q2, Q3 values
+            
+        Returns:
+            True if the row has a meaningful range, False otherwise
+        """
+        try:
+            # Look for Q1 and Q3 values in common column names
+            q1_value = None
+            q3_value = None
+            
+            # Common patterns for Q1 and Q3 column names
+            for key, value in result_row.items():
+                key_lower = key.lower()
+                if 'q1' in key_lower and isinstance(value, (int, float)):
+                    q1_value = float(value)
+                elif 'q3' in key_lower and isinstance(value, (int, float)):
+                    q3_value = float(value)
+            
+            # If we found both Q1 and Q3, check if range is meaningful
+            if q1_value is not None and q3_value is not None:
+                range_diff = abs(q3_value - q1_value)
+                # Consider a range meaningful if difference is > $2
+                return range_diff > 2.0
+            
+            return True  # If no Q1/Q3 found, include by default
+            
+        except (ValueError, TypeError):
+            return True  # If any error, include by default
+    
+    def _smart_sample_results(self, results: List[Dict], query_description: str = "") -> Dict[str, Any]:
+        """
+        Smart sampling strategy: If >10 rows, take top 5 + bottom 5. If ≤10 rows, take all.
+        Prioritizes rows with meaningful ranges (Q3-Q1 > $2) over single-value ranges.
+        
+        Args:
+            results: List of result dictionaries
+            query_description: Description of the query for context
+            
+        Returns:
+            Dictionary with sampled results and sampling info
+        """
+        if not results:
+            return {
+                "results": [],
+                "sampling_info": "No results available",
+                "total_rows": 0,
+                "sampling_applied": False
+            }
+        
+        total_rows = len(results)
+        
+        if total_rows <= 10:
+            # For small datasets, filter out single-value ranges if we have enough meaningful ranges
+            meaningful_ranges = [r for r in results if self._has_meaningful_range(r)]
+            single_value_ranges = [r for r in results if not self._has_meaningful_range(r)]
+            
+            if len(meaningful_ranges) >= 5:
+                # Use meaningful ranges if we have at least 5
+                filtered_results = meaningful_ranges
+                sampling_info = f"All {len(filtered_results)} rows with meaningful ranges included (filtered {total_rows - len(filtered_results)} single-value ranges)"
+                logger.debug(f"📊 Smart sampling: Filtered to {len(filtered_results)} meaningful ranges for '{query_description[:50]}...'")
+            else:
+                # Use all results if we don't have enough meaningful ranges
+                filtered_results = results
+                sampling_info = f"All {total_rows} rows included (≤10 total)"
+                logger.debug(f"📊 Smart sampling: Returning all {total_rows} rows for '{query_description[:50]}...' (≤10 total)")
+            
+            return {
+                "results": filtered_results,
+                "sampling_info": sampling_info,
+                "total_rows": total_rows,
+                "sampling_applied": len(filtered_results) != total_rows,
+                "meaningful_ranges_count": len(meaningful_ranges),
+                "single_value_ranges_count": len(single_value_ranges)
+            }
+        else:
+            # For large datasets, prioritize meaningful ranges in sampling
+            meaningful_ranges = [r for r in results if self._has_meaningful_range(r)]
+            single_value_ranges = [r for r in results if not self._has_meaningful_range(r)]
+            
+            if len(meaningful_ranges) >= 10:
+                # Use top 5 + bottom 5 from meaningful ranges only
+                sampled_results = meaningful_ranges[:5] + meaningful_ranges[-5:]
+                sampling_info = f"Showing top 5 + bottom 5 meaningful ranges (out of {len(meaningful_ranges)} meaningful ranges, {total_rows} total)"
+                logger.info(f"📊 Smart sampling: Applied meaningful range sampling for '{query_description[:50]}...' ({total_rows} total → 10 meaningful ranges)")
+            elif len(meaningful_ranges) >= 5:
+                # Use all meaningful ranges + fill with single-value ranges if needed
+                remaining_slots = 10 - len(meaningful_ranges)
+                fill_ranges = single_value_ranges[:remaining_slots] if single_value_ranges else []
+                sampled_results = meaningful_ranges + fill_ranges
+                sampling_info = f"Showing {len(meaningful_ranges)} meaningful ranges + {len(fill_ranges)} single-value ranges (out of {total_rows} total)"
+                logger.info(f"📊 Smart sampling: Mixed sampling for '{query_description[:50]}...' ({len(meaningful_ranges)} meaningful + {len(fill_ranges)} single-value)")
+            else:
+                # Fallback to standard top 5 + bottom 5 if not enough meaningful ranges
+                sampled_results = results[:5] + results[-5:]
+                sampling_info = f"Showing top 5 + bottom 5 rows (out of {total_rows} total) - insufficient meaningful ranges available"
+                logger.info(f"📊 Smart sampling: Standard sampling fallback for '{query_description[:50]}...' ({total_rows} total rows → 10 sampled rows)")
+            
+            return {
+                "results": sampled_results,
+                "sampling_info": sampling_info,
+                "total_rows": total_rows,
+                "sampling_applied": True,
+                "meaningful_ranges_count": len(meaningful_ranges),
+                "single_value_ranges_count": len(single_value_ranges)
+            }
+    
     def set_llm(self, llm: BaseLanguageModel):
         """Set the language model for analytical processing"""
         self.llm = llm
@@ -564,6 +676,9 @@ class AnalyticalManager:
             failed_executions = 0
             total_execution_time = 0
             
+            # Collect previously generated questions to avoid redundancy
+            previous_questions = []
+            
             # Execute each analytical question with intelligent planning
             for i, question_data in enumerate(questions):
                 question = question_data.get("question", "") if isinstance(question_data, dict) else str(question_data)
@@ -603,7 +718,8 @@ class AnalyticalManager:
                 print(f"🔍 DEBUG: Generating queries for question {i+1}")
                 
                 # Generate queries using the flexible prompt that can decide on 1 or multiple queries
-                generated_queries = await self._generate_flexible_queries(question, enhanced_schema_context)
+                # Pass previous questions to avoid redundancy
+                generated_queries = await self._generate_flexible_queries(question, enhanced_schema_context, previous_questions)
                 
                 if generated_queries:
                     logger.info(f"📊 Generated {len(generated_queries)} queries for question {i+1}")
@@ -624,6 +740,8 @@ class AnalyticalManager:
                         
                         for result in successful_results:
                                 all_results.extend(result["results"])
+                        
+                        # Note: successful query descriptions will be added below in the unified collection logic
                         
                         analytical_results.append({
                             "question": question,
@@ -659,6 +777,38 @@ class AnalyticalManager:
                         successful_executions += 1
                     else:
                         failed_executions += 1
+                
+                # Add current question to previous questions list for next iterations
+                previous_questions.append(question)
+                
+                # Also add ALL generated query descriptions to avoid SQL-level redundancy
+                query_descriptions_added = 0
+                
+                # From generated_queries (initial SQL queries generated)
+                if generated_queries:
+                    for query_info in generated_queries:
+                        query_description = query_info.get("description", "")
+                        if query_description and query_description not in previous_questions:
+                            previous_questions.append(query_description)
+                            query_descriptions_added += 1
+                            print(f"🔍 DEBUG: Added generated query description: '{query_description[:60]}...'")
+                
+                # From successful_results (executed queries with their descriptions)
+                if query_results:
+                    for result in query_results:
+                        if result.get("success", True):  # Only from successful queries
+                            query_description = result.get("query_description", "")
+                            if query_description and query_description not in previous_questions:
+                                previous_questions.append(query_description)
+                                query_descriptions_added += 1
+                                print(f"🔍 DEBUG: Added executed query description: '{query_description[:60]}...'")
+                
+                # Debug: Print current state of previous questions
+                print(f"🔍 DEBUG: Current previous_questions count: {len(previous_questions)} (added {query_descriptions_added} query descriptions)")
+                for idx, prev_q in enumerate(previous_questions):
+                    print(f"🔍 DEBUG: Previous question {idx+1}: '{prev_q[:80]}...'")
+                
+                logger.info(f"🔍 Added question and {query_descriptions_added} query descriptions to previous questions list. Total previous questions: {len(previous_questions)}")
             
             logger.info(f"🔍 Intelligent analytical workflow completed: {successful_executions} successful, {failed_executions} failed, total time: {total_execution_time:.2f}s")
             print(f"🔍 DEBUG: Intelligent analytical workflow completed: {successful_executions} successful, {failed_executions} failed")
@@ -689,7 +839,7 @@ class AnalyticalManager:
                 "total_execution_time": 0
             }
 
-    async def _generate_flexible_queries(self, question: str, schema_context: str) -> List[Dict]:
+    async def _generate_flexible_queries(self, question: str, schema_context: str, previous_questions: List[str] = None) -> List[Dict]:
         """
         Generate contextual queries using LLM with flexible approach (can decide 1 or multiple queries).
         This prompt is designed to be more open-ended and let the LLM decide the number of queries.
@@ -697,6 +847,7 @@ class AnalyticalManager:
         Args:
             question: The natural language question
             schema_context: The database schema context
+            previous_questions: List of previously generated analytical questions to avoid redundancy
             
         Returns:
             List of generated query dictionaries
@@ -711,10 +862,19 @@ class AnalyticalManager:
             # Get memory context
             memory_context = self.memory_manager.get_memory_context(question) if self.memory_manager.use_memory else ""
             
+            # Format previous questions context to avoid redundancy
+            previous_questions_context = ""
+            if previous_questions:
+                previous_questions_context = "Previous analytical questions generated:\n" + "\n".join([f"- {q}" for q in previous_questions])
+                logger.info(f"Including context of {len(previous_questions)} previous questions to avoid redundancy")
+            else:
+                previous_questions_context = "No previous questions generated yet."
+            
             # Prepare the enhanced prompt
             prompt_values = {
                 "schema": schema_context,
                 "question": question,
+                "previous_questions": previous_questions_context,
                 "memory": memory_context  # Always include memory, even if empty
             }
 
@@ -942,7 +1102,8 @@ class AnalyticalManager:
             logger.info(f"Generating contextual queries for: '{question}'")
             
             # Use the same simplified flexible query generation
-            return await self._generate_flexible_queries(question, schema_context)
+            # No previous questions for single contextual queries
+            return await self._generate_flexible_queries(question, schema_context, [])
             
         except Exception as e:
             logger.error(f"Error generating contextual queries: {e}")
@@ -1312,7 +1473,7 @@ class AnalyticalManager:
             memory_context = self.memory_manager.get_memory_context(user_query) if self.memory_manager.use_memory else ""
             logger.debug(f"Memory context retrieved: {len(memory_context) if memory_context else 0} characters")
             
-            # Prepare results summary for the prompt
+            # Prepare results summary organized by individual queries for clearer LLM understanding
             results_summary = []
             successful_results = 0
             total_rows = 0
@@ -1322,30 +1483,91 @@ class AnalyticalManager:
                     successful_results += 1
                     total_rows += result["row_count"]
                     
-                    # Limit results to first 10 rows for context and ensure JSON serializable
-                    limited_results = result["results"][:10] if result["results"] else []
-                    
                     logger.debug(f"Processing result {i+1}: {result['row_count']} rows, question: {result['question'][:50]}...")
                     print(f"🔍 DEBUG: Processing analytical result {i+1}: {result['row_count']} rows")
                     
-                    results_summary.append({
-                        "question": result["question"],
-                        "sql": result["sql"],
-                        "results": limited_results,
-                        "row_count": result["row_count"],
-                        "execution_time": result["execution_time"]
-                    })
+                    # Check if this result has individual_queries (from flexible query approach)
+                    if "individual_queries" in result and result["individual_queries"]:
+                        # Structure data by individual queries for clearer LLM understanding
+                        for individual_query in result["individual_queries"]:
+                            if individual_query.get("success", True) and individual_query.get("results"):
+                                # Apply smart sampling strategy
+                                query_description = individual_query.get("query_description", result["question"])
+                                sampling_result = self._smart_sample_results(
+                                    individual_query["results"], 
+                                    query_description
+                                )
+                                
+                                results_summary.append({
+                                    "question": query_description,
+                                    "query_type": individual_query.get("query_type", "analysis"),
+                                    "results": sampling_result["results"],
+                                    "row_count": individual_query.get("row_count", sampling_result["total_rows"]),
+                                    "execution_time": individual_query.get("execution_time", 0),
+                                    "sampling_info": sampling_result["sampling_info"],
+                                    "total_rows_available": sampling_result["total_rows"],
+                                    "sampling_applied": sampling_result["sampling_applied"],
+                                    "meaningful_ranges_count": sampling_result.get("meaningful_ranges_count", 0),
+                                    "single_value_ranges_count": sampling_result.get("single_value_ranges_count", 0)
+                                })
+                    else:
+                        # Fallback to original structure for single queries
+                        sampling_result = self._smart_sample_results(
+                            result["results"], 
+                            result["question"]
+                        )
+                        
+                        results_summary.append({
+                            "question": result["question"],
+                            "query_type": "analysis",
+                            "results": sampling_result["results"],
+                            "row_count": result["row_count"],
+                            "execution_time": result["execution_time"],
+                            "sampling_info": sampling_result["sampling_info"],
+                            "total_rows_available": sampling_result["total_rows"],
+                            "sampling_applied": sampling_result["sampling_applied"],
+                            "meaningful_ranges_count": sampling_result.get("meaningful_ranges_count", 0),
+                            "single_value_ranges_count": sampling_result.get("single_value_ranges_count", 0)
+                        })
                 else:
                     logger.warning(f"Skipping failed result {i+1}: {result.get('error', 'Unknown error')}")
                     print(f"🔍 DEBUG: Skipping failed result {i+1}: {result.get('error', 'Unknown error')}")
                     
                     results_summary.append({
                         "question": result["question"],
+                        "query_type": "failed_analysis",
                         "error": result["error"]
                     })
             
             logger.info(f"Results summary prepared: {successful_results} successful results, {total_rows} total rows")
             print(f"🔍 DEBUG: Results summary prepared: {successful_results} successful results, {total_rows} total rows")
+            
+            # Debug: Log the structure of results summary for verification
+            print(f"🔍 DEBUG: Results summary contains {len(results_summary)} individual queries:")
+            for idx, summary in enumerate(results_summary):
+                print(f"🔍 DEBUG: Query {idx+1}: {summary.get('query_type', 'unknown')} - {summary.get('question', 'No question')[:100]}...")
+                if 'results' in summary and summary['results']:
+                    first_result = summary['results'][0]
+                    result_keys = list(first_result.keys()) if isinstance(first_result, dict) else []
+                    sampling_info = summary.get('sampling_info', 'No sampling info')
+                    total_available = summary.get('total_rows_available', 0)
+                    sampling_applied = summary.get('sampling_applied', False)
+                    meaningful_count = summary.get('meaningful_ranges_count', 0)
+                    single_value_count = summary.get('single_value_ranges_count', 0)
+                    
+                    print(f"🔍 DEBUG:   -> Contains {len(summary['results'])} rows with keys: {result_keys}")
+                    print(f"🔍 DEBUG:   -> Sampling: {sampling_info}")
+                    if meaningful_count > 0 or single_value_count > 0:
+                        print(f"🔍 DEBUG:   -> Range analysis: {meaningful_count} meaningful ranges, {single_value_count} single-value ranges")
+                    if sampling_applied:
+                        if meaningful_count >= 10:
+                            print(f"🔍 DEBUG:   -> Applied meaningful range prioritization (filtered out single-value ranges)")
+                        elif total_available > 10:
+                            print(f"🔍 DEBUG:   -> Showing top 5 + bottom 5 out of {total_available} total rows")
+                        else:
+                            print(f"🔍 DEBUG:   -> Filtered to meaningful ranges only ({len(summary['results'])} out of {total_available})")
+                    else:
+                        print(f"🔍 DEBUG:   -> All {total_available} rows included (≤10 total)")
             
             # Convert results to JSON string with custom encoder to handle Decimal objects
             try:
