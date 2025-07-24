@@ -14,7 +14,7 @@ DB_CONFIG = {
 }
 
 FILE_CONFIG = {
-    'data_file_path': 'GR_IT_Professional_Services_till_V219.xlsx',
+    'data_file_path': 'GR_IT_Professional_Services_Spend2025.xlsx',
     'data_sheet_name': 'GR_IT_Professional_Services_til',
     'description_file_path': 'ImportantColumns_PriceBenchmarks.xlsx',  # New field for description file
     'description_sheet_name': 'IT|Professional Services',  # Updated to correct sheet name
@@ -33,6 +33,92 @@ FILE_CONFIG = {
 
 # Create connection string
 connection_string = f"postgresql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}"
+
+def parse_spend_range(spend_str):
+    """
+    Parse spend range strings and return lower and upper limits in millions.
+    
+    Examples:
+    - '$20M - $30M' -> (20.0, 30.0)
+    - '$2B - $3B' -> (2000.0, 3000.0)
+    - '$1B+' -> (1000.0, None)
+    - '<$1M' -> (0.0, 1.0)
+    - '$500M - $1B' -> (500.0, 1000.0)
+    
+    Returns:
+        tuple: (lower_limit_millions, upper_limit_millions) where None means unbounded
+    """
+    if pd.isna(spend_str) or spend_str == '' or str(spend_str).strip() == '':
+        return (None, None)
+    
+    # Clean the string
+    spend_str = str(spend_str).strip()
+    
+    # Helper function to convert value to millions
+    def convert_to_millions(value_str):
+        # Remove $ and any whitespace
+        clean_val = re.sub(r'[\$\s]', '', value_str)
+        
+        if clean_val.endswith('B'):
+            # Billions to millions
+            num = float(clean_val[:-1])
+            return num * 1000.0
+        elif clean_val.endswith('M'):
+            # Already in millions
+            num = float(clean_val[:-1])
+            return num
+        elif clean_val.endswith('K'):
+            # Thousands to millions
+            num = float(clean_val[:-1])
+            return num / 1000.0
+        else:
+            # Assume it's in raw dollars, convert to millions
+            try:
+                num = float(clean_val)
+                return num / 1000000.0
+            except:
+                return None
+    
+    # Pattern 1: Range like "$20M - $30M" or "$2B - $3B"
+    range_pattern = r'\$?([0-9.]+[MBK]?)\s*-\s*\$?([0-9.]+[MBK]?)'
+    range_match = re.search(range_pattern, spend_str, re.IGNORECASE)
+    
+    if range_match:
+        lower_str = range_match.group(1)
+        upper_str = range_match.group(2)
+        lower = convert_to_millions(lower_str)
+        upper = convert_to_millions(upper_str)
+        return (lower, upper)
+    
+    # Pattern 2: Greater than like "$1B+" 
+    greater_pattern = r'\$?([0-9.]+[MBK]?)\+'
+    greater_match = re.search(greater_pattern, spend_str, re.IGNORECASE)
+    
+    if greater_match:
+        lower_str = greater_match.group(1)
+        lower = convert_to_millions(lower_str)
+        return (lower, None)  # No upper bound
+    
+    # Pattern 3: Less than like "<$1M"
+    less_pattern = r'<\s*\$?([0-9.]+[MBK]?)'
+    less_match = re.search(less_pattern, spend_str, re.IGNORECASE)
+    
+    if less_match:
+        upper_str = less_match.group(1)
+        upper = convert_to_millions(upper_str)
+        return (0.0, upper)  # Lower bound is 0
+    
+    # Pattern 4: Single value like "$50M"
+    single_pattern = r'\$?([0-9.]+[MBK]?)'
+    single_match = re.search(single_pattern, spend_str, re.IGNORECASE)
+    
+    if single_match:
+        value_str = single_match.group(1)
+        value = convert_to_millions(value_str)
+        return (value, value)  # Same lower and upper bound
+    
+    # If no pattern matches, return None
+    return (None, None)
 
 def clean_column_name(col_name):
     """Clean column names by removing data type annotations and special characters"""
@@ -98,6 +184,8 @@ def get_postgres_datatype(col_name, sample_data):
         return 'DATE'
     elif '|boolean' in col_name.lower() or '|bool' in col_name.lower():
         return 'BOOLEAN'
+    elif '|spend' in col_name.lower():
+        return 'SPEND'  # Special marker for spend columns
     
     # If no type annotation, infer from sample data
     # Remove NaN values to get a better sample for type detection
@@ -300,7 +388,14 @@ def import_excel_to_postgres(excel_file_path, table_name, sheet_name=0):
     
     for original_col, clean_col in column_mapping.items():
         data_type = get_postgres_datatype(original_col, df[clean_col])
-        column_definitions.append(f'    "{clean_col}" {data_type}')
+        
+        if data_type == 'SPEND':
+            # For spend columns, create 3 columns: original, lower_limit, upper_limit
+            column_definitions.append(f'    "{clean_col}" VARCHAR(255)')  # Original string value
+            column_definitions.append(f'    "{clean_col}_lower_limit" DECIMAL(12,3)')  # Lower limit in millions
+            column_definitions.append(f'    "{clean_col}_upper_limit" DECIMAL(12,3)')  # Upper limit in millions
+        else:
+            column_definitions.append(f'    "{clean_col}" {data_type}')
     
     create_table_sql += ',\n'.join(column_definitions)
     create_table_sql += '\n);'
@@ -320,7 +415,40 @@ def import_excel_to_postgres(excel_file_path, table_name, sheet_name=0):
     for original_col, clean_col in column_mapping.items():
         data_type = get_postgres_datatype(original_col, df[clean_col])
         
-        if 'INTEGER' in data_type:
+        if data_type == 'SPEND':
+            # For spend columns, parse the values and create additional columns
+            print(f"Processing spend column '{clean_col}'...")
+            
+            # Create new columns for lower and upper limits
+            lower_col = f"{clean_col}_lower_limit"
+            upper_col = f"{clean_col}_upper_limit"
+            
+            # Initialize the new columns
+            df[lower_col] = None
+            df[upper_col] = None
+            
+            # Process each value in the spend column
+            for idx, spend_value in df[clean_col].items():
+                lower, upper = parse_spend_range(spend_value)
+                df.at[idx, lower_col] = lower
+                df.at[idx, upper_col] = upper
+            
+            # Fill NaN values in original spend column with empty string
+            df[clean_col] = df[clean_col].fillna('')
+            
+            print(f"Spend column '{clean_col}' processed:")
+            print(f"  - Original values kept in '{clean_col}'")
+            print(f"  - Lower limits stored in '{lower_col}' (millions)")
+            print(f"  - Upper limits stored in '{upper_col}' (millions)")
+            
+            # Show some sample conversions
+            sample_data = df[[clean_col, lower_col, upper_col]].dropna(subset=[clean_col]).head(3)
+            if not sample_data.empty:
+                print(f"  Sample conversions:")
+                for _, row in sample_data.iterrows():
+                    print(f"    '{row[clean_col]}' -> Lower: {row[lower_col]}, Upper: {row[upper_col]}")
+        
+        elif 'INTEGER' in data_type:
             # For integer columns, replace NaN with configured default
             default_val = FILE_CONFIG['default_values']['integer']
             if default_val is not None:
@@ -369,7 +497,21 @@ def import_excel_to_postgres(excel_file_path, table_name, sheet_name=0):
         data_type = get_postgres_datatype(original_col, df[clean_col])
         
         try:
-            if 'INTEGER' in data_type:
+            if data_type == 'SPEND':
+                # For spend columns, validate the additional columns we created
+                lower_col = f"{clean_col}_lower_limit"
+                upper_col = f"{clean_col}_upper_limit"
+                
+                # Ensure spend limit columns are numeric
+                if lower_col in df.columns:
+                    df[lower_col] = df[lower_col].astype('float64')
+                if upper_col in df.columns:
+                    df[upper_col] = df[upper_col].astype('float64')
+                
+                # Ensure original spend column is string
+                df[clean_col] = df[clean_col].astype('str')
+                
+            elif 'INTEGER' in data_type:
                 # Ensure the column can be converted to integers
                 df[clean_col] = df[clean_col].astype('Int64')
             elif 'DECIMAL' in data_type:

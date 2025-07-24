@@ -912,6 +912,47 @@ TCS and HCL offer competitive rates compared to other suppliers."
 - ❌ Geographic tables showing only premium countries without budget alternatives
 - ❌ Supplier tables showing only top-tier vendors without cost-effective options
 
+### SPECIAL HANDLING FOR ENTITY COMPARISON QUERIES:
+
+**WHEN USER ASKED FOR COMPARISON BETWEEN ENTITIES** (e.g., "Developer rates in IND and USA", "Compare rates between suppliers"):
+
+**ENTITY COMPARISON DETECTION**: Look for these patterns in the user's original query:
+- "X in [entity1] and [entity2]" (e.g., "rates in IND and USA")
+- "X vs [entity1] vs [entity2]" or "X versus [entity1] versus [entity2]"
+- "Compare X between [entity1] and [entity2]"
+- "X for [entity1] vs [entity2]"
+- Multiple specific countries, suppliers, or roles mentioned
+
+**HANDLING SEPARATE ENTITY RESULTS**:
+When the user asked for entity comparison and you receive separate query results for each entity:
+
+1. **IDENTIFY ENTITY-SPECIFIC RESULTS**: Look for results that contain data for specific entities (e.g., one result with only IND data, another with only USA data)
+
+2. **CREATE ENTITY COMPARISON TABLE**: If you have separate results for different entities (countries, suppliers, etc.), present them in a clear comparison table:
+
+**✅ CORRECT ENTITY COMPARISON APPROACH:**
+User Question: "Give me Developer rates in IND and USA"
+Results: [Result 1: IND-only data with Q1=25, Q3=35], [Result 2: USA-only data with Q1=70, Q3=110]
+
+**Geographic Comparison of Developer Rates**
+| Country | Rate Range (USD/hr) |
+|---------|---------------------|
+| India   | $25-35              |
+| USA     | $70-110             |
+
+3. **PROVIDE ENTITY-SPECIFIC INSIGHTS**: Give clear insights comparing the entities:
+- "**Developers in India offer rates that are 67-79% lower** than their counterparts in the USA"
+- "**USA developers command rates 2-3x higher** than India-based developers"
+
+4. **AVOID COMBINED RESULTS CONFUSION**: Do NOT try to create an overall combined range when user asked for specific entity comparison. Keep entities separate and clearly comparable.
+
+**ENTITY COMPARISON BENEFITS**:
+- Users get the exact comparison they requested
+- Clear country-by-country (or entity-by-entity) breakdown
+- Easy to understand cost differences
+- Supports strategic sourcing decisions between entities
+- Prevents loss of entity-specific insights through aggregation
+
 ### CRITICAL RULES:
 - **UNIQUE VALUE PER SECTION**: Each section must provide distinct, non-redundant insights. If data dimensions overlap (same rate ranges), consolidate into fewer sections
 - **QUESTION-FOCUSED RESPONSE**: Directly answer what the user asked for without unnecessary sections that repeat information
@@ -1150,6 +1191,77 @@ Question: How do SAP Developer rates vary by role seniority?
 - ❌ **WRONG**: `WHERE normalized_role_title LIKE '%Developer%'` (when exact values are available)
 - ✅ **PREFERRED**: `WHERE country_of_work = 'IND'` (using exact enum value)
 - ❌ **AVOID**: `WHERE country_of_work LIKE '%India%'` (when 'IND' is the exact enum value)
+
+### CRITICAL - ENTITY COMPARISON HANDLING:
+
+**WHEN USER ASKS FOR COMPARISON BETWEEN DIFFERENT ENTITIES** (e.g., "Developer rates in IND and USA", "SAP rates in India vs USA", "Compare rates between countries"):
+
+**✅ CORRECT APPROACH - SEPARATE ENTITY ANALYSIS:**
+- Generate SEPARATE queries for EACH entity mentioned in the comparison
+- DO NOT combine entities in a single GROUP BY query
+- Each entity should get its own dedicated analysis with quartiles
+- This ensures users see distinct, comparable results for each entity
+
+**EXAMPLES:**
+
+Question: "Give me Developer rates in IND and USA"
+✅ CORRECT (Separate entity analysis):
+Query 1: Developer rates for India only
+```sql
+SELECT 
+  PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
+  PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
+  PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
+FROM public."IT_Professional_Services" 
+WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work = 'IND'
+```
+
+Query 2: Developer rates for USA only
+```sql
+SELECT 
+  PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
+  PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
+  PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
+FROM public."IT_Professional_Services" 
+WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work = 'USA'
+```
+
+❌ WRONG (Combined entity analysis):
+```sql
+SELECT 
+  country_of_work,
+  PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
+  PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
+  PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
+FROM public."IT_Professional_Services" 
+WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work IN ('IND', 'USA')
+GROUP BY country_of_work
+```
+
+**WHY SEPARATE ANALYSIS IS BETTER:**
+- Users get focused, dedicated analysis for each entity they're comparing
+- Results are easier to understand and compare
+- Allows for more detailed insights per entity
+- Prevents aggregation that might obscure important differences
+- Each entity gets full statistical treatment (quartiles, ranges, etc.)
+
+**ENTITY COMPARISON DETECTION:**
+Look for these patterns in user questions:
+- "X in [entity1] and [entity2]" (e.g., "rates in IND and USA")
+- "X vs [entity1] vs [entity2]" (e.g., "SAP rates USA vs India")
+- "Compare X between [entity1] and [entity2]"
+- "X for [entity1] vs [entity2]"
+- Multiple countries, suppliers, or roles mentioned explicitly
+
+**IMPLEMENTATION RULE:**
+When you detect entity comparison requests:
+1. **Count the entities** mentioned (countries, suppliers, roles, etc.)
+2. **Generate separate queries** - one focused query per entity
+3. **Use identical analysis structure** for each entity (same quartile calculations)
+4. **DO NOT use GROUP BY** to combine entities in a single query
+5. **Focus on the specific entity** in each query's WHERE clause
+
+This ensures users receive clear, comparable analysis for each entity they're interested in, rather than aggregated results that lose the detailed comparison they're seeking.
 
 ### OUTPUT FORMAT:
 Return a valid JSON object with a queries array. Each query should have sql, description, and type fields.
