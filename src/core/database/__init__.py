@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 # Hardcoded database configuration
 HARDCODED_DB_CONFIG = {
     "db_name": "PBTest",
-    "username": "postgres",  # Will be overridden by env vars if available
-    "password": "Arjit#195",  # Will be overridden by env vars if available
+    "username": "admin123",  # Will be overridden by env vars if available
+    "password": "arjit",  # Will be overridden by env vars if available
     "host": "localhost",     # Will be overridden by env vars if available
     "port": "5432",          # Will be overridden by env vars if available
     "table_name": "IT_Professional_Services",

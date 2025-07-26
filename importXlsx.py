@@ -9,8 +9,8 @@ DB_CONFIG = {
     'host': 'localhost',
     'port': '5432',
     'database': 'PBTest',
-    'user': 'postgres',
-    'password': 'Arjit#195'
+    'user': 'admin123',
+    'password': 'arjit'
 }
 
 FILE_CONFIG = {
