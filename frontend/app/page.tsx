@@ -1,14 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../lib/authContext';
 import Auth from '../components/Auth';
 import LandingPage from '../components/LandingPage';
-
-// Dynamically import the ChatBot component with no SSR to avoid hydration issues
-const ChatBot = dynamic(() => import('../components/ChatBot'), { ssr: false });
 
 type PageState = 'landing' | 'login' | 'register';
 

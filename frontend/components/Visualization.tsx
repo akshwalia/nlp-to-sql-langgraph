@@ -1,18 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, 
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   ScatterChart, Scatter, AreaChart, Area, ComposedChart, 
-  RadialBarChart, RadialBar, Treemap, FunnelChart, Funnel, LabelList,
-  ReferenceLine, ReferenceArea
+  RadialBarChart, RadialBar, Treemap, FunnelChart, Funnel, LabelList
 } from 'recharts';
 import { 
-  BarChart2, LineChart as LineChartIcon, PieChart as PieChartIcon, 
-  ScatterChart as ScatterIcon, AreaChart as AreaIcon, Activity,
-  CircleUser as RadialIcon, Triangle, X, Check, Settings, ChevronDown,
-  Target, Filter, Layers, TrendingUp, Gauge, Zap, Eye, ArrowLeft, Download,
-  Grid3X3, TrendingDown, Plus, Save, Trash2, Star, Lightbulb
+  X, Download,
+  Plus, Save, Trash2, Star, Lightbulb
 } from 'lucide-react';
 import { saveChartToMessage, deleteChartFromMessage, getMessageCharts } from '../lib/api';
 
@@ -20,28 +16,23 @@ import { saveChartToMessage, deleteChartFromMessage, getMessageCharts } from '..
 export type ChartType = 'bar' | 'line' | 'pie' | 'donut' | 'scatter' | 'area' | 'composed' | 'radial' | 'treemap' | 'funnel' | 'gauge' | 'waterfall' | 'heatmap' | 'pyramid' | 'bubble';
 
 interface VisualizationProps {
-  data: any[];
+  data: Record<string, unknown>[];
   onClose: () => void;
   embedded?: boolean;
   messageId?: string; // Add message ID for saving charts
-  visualizationRecommendations?: any; // LLM recommendations
-  savedCharts?: any[]; // Previously saved charts
+  visualizationRecommendations?: {
+    is_visualizable?: boolean;
+    reason?: string;
+    recommended_charts?: RecommendedChart[];
+  }; // LLM recommendations
+  savedCharts?: SavedChart[]; // Previously saved charts
   databaseType?: string; // Database type for context
-  tableSchema?: any; // Table schema information
+  tableSchema?: Record<string, unknown>; // Table schema information
 }
 
 interface ChartDataItem {
   name: string;
   value: number;
-}
-
-interface ChartOption {
-  type: ChartType;
-  label: string;
-  icon: React.ReactNode;
-  recommended?: boolean;
-  compatible: boolean;
-  description?: string;
 }
 
 interface RecommendedChart {
@@ -51,7 +42,7 @@ interface RecommendedChart {
   x_axis: string;
   y_axis: string;
   secondary_y_axis?: string;
-  chart_config?: any;
+  chart_config?: Record<string, unknown>;
   confidence_score: number;
 }
 
@@ -62,13 +53,13 @@ interface SavedChart {
   x_axis: string;
   y_axis: string;
   secondary_y_axis?: string;
-  chart_config?: any;
+  chart_config?: Record<string, unknown>;
   created_by: string;
   created_at: string;
 }
 
 // Helper function to format numbers
-const formatNumber = (value: any): number => {
+const formatNumber = (value: unknown): number => {
   if (typeof value === 'number') return value;
   if (typeof value === 'string') {
     const parsed = parseFloat(value);
@@ -78,7 +69,7 @@ const formatNumber = (value: any): number => {
 };
 
 // Helper function to format tooltip values
-const formatTooltipValue = (value: any, name: string) => {
+const formatTooltipValue = (value: unknown, name: string) => {
   if (typeof value === 'number') {
     return [value.toLocaleString(), name];
   }
@@ -86,17 +77,17 @@ const formatTooltipValue = (value: any, name: string) => {
 };
 
 // Helper function to get display name for a row based on column mapping
-const getDisplayName = (row: any, column: string, chart?: RecommendedChart | SavedChart): string => {
+const getDisplayName = (row: Record<string, unknown>, column: string, chart?: RecommendedChart | SavedChart): string => {
   // Check if we need to combine name fields
   const chartConfig = chart?.chart_config;
   
   // If chart config suggests name combination
-  if (chartConfig?.name_combination) {
+  if (chartConfig?.name_combination && typeof chartConfig.name_combination === 'string') {
     const nameFields = chartConfig.name_combination.split('_');
     if (nameFields.length >= 2) {
       const combinedName = nameFields
         .map(field => row[field] || '')
-        .filter(part => part.trim())
+        .filter(part => typeof part === 'string' && part.trim())
         .join(' ')
         .trim();
       if (combinedName) return combinedName;
@@ -115,7 +106,7 @@ const getDisplayName = (row: any, column: string, chart?: RecommendedChart | Sav
     }
     // Look for name field
     if (row.name) {
-      return row.name;
+      return String(row.name);
     }
   }
   
@@ -204,9 +195,7 @@ export default function Visualization({
   embedded = false, 
   messageId,
   visualizationRecommendations,
-  savedCharts: initialSavedCharts = [],
-  databaseType,
-  tableSchema
+  savedCharts: initialSavedCharts = []
 }: VisualizationProps) {
   // State management
   const [currentView, setCurrentView] = useState<'recommendations' | 'create' | 'saved'>('recommendations');
@@ -222,7 +211,6 @@ export default function Visualization({
   const [yAxis, setYAxis] = useState<string>('');
   const [secondaryYAxis, setSecondaryYAxis] = useState<string>('');
   const [availableColumns, setAvailableColumns] = useState<string[]>([]);
-  const [selectedRecommendationIndex, setSelectedRecommendationIndex] = useState<number | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -231,6 +219,19 @@ export default function Visualization({
     setIsMounted(true);
   }, []);
   
+  const loadSavedCharts = useCallback(async () => {
+    if (!messageId) return;
+    
+    try {
+      const response = await getMessageCharts(messageId);
+      if (response.success) {
+        setSavedCharts(response.saved_charts || []);
+      }
+    } catch (error) {
+      console.error('Error loading saved charts:', error);
+    }
+  }, [messageId]);
+
   // Load chart data and recommendations
   useEffect(() => {
     if (!data || data.length === 0) return;
@@ -253,20 +254,7 @@ export default function Visualization({
     if (messageId) {
       loadSavedCharts();
     }
-  }, [data, visualizationRecommendations, messageId]);
-
-  const loadSavedCharts = async () => {
-    if (!messageId) return;
-    
-    try {
-      const response = await getMessageCharts(messageId);
-      if (response.success) {
-        setSavedCharts(response.saved_charts || []);
-      }
-    } catch (error) {
-      console.error('Error loading saved charts:', error);
-    }
-  };
+  }, [data, visualizationRecommendations, messageId, loadSavedCharts]);
 
   // COLORS for charts - Updated for dark theme with more variety
   const COLORS = [
@@ -275,7 +263,7 @@ export default function Visualization({
   ];
 
   // Prepare data for visualization
-  const prepareChartData = (chart?: RecommendedChart | SavedChart): any[] => {
+  const prepareChartData = (chart?: RecommendedChart | SavedChart): ChartDataItem[] => {
     if (!data || data.length === 0) return [];
 
     // Map recommended columns to actual data columns
@@ -320,7 +308,8 @@ export default function Visualization({
           [xCol]: xValue,  // Use actual column name for axis
           [yCol]: yValue,  // Use actual column name for axis
           z: chartTypeToUse === 'bubble' ? formatNumber(row[secondaryYAxis] || row[yCol] || 10) : 10,
-          fill: COLORS[index % COLORS.length]
+          fill: COLORS[index % COLORS.length],
+          value: yValue
         };
       });
     }
@@ -413,7 +402,7 @@ export default function Visualization({
                 borderRadius: '8px',
                 color: '#F9FAFB'
               }} 
-              formatter={(value: number, name: string, props: any) => [formatNumber(value), props.payload.fullName || name]} 
+              formatter={(value: number, name: string, props: { payload: { fullName?: string } }) => [formatNumber(value), props.payload.fullName || name]} 
             />
             <Legend />
           </PieChart>
@@ -443,7 +432,7 @@ export default function Visualization({
                 borderRadius: '8px',
                 color: '#F9FAFB'
               }} 
-              formatter={(value: number, name: string, props: any) => [formatNumber(value), props.payload.fullName || name]} 
+              formatter={(value: number, name: string, props: { payload: { fullName?: string } }) => [formatNumber(value), props.payload.fullName || name]} 
             />
             <Legend />
           </PieChart>

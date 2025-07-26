@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../lib/authContext';
-import { UserCircle, LogOut, ChevronDown, Settings } from 'lucide-react';
+import { LogOut, ChevronDown, Settings } from 'lucide-react';
 
 export default function UserProfile() {
   const { user, logout, isAuthenticated } = useAuth();

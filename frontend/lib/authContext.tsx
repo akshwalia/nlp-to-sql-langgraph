@@ -122,11 +122,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       router.push('/dashboard');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login error:', err);
       let errorMessage = 'Failed to login';
-      if (err.response?.data?.detail) {
-        errorMessage = err.response.data.detail;
+      if (err && typeof err === 'object' && 'response' in err) {
+        const axiosError = err as { response?: { data?: { detail?: string } } };
+        if (axiosError.response?.data?.detail) {
+          errorMessage = axiosError.response.data.detail;
+        }
       }
       setError(errorMessage);
     } finally {
@@ -140,11 +143,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       await apiRegister({ email, password, name: `${firstName} ${lastName || ''}`.trim() });
       await login(email, password);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Registration error:', err);
       let errorMessage = 'Failed to register';
-      if (err.response?.data?.detail) {
-        errorMessage = err.response.data.detail;
+      if (err && typeof err === 'object' && 'response' in err) {
+        const axiosError = err as { response?: { data?: { detail?: string } } };
+        if (axiosError.response?.data?.detail) {
+          errorMessage = axiosError.response.data.detail;
+        }
       }
       setError(errorMessage);
       setLoading(false);

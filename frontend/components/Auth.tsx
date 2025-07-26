@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../lib/authContext';
-import { useTheme } from '../lib/themeContext';
 import { AlertCircle, EyeOff, Eye, Loader2, ArrowLeft, Sparkles, User, Mail, Lock } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 
@@ -14,7 +13,6 @@ interface AuthProps {
 }
 
 export default function Auth({ initialMode = 'login', onBack }: AuthProps) {
-  const { theme } = useTheme();
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const { login, register, loading, error } = useAuth();

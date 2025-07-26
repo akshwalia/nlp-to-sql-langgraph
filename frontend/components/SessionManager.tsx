@@ -126,7 +126,7 @@ export default function SessionManager({ onSessionCreated, isOpen, onClose }: Se
       // Pass the session ID back
       onSessionCreated(sessionResponse.data.id || sessionResponse.data._id);
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Session creation error:', err);
       let errorMsg = 'Failed to create session';
       
