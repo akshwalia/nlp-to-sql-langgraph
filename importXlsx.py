@@ -15,7 +15,7 @@ DB_CONFIG = {
 
 FILE_CONFIG = {
     'data_file_path': 'GR_IT_Professional_Services_Spend2025.xlsx',
-    'data_sheet_name': 'GR_IT_Professional_Services_til',
+    'data_sheet_name': 'GR_IT_Professional_Services_Spe',
     'description_file_path': 'ImportantColumns_PriceBenchmarks.xlsx',  # New field for description file
     'description_sheet_name': 'IT|Professional Services',  # Updated to correct sheet name
     'table_name': 'IT_Professional_Services',
