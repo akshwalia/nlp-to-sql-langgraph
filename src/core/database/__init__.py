@@ -1,33 +1,36 @@
 """
-Simplified database package for hardcoded PBTest database access
+Simplified database package for SQLite database access (migrated from PostgreSQL)
 """
 import logging
 from .analysis.single_table_analyzer import SingleTableAnalyzer
 
 logger = logging.getLogger(__name__)
 
-# Hardcoded database configuration
+# Hardcoded database configuration for SQLite
 HARDCODED_DB_CONFIG = {
     "db_name": "PBTest",
-    "username": "admin123",  # Will be overridden by env vars if available
-    "password": "arjit",  # Will be overridden by env vars if available
-    "host": "localhost",     # Will be overridden by env vars if available
-    "port": "5432",          # Will be overridden by env vars if available
+    "db_path": "./data/PBTest.db",  # SQLite database file path
     "table_name": "IT_Professional_Services",
-    "schema_name": "public"
+    "schema_name": None,  # SQLite doesn't use schemas like PostgreSQL
+    # Legacy fields for backward compatibility (not used in SQLite)
+    "username": None,  # Not used in SQLite
+    "password": None,  # Not used in SQLite  
+    "host": None,      # Not used in SQLite
+    "port": None,      # Not used in SQLite
 }
 
 
 class SimplifiedDatabaseAnalyzer:
     """
-    Simplified database analyzer for PBTest database and IT_Professional_Services
-    - Hardcoded configuration for single database/table setup
-    - No workspace management or connection pools
+    Simplified database analyzer for SQLite database and IT_Professional_Services
+    - Migrated from PostgreSQL to SQLite
+    - File-based database instead of network connection
+    - No workspace management or connection pools needed for simple use cases
     """
     
     def __init__(self, enum_threshold: int = 50):
         """
-        Initialize with hardcoded PBTest configuration
+        Initialize with SQLite configuration
         
         Args:
             enum_threshold: Maximum number of unique values to treat as enum (default: 50)
@@ -37,26 +40,26 @@ class SimplifiedDatabaseAnalyzer:
         
         load_dotenv()
         
-        # Use environment variables if available, otherwise use hardcoded values
+        # SQLite configuration
         self.db_name = "PBTest"
-        self.username = os.getenv("DB_USERNAME", HARDCODED_DB_CONFIG["username"])
-        self.password = os.getenv("DB_PASSWORD", HARDCODED_DB_CONFIG["password"])
-        self.host = os.getenv("DB_HOST", HARDCODED_DB_CONFIG["host"])
-        self.port = os.getenv("DB_PORT", HARDCODED_DB_CONFIG["port"])
+        self.db_path = os.getenv("DB_PATH", HARDCODED_DB_CONFIG["db_path"])
         self.table_name = "IT_Professional_Services"
-        self.schema_name = "public"
+        self.schema_name = None  # SQLite doesn't use schemas
         self.enum_threshold = enum_threshold
         
-        logger.info(f"Initialized SimplifiedDatabaseAnalyzer for {self.db_name}.{self.schema_name}.{self.table_name}")
+        # Ensure database directory exists
+        import os
+        db_dir = os.path.dirname(self.db_path)
+        if db_dir:
+            os.makedirs(db_dir, exist_ok=True)
+        
+        logger.info(f"Initialized SimplifiedDatabaseAnalyzer for SQLite database: {self.db_path}")
+        logger.info(f"Target table: {self.table_name}")
         logger.info(f"Enum detection threshold: {self.enum_threshold} unique values")
         
-        # Initialize the single table analyzer
+        # Initialize the single table analyzer with SQLite configuration
         self.analyzer = SingleTableAnalyzer(
-            db_name=self.db_name,
-            username=self.username,
-            password=self.password,
-            host=self.host,
-            port=self.port,
+            db_path=self.db_path,
             table_name=self.table_name,
             schema_name=self.schema_name,
             output_file=f"{self.table_name}_analysis.txt",
@@ -69,7 +72,7 @@ class SimplifiedDatabaseAnalyzer:
         self._analyze_table()
     
     def _analyze_table(self):
-        """Analyze the hardcoded table"""
+        """Analyze the table in SQLite database"""
         try:
             result = self.analyzer.analyze_table(save_to_file=True)
             if result.get("success"):
@@ -108,7 +111,7 @@ class SimplifiedDatabaseAnalyzer:
         return self._analyze_table()
     
     def test_connection(self) -> bool:
-        """Test database connection"""
+        """Test SQLite database connection"""
         try:
             # Try to analyze the table to test connection
             result = self.analyzer.analyze_table(save_to_file=False)
@@ -117,7 +120,7 @@ class SimplifiedDatabaseAnalyzer:
             return False
     
     def execute_query(self, query: str):
-        """Execute a query - simplified version"""
+        """Execute a query - SQLite version"""
         try:
             with self.analyzer.engine.connect() as connection:
                 from sqlalchemy import text

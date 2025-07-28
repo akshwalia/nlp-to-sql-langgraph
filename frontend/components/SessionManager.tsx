@@ -11,10 +11,13 @@ interface SessionManagerProps {
 // Define the session request interface
 interface SessionRequest {
   db_name: string;
-  username: string;
-  password: string;
-  host: string;
-  port: string;
+  db_path: string;
+  db_type: 'sqlite';
+  // Legacy PostgreSQL fields (optional)
+  username?: string;
+  password?: string;
+  host?: string;
+  port?: string;
   use_memory: boolean;
   use_cache: boolean;
 }
@@ -23,11 +26,14 @@ export default function SessionManager({ onSessionCreated, isOpen, onClose }: Se
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<SessionRequest>({
-    db_name: 'Adventureworks',
-    username: 'postgres',
-    password: 'anmol',
-    host: 'localhost',
-    port: '5432',
+    db_name: 'PBTest',
+    db_path: './data/PBTest.db',
+    db_type: 'sqlite',
+    // Legacy PostgreSQL fields (for backward compatibility)
+    username: '',
+    password: '',
+    host: '',
+    port: '',
     use_memory: true,
     use_cache: true,
   });
@@ -79,14 +85,16 @@ export default function SessionManager({ onSessionCreated, isOpen, onClose }: Se
       // Step 1: Create a new workspace with the database connection details
       const workspaceRequest = {
         name: `${formData.db_name} Workspace`,
-        description: `Workspace for ${formData.host} database`,
+        description: `Workspace for ${formData.db_type} database: ${formData.db_path || formData.host}`,
         db_connection: {
           db_name: formData.db_name,
-          username: formData.username,
-          password: formData.password,
-          host: formData.host,
-          port: formData.port,
-          db_type: 'postgresql'
+          db_path: formData.db_path,
+          db_type: formData.db_type,
+          // Include legacy fields if they exist
+          ...(formData.username && { username: formData.username }),
+          ...(formData.password && { password: formData.password }),
+          ...(formData.host && { host: formData.host }),
+          ...(formData.port && { port: formData.port })
         }
       };
 
@@ -130,15 +138,19 @@ export default function SessionManager({ onSessionCreated, isOpen, onClose }: Se
       console.error('Session creation error:', err);
       let errorMsg = 'Failed to create session';
       
-      if (err.response) {
-        // The request was made and the server responded with a non-2xx status
-        errorMsg = err.response.data?.detail || `Error: ${err.response.status} ${err.response.statusText}`;
-      } else if (err.request) {
-        // The request was made but no response was received
-        errorMsg = 'No response from server. Please check if the backend is running.';
-      } else {
-        // Something happened in setting up the request
-        errorMsg = err.message || 'Unknown error occurred';
+      if (axios.isAxiosError(err)) {
+        if (err.response) {
+          // The request was made and the server responded with a non-2xx status
+          errorMsg = err.response.data?.detail || `Error: ${err.response.status} ${err.response.statusText}`;
+        } else if (err.request) {
+          // The request was made but no response was received
+          errorMsg = 'No response from server. Please check if the backend is running.';
+        } else {
+          // Something happened in setting up the request
+          errorMsg = err.message || 'Unknown error occurred';
+        }
+      } else if (err instanceof Error) {
+        errorMsg = err.message;
       }
       
       setError(errorMsg);
@@ -181,65 +193,42 @@ export default function SessionManager({ onSessionCreated, isOpen, onClose }: Se
         
         {/* Connection Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Database Name</label>
-              <input
-                type="text"
-                name="db_name"
-                value={formData.db_name}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg mt-1"
-                disabled={isLoading}
-              />
+          {/* Database Type - SQLite Only */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Database Type</label>
+            <div className="w-full px-4 py-2 border border-gray-300 rounded-lg mt-1 bg-gray-50 text-gray-700">
+              SQLite Database
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Host</label>
-              <input
-                type="text"
-                name="host"
-                value={formData.host}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg mt-1"
-                disabled={isLoading}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Port</label>
-              <input
-                type="text"
-                name="port"
-                value={formData.port}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg mt-1"
-                disabled={isLoading}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Username</label>
-              <input
-                type="text"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg mt-1"
-                disabled={isLoading}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Password</label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg mt-1"
-                disabled={isLoading}
-              />
+          </div>
+
+          {/* SQLite Configuration */}
+          <div className="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h3 className="text-sm font-medium text-blue-800">SQLite Configuration</h3>
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Database Name</label>
+                <input
+                  type="text"
+                  name="db_name"
+                  value={formData.db_name}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg mt-1"
+                  disabled={isLoading}
+                  placeholder="PBTest"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Database File Path</label>
+                <input
+                  type="text"
+                  name="db_path"
+                  value={formData.db_path}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg mt-1"
+                  disabled={isLoading}
+                  placeholder="./data/PBTest.db"
+                />
+              </div>
             </div>
           </div>
           

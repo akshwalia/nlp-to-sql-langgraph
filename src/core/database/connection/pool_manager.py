@@ -1,17 +1,102 @@
 import time
 import threading
+import sqlite3
+import os
 from typing import Dict, Optional, Any
-import psycopg2
-from psycopg2 import pool
 from contextlib import contextmanager
+from queue import Queue, Empty
 import logging
 
 logger = logging.getLogger(__name__)
 
 
+class SQLiteConnectionPool:
+    """
+    Simple connection pool for SQLite databases
+    """
+    
+    def __init__(self, db_path: str, max_connections: int = 10):
+        self.db_path = db_path
+        self.max_connections = max_connections
+        self._pool = Queue(maxsize=max_connections)
+        self._created_connections = 0
+        self._lock = threading.RLock()
+        
+        # Ensure database directory exists
+        os.makedirs(os.path.dirname(db_path) if os.path.dirname(db_path) else '.', exist_ok=True)
+    
+    def _create_connection(self):
+        """Create a new SQLite connection"""
+        conn = sqlite3.connect(
+            self.db_path,
+            check_same_thread=False,  # Allow sharing between threads
+            timeout=30.0  # 30 second timeout for database locks
+        )
+        # Enable foreign key constraints
+        conn.execute("PRAGMA foreign_keys = ON")
+        # Set row factory for dict-like access
+        conn.row_factory = sqlite3.Row
+        return conn
+    
+    def get_connection(self):
+        """Get a connection from the pool"""
+        try:
+            # Try to get an existing connection from the pool
+            conn = self._pool.get_nowait()
+            # Test if connection is still valid
+            try:
+                conn.execute("SELECT 1")
+                return conn
+            except sqlite3.Error:
+                # Connection is invalid, create a new one
+                conn.close()
+        except Empty:
+            pass
+        
+        # Create a new connection if pool is empty or connection was invalid
+        with self._lock:
+            if self._created_connections < self.max_connections:
+                self._created_connections += 1
+                return self._create_connection()
+            else:
+                # Wait for a connection to become available
+                try:
+                    return self._pool.get(timeout=10)
+                except Empty:
+                    raise Exception("Connection pool exhausted")
+    
+    def put_connection(self, conn):
+        """Return a connection to the pool"""
+        if conn and not conn.in_transaction:
+            try:
+                self._pool.put_nowait(conn)
+            except:
+                # Pool is full, close the connection
+                conn.close()
+                with self._lock:
+                    self._created_connections -= 1
+        else:
+            # Close invalid or transaction-active connections
+            if conn:
+                conn.close()
+                with self._lock:
+                    self._created_connections -= 1
+    
+    def close_all(self):
+        """Close all connections in the pool"""
+        while True:
+            try:
+                conn = self._pool.get_nowait()
+                conn.close()
+            except Empty:
+                break
+        with self._lock:
+            self._created_connections = 0
+
+
 class ConnectionPoolManager:
     """
-    Core connection pool management for workspaces
+    Core connection pool management for workspaces - SQLite version
     """
     
     def __init__(self, min_connections: int = 1, max_connections: int = 10):
@@ -31,7 +116,7 @@ class ConnectionPoolManager:
         
         Args:
             workspace_id: Unique identifier for the workspace
-            db_config: Database configuration dict with keys: host, port, db_name, username, password
+            db_config: Database configuration dict with keys: db_path (required), others optional
             
         Returns:
             bool: True if pool created successfully, False otherwise
@@ -42,35 +127,24 @@ class ConnectionPoolManager:
                 if workspace_id in self.workspace_pools:
                     self.close_pool(workspace_id)
                 
-                # Create new connection pool
-                connection_params = {
-                    'minconn': self.min_connections,
-                    'maxconn': self.max_connections,
-                    'host': db_config['host'],
-                    'port': db_config['port'],
-                    'database': db_config['db_name'],
-                    'user': db_config['username'],
-                    'password': db_config['password'],
-                    'connect_timeout': 10
-                }
+                # Get database path from config
+                db_path = db_config.get('db_path')
+                if not db_path:
+                    # Fallback: construct path from db_name
+                    db_name = db_config.get('db_name', 'database')
+                    db_path = f"./data/{db_name}.db"
                 
-                # Add SSL configuration for production
-                if db_config.get('sslmode'):
-                    connection_params['sslmode'] = db_config['sslmode']
-                elif db_config['host'] not in ['localhost', '127.0.0.1']:
-                    # Default to requiring SSL for remote connections
-                    connection_params['sslmode'] = 'prefer'
-                
-                connection_pool = psycopg2.pool.ThreadedConnectionPool(**connection_params)
+                # Create connection pool
+                connection_pool = SQLiteConnectionPool(db_path, self.max_connections)
                 
                 # Test the pool by getting a connection
-                test_conn = connection_pool.getconn()
+                test_conn = connection_pool.get_connection()
                 if test_conn:
                     cursor = test_conn.cursor()
                     cursor.execute("SELECT 1")
                     cursor.fetchone()
                     cursor.close()
-                    connection_pool.putconn(test_conn)
+                    connection_pool.put_connection(test_conn)
                 
                 # Store pool info
                 self.workspace_pools[workspace_id] = {
@@ -79,7 +153,7 @@ class ConnectionPoolManager:
                     'db_config': db_config.copy()
                 }
                 
-                logger.info(f"Created connection pool for workspace {workspace_id}")
+                logger.info(f"Created SQLite connection pool for workspace {workspace_id} at {db_path}")
                 return True
                 
             except Exception as e:
@@ -95,7 +169,7 @@ class ConnectionPoolManager:
             workspace_id: Unique identifier for the workspace
             
         Yields:
-            psycopg2.connection: Database connection
+            sqlite3.Connection: Database connection
             
         Raises:
             Exception: If workspace pool doesn't exist or connection fails
@@ -111,14 +185,10 @@ class ConnectionPoolManager:
                 pool_info['last_used'] = time.time()  # Update last used time
             
             # Get connection from pool
-            connection = pool_obj.getconn()
+            connection = pool_obj.get_connection()
             
             if connection is None:
                 raise Exception(f"Failed to get connection from pool for workspace {workspace_id}")
-            
-            # Test connection
-            if connection.closed:
-                raise Exception("Connection is closed")
             
             yield connection
             
@@ -127,14 +197,14 @@ class ConnectionPoolManager:
             if connection:
                 try:
                     # Put connection back to pool even if it's problematic
-                    pool_obj.putconn(connection)
+                    pool_obj.put_connection(connection)
                 except Exception as put_error:
                     logger.error(f"Error putting connection back to pool: {put_error}")
             raise
         finally:
             if connection:
                 try:
-                    pool_obj.putconn(connection)
+                    pool_obj.put_connection(connection)
                 except Exception as put_error:
                     logger.error(f"Error putting connection back to pool: {put_error}")
     
@@ -156,7 +226,7 @@ class ConnectionPoolManager:
             try:
                 pool_info = self.workspace_pools[workspace_id]
                 pool_obj = pool_info['pool']
-                pool_obj.closeall()
+                pool_obj.close_all()
                 del self.workspace_pools[workspace_id]
                 logger.info(f"Closed connection pool for workspace {workspace_id}")
                 return True

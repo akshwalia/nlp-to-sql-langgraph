@@ -98,14 +98,13 @@ def cleanup_db_connections():
     Used for emergency cleanup scenarios
     """
     try:
-        import psycopg2
+        # SQLite connections are simpler to cleanup (auto-close when out of scope)
         # This is a basic cleanup function that doesn't rely on the manager
         # It's mainly for emergency scenarios
         logger.info("Emergency database connection cleanup initiated")
         
-        # Note: This is a basic implementation
-        # In practice, you might want to implement more sophisticated cleanup
-        # based on your specific needs
+        # Note: SQLite cleanup is automatic when connections go out of scope
+        # This function is kept for compatibility but doesn't need psycopg2
         
     except Exception as e:
         logger.error(f"Error in emergency cleanup: {e}") 

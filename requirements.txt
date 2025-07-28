@@ -5,9 +5,10 @@ pydantic>=2.8.0
 python-dotenv>=1.0.0
 
 # Database
-psycopg2-binary>=2.9.9
+# psycopg2-binary>=2.9.9  # Removed - migrated to SQLite
 pymongo>=4.5.0
 motor>=3.3.1
+# SQLite3 is included with Python standard library
 
 # Authentication
 pyjwt>=2.8.0

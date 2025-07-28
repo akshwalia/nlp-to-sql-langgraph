@@ -538,7 +538,7 @@ class SmartSQLGenerator:
     def generate_chart_recommendations(self, question: str, sql: str, results: List[Dict[str, Any]], database_type: Optional[str] = None) -> Dict[str, Any]:
         """Generate chart recommendations"""
         return self.chart_recommendations_manager.generate_chart_recommendations(
-            question, sql, results, database_type or "postgresql"
+            question, sql, results, database_type or "sqlite"
         )
     
     def clear_cache(self) -> None:

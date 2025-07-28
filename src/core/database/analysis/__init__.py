@@ -3,7 +3,7 @@ import pandas as pd
 from sqlalchemy import create_engine, inspect, MetaData, text
 from sqlalchemy.ext.automap import automap_base
 from typing import Dict, List, Any, Tuple, Optional
-import psycopg2
+import sqlite3
 import warnings
 import logging
 
@@ -28,33 +28,45 @@ class DatabaseAnalyzer:
     
     def __init__(
         self,
-        db_name: str,
-        username: str,
-        password: str,
-        host: str = "localhost",
-        port: str = "5432",
+        db_path: str,
+        db_name: str = None,
+        username: str = None,
+        password: str = None,
+        host: str = None,
+        port: str = None,
         connection_manager=None,
         workspace_id: str = None
     ):
         """
-        Initialize the database analyzer
+        Initialize the database analyzer for SQLite
         
         Args:
-            db_name: PostgreSQL database name
-            username: PostgreSQL username
-            password: PostgreSQL password
-            host: PostgreSQL host
-            port: PostgreSQL port
+            db_path: Path to SQLite database file
+            db_name: Legacy parameter (ignored for SQLite compatibility)
+            username: Legacy parameter (ignored for SQLite compatibility)
+            password: Legacy parameter (ignored for SQLite compatibility)
+            host: Legacy parameter (ignored for SQLite compatibility)
+            port: Legacy parameter (ignored for SQLite compatibility)
             connection_manager: Optional connection manager instance
             workspace_id: Workspace ID for connection pooling
         """
-        self.db_name = db_name
+        self.db_path = db_path
+        # Legacy attributes for backward compatibility
+        self.db_name = db_name or os.path.basename(db_path).replace('.db', '')
         self.username = username
         self.password = password
         self.host = host
         self.port = port
-        self.connection_string = f"postgresql://{username}:{password}@{host}:{port}/{db_name}"
-        self.engine = create_engine(self.connection_string)
+        
+        # Ensure database directory exists
+        os.makedirs(os.path.dirname(db_path) if os.path.dirname(db_path) else '.', exist_ok=True)
+        
+        self.connection_string = f"sqlite:///{db_path}"
+        self.engine = create_engine(
+            self.connection_string,
+            pool_pre_ping=True,
+            connect_args={"check_same_thread": False}
+        )
         self.metadata = MetaData()
         self.inspector = inspect(self.engine)
         self.schema_info = None
@@ -79,13 +91,11 @@ class DatabaseAnalyzer:
         if self.connection_manager and self.workspace_id:
             return self.connection_manager.get_connection(self.workspace_id)
         else:
-            # Fallback to direct connection
-            return psycopg2.connect(
-                host=self.host,
-                port=self.port,
-                database=self.db_name,
-                user=self.username,
-                password=self.password
+            # Fallback to direct SQLite connection
+            return sqlite3.connect(
+                self.db_path,
+                check_same_thread=False,
+                timeout=30.0
             )
         
     def analyze_schema(self) -> Dict[str, Any]:
@@ -264,13 +274,16 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
     
     load_dotenv()
-    db_name = os.getenv("DB_NAME", "postgres")
-    username = os.getenv("DB_USERNAME", "postgres")
-    password = os.getenv("DB_PASSWORD", "postgres")
-    host = os.getenv("DB_HOST", "localhost")
-    port = os.getenv("DB_PORT", "5432")
+    db_path = os.getenv("DB_PATH", "./data/PBTest.db")
     
-    analyzer = DatabaseAnalyzer(db_name, username, password, host, port)
+    # Legacy PostgreSQL parameters (for backward compatibility)
+    db_name = os.getenv("DB_NAME", "PBTest")
+    username = os.getenv("DB_USERNAME", "")
+    password = os.getenv("DB_PASSWORD", "")
+    host = os.getenv("DB_HOST", "")
+    port = os.getenv("DB_PORT", "")
+    
+    analyzer = DatabaseAnalyzer(db_path, db_name, username, password, host, port)
     schema = analyzer.analyze_schema()
     
     # Print schema summary
@@ -297,13 +310,9 @@ if __name__ == "__main__":
     
     # Initialize single table analyzer
     single_analyzer = SingleTableAnalyzer(
-        db_name=db_name,
-        username=username,
-        password=password,
-        host=host,
-        port=port,
+        db_path=db_path,
         table_name="IT_Professional_Services",
-        schema_name="public"
+        schema_name=None  # SQLite doesn't use schemas
     )
     
     # Perform analysis

@@ -1,58 +1,62 @@
 LLM CONTEXT:
 ================================================================================
-DATABASE TABLE ANALYSIS: public.IT_Professional_Services
+DATABASE TABLE ANALYSIS: IT_Professional_Services
 ================================================================================
 
 BASIC INFORMATION:
-- Database: PBTest
-- Table: public.IT_Professional_Services
-- Analysis Date: 2025-07-26T18:54:18.218882
+- Database Path: ./data/PBTest.db
+- Table: IT_Professional_Services
+- Analysis Date: 2025-07-28T15:58:39.498886
 
 TABLE STRUCTURE:
 - Total Columns: 26
-- Data Types: ['VARCHAR(255)', 'INTEGER', 'NUMERIC(12, 5)']
+- Data Types: ['TEXT', 'INTEGER', 'REAL']
 
 COLUMNS:
-  - unique_id: VARCHAR(255) (Nullable: True)
-  - client: VARCHAR(255) (Nullable: True)
-  - client_industry: VARCHAR(255) (Nullable: True)
-  - supplier: VARCHAR(255) (Nullable: True)
-  - supplier_market_tier: VARCHAR(255) (Nullable: True)
-  - supplier_market_group: VARCHAR(255) (Nullable: True)
+  - client_industry: TEXT (Nullable: True)
+  - supplier: TEXT (Nullable: True)
+  - supplier_market_tier: TEXT (Nullable: True)
+  - supplier_market_group: TEXT (Nullable: True)
   - year: INTEGER (Nullable: True)
-  - spend_tier: VARCHAR(255) (Nullable: True)
-  - contracted_region: VARCHAR(255) (Nullable: True)
-  - country_of_work: VARCHAR(255) (Nullable: True)
-  - service_type: VARCHAR(255) (Nullable: True)
-  - role_title_group: VARCHAR(255) (Nullable: True)
-  - role_title_from_supplier: VARCHAR(255) (Nullable: True)
-  - normalized_role_title: VARCHAR(255) (Nullable: True)
-  - role_seniority: VARCHAR(255) (Nullable: True)
-  - role_specialization: VARCHAR(255) (Nullable: True)
-  - bill_rate_recurrence: VARCHAR(255) (Nullable: True)
-  - rate_in_local_currency: NUMERIC(12, 5) (Nullable: True)
-  - currency: VARCHAR(255) (Nullable: True)
-  - data_type: VARCHAR(255) (Nullable: True)
-  - number_of_hours: NUMERIC(12, 5) (Nullable: True)
-  - comments: VARCHAR(255) (Nullable: True)
+  - spend_tier: TEXT (Nullable: True)
+  - spend_tier_lower_limit: REAL (Nullable: True)
+  - spend_tier_upper_limit: REAL (Nullable: True)
+  - contracted_region: TEXT (Nullable: True)
+  - country_of_work: TEXT (Nullable: True)
+  - service_type: TEXT (Nullable: True)
+  - role_title_group: TEXT (Nullable: True)
+  - role_title_from_supplier: TEXT (Nullable: True)
+  - normalized_role_title: TEXT (Nullable: True)
+  - role_seniority: TEXT (Nullable: True)
+  - role_specialization: TEXT (Nullable: True)
+  - bill_rate_recurrence: TEXT (Nullable: True)
+  - rate_in_local_currency: REAL (Nullable: True)
+  - currency: TEXT (Nullable: True)
+  - data_type: TEXT (Nullable: True)
+  - number_of_hours: REAL (Nullable: True)
+  - comments: TEXT (Nullable: True)
   - daily_rate_calc: INTEGER (Nullable: True)
-  - bill_rate_hourly: NUMERIC(12, 5) (Nullable: True)
-  - xrate: NUMERIC(12, 5) (Nullable: True)
-  - hourly_rate_in_usd: NUMERIC(12, 5) (Nullable: True)
+  - bill_rate_hourly: REAL (Nullable: True)
+  - xrate: REAL (Nullable: True)
+  - hourly_rate_in_usd: REAL (Nullable: True)
 
 COLUMN STATISTICS:
 
 ENUM-LIKE COLUMNS (Low Cardinality):
-  - client_industry: 29 unique values
-    Values: 'Airline', 'Automotive', 'Banking/Financial Services', 'Biotech', 'Chemicals', 'Consumer Packaged Goods', 'Education', 'Energy', ... (+21 more)
+  - client_industry: 30 unique values
+    Values: 'Airline', 'Automotive', 'Banking/Financial Services', 'Biotech', 'Chemicals', 'Consumer Packaged Goods', 'Education', 'Energy', ... (+22 more)
   - supplier_market_tier: 4 unique values
     Values: 'Tier 1', 'Tier 2', 'Tier 3', 'Tier 4'
   - supplier_market_group: 11 unique values
-    Values: 'Boutique', 'Emerging/Situational', 'Global Major', 'Global Minor', 'Indian Major', 'Indian Minor', 'IT staffing', 'IT Staffing', ... (+3 more)
+    Values: 'Boutique', 'Emerging/Situational', 'Global Major', 'Global Minor', 'IT Staffing', 'IT staffing', 'Indian Major', 'Indian Minor', ... (+3 more)
   - year: 10 unique values
     Values: '2020', '2021', '2022', '2023', '2024', '2025', '2026', '2027', '2028', '2029'
-  - spend_tier: 3 unique values
-    Values: '-', '$1M-$5M', '<$1M'
+  - spend_tier: 13 unique values
+    Values: '$100M - $500M', '$1B - $2B', '$1M - $5M', '$20M - $30M', '$2B - $3B', '$30M - $40M', '$40M - $50M', '$500M – $1B', ... (+5 more)
+  - spend_tier_lower_limit: 12 unique values
+    Values: '0.0', '1.0', '20.0', '30.0', '40.0', '50.0', '60.0', '80.0', ... (+4 more)
+  - spend_tier_upper_limit: 11 unique values
+    Values: '1.0', '5.0', '30.0', '40.0', '50.0', '60.0', '70.0', '90.0', ... (+3 more)
   - contracted_region: 4 unique values
     Values: 'Asia Pacific', 'Central/ South America', 'EMEA', 'North America'
   - service_type: 2 unique values
@@ -68,32 +72,26 @@ ENUM-LIKE COLUMNS (Low Cardinality):
   - data_type: 2 unique values
     Values: 'Negotiated', 'Proposed'
   - comments: 22 unique values
-    Values: '-', 'Automation', 'Cloud Services', 'Cyber Security & Infrastructure', 'Data Science & Analytics', 'Database Operations', 'Development & Operations', 'Engineering Services', ... (+14 more)
+    Values: '-', 'Automation', 'Cloud Services', 'Cyber Security & Infrastructure', 'Data Science & Analytics', 'Database Operations', 'Development & Operations', 'ERP Management', ... (+14 more)
   - daily_rate_calc: 2 unique values
     Values: '1', '8'
-  - xrate: 43 unique values
-    Values: '0.72792', '0.77980', '0.78000', '0.80552', '0.82634', '0.83000', '0.85372', '0.91000', ... (+35 more)
+  - xrate: 45 unique values
+    Values: '0.727924876', '0.748697', '0.7798', '0.78', '0.805517', '0.826337', '0.83', '0.853720529', ... (+37 more)
 
 OTHER COLUMN STATISTICS:
-  - unique_id: 203 distinct values, 0.00% null
-  - client: 62 distinct values, 0.00% null
-  - supplier: 336 distinct values, 0.00% null
-  - country_of_work: 66 distinct values, 0.00% null
-  - role_title_from_supplier: 5851 distinct values, 0.00% null
-  - normalized_role_title: 229 distinct values, 0.00% null
-  - role_specialization: 134 distinct values, 0.00% null
-  - rate_in_local_currency: 8211 distinct values, 0.00% null
-    Range: 7.71000 to 275000.00000, Average: 180.5705740383090427
-  - number_of_hours: 940 distinct values, 93.09% null
-    Range: 0.50000 to 62640.00000, Average: 1454.5022513966369931
-  - bill_rate_hourly: 7779 distinct values, 0.00% null
-    Range: 7.71000 to 275000.00000, Average: 153.8963268639085614
-  - hourly_rate_in_usd: 8923 distinct values, 0.00% null
-    Range: 8.20227 to 275000.00000, Average: 123.9058159708512209
+  - supplier: 337 distinct values, 0.0% null
+  - country_of_work: 66 distinct values, 0.0% null
+  - role_title_from_supplier: 5863 distinct values, 0.0% null
+  - normalized_role_title: 230 distinct values, 0.0% null
+  - role_specialization: 134 distinct values, 0.0% null
+  - rate_in_local_currency: 8217 distinct values, 0.0% null
+  - number_of_hours: 940 distinct values, 93.08% null
+  - bill_rate_hourly: 7788 distinct values, 0.0% null
+  - hourly_rate_in_usd: 8935 distinct values, 0.0% null
 
 DATA ANALYSIS:
-- Total Rows: 73142
-- Table Size: 21 MB
+- Total Rows: 73168
+- Table Size: 3.38 MB (estimated)
 
 CONSTRAINTS AND INDEXES:
 - Primary Key: []
@@ -106,9 +104,9 @@ RELATIONSHIPS:
 - Incoming References: 0
 
 SAMPLE DATA:
-  Row 1: {'unique_id': '100430 - 18212', 'client': 'Zimmer Biomet', 'client_industry': 'Medical devices', 'supplier': 'Deloitte', 'supplier_market_tier': 'Tier 1', 'supplier_market_group': 'Global Major', 'year': 2022, 'spend_tier': '-', 'contracted_region': 'North America', 'country_of_work': 'IND', 'service_type': 'Consulting', 'role_title_group': 'Technical Consulting', 'role_title_from_supplier': 'SAP Associate Consultant', 'normalized_role_title': 'Consultant', 'role_seniority': 'Elementary', 'role_specialization': 'SAP', 'bill_rate_recurrence': 'Hourly', 'rate_in_local_currency': Decimal('29.00000'), 'currency': 'USD', 'data_type': 'Proposed', 'number_of_hours': None, 'comments': 'ERP Management', 'daily_rate_calc': 1, 'bill_rate_hourly': Decimal('29.00000'), 'xrate': Decimal('1.00000'), 'hourly_rate_in_usd': Decimal('29.00000')}
-  Row 2: {'unique_id': '100430 - 18212', 'client': 'Zimmer Biomet', 'client_industry': 'Medical devices', 'supplier': 'Deloitte', 'supplier_market_tier': 'Tier 1', 'supplier_market_group': 'Global Major', 'year': 2022, 'spend_tier': '-', 'contracted_region': 'North America', 'country_of_work': 'IND', 'service_type': 'Consulting', 'role_title_group': 'Technical Consulting', 'role_title_from_supplier': 'SAP Consultant', 'normalized_role_title': 'Consultant', 'role_seniority': 'Experienced', 'role_specialization': 'SAP', 'bill_rate_recurrence': 'Hourly', 'rate_in_local_currency': Decimal('39.00000'), 'currency': 'USD', 'data_type': 'Proposed', 'number_of_hours': None, 'comments': 'ERP Management', 'daily_rate_calc': 1, 'bill_rate_hourly': Decimal('39.00000'), 'xrate': Decimal('1.00000'), 'hourly_rate_in_usd': Decimal('39.00000')}
-  Row 3: {'unique_id': '100430 - 18212', 'client': 'Zimmer Biomet', 'client_industry': 'Medical devices', 'supplier': 'Deloitte', 'supplier_market_tier': 'Tier 1', 'supplier_market_group': 'Global Major', 'year': 2022, 'spend_tier': '-', 'contracted_region': 'North America', 'country_of_work': 'IND', 'service_type': 'Consulting', 'role_title_group': 'Technical Consulting', 'role_title_from_supplier': 'SAP Senior Consultant', 'normalized_role_title': 'Consultant', 'role_seniority': 'Advanced', 'role_specialization': 'SAP', 'bill_rate_recurrence': 'Hourly', 'rate_in_local_currency': Decimal('47.00000'), 'currency': 'USD', 'data_type': 'Proposed', 'number_of_hours': None, 'comments': 'ERP Management', 'daily_rate_calc': 1, 'bill_rate_hourly': Decimal('47.00000'), 'xrate': Decimal('1.00000'), 'hourly_rate_in_usd': Decimal('47.00000')}
+  Row 1: {'client_industry': 'Education', 'supplier': '22nd Century Technologies Inc', 'supplier_market_tier': 'Tier 4', 'supplier_market_group': 'IT staffing', 'year': 2023, 'spend_tier': '-', 'spend_tier_lower_limit': None, 'spend_tier_upper_limit': None, 'contracted_region': 'North America', 'country_of_work': 'USA', 'service_type': 'Consulting', 'role_title_group': 'Application Design & Programming/Deployment', 'role_title_from_supplier': 'Application Developer', 'normalized_role_title': 'Developer/Programmer', 'role_seniority': 'Elementary', 'role_specialization': '-', 'bill_rate_recurrence': 'Hourly', 'rate_in_local_currency': 86.09666667, 'currency': 'USD', 'data_type': 'Proposed', 'number_of_hours': None, 'comments': '-', 'daily_rate_calc': 1, 'bill_rate_hourly': 86.09666667, 'xrate': 1.0, 'hourly_rate_in_usd': 86.09666667}
+  Row 2: {'client_industry': 'Education', 'supplier': '22nd Century Technologies Inc', 'supplier_market_tier': 'Tier 4', 'supplier_market_group': 'IT staffing', 'year': 2023, 'spend_tier': '-', 'spend_tier_lower_limit': None, 'spend_tier_upper_limit': None, 'contracted_region': 'North America', 'country_of_work': 'USA', 'service_type': 'Consulting', 'role_title_group': 'Application Design & Programming/Deployment', 'role_title_from_supplier': 'Application Developer', 'normalized_role_title': 'Developer/Programmer', 'role_seniority': 'Elementary', 'role_specialization': '-', 'bill_rate_recurrence': 'Hourly', 'rate_in_local_currency': 81.79333333, 'currency': 'USD', 'data_type': 'Proposed', 'number_of_hours': None, 'comments': '-', 'daily_rate_calc': 1, 'bill_rate_hourly': 81.79333333, 'xrate': 1.0, 'hourly_rate_in_usd': 81.79333333}
+  Row 3: {'client_industry': 'Education', 'supplier': '22nd Century Technologies Inc', 'supplier_market_tier': 'Tier 4', 'supplier_market_group': 'IT staffing', 'year': 2023, 'spend_tier': '-', 'spend_tier_lower_limit': None, 'spend_tier_upper_limit': None, 'contracted_region': 'North America', 'country_of_work': 'USA', 'service_type': 'Consulting', 'role_title_group': 'Business/Functional Analysis', 'role_title_from_supplier': 'Business Analyst', 'normalized_role_title': 'Business Analyst', 'role_seniority': 'Elementary', 'role_specialization': '-', 'bill_rate_recurrence': 'Hourly', 'rate_in_local_currency': 94.705, 'currency': 'USD', 'data_type': 'Proposed', 'number_of_hours': None, 'comments': '-', 'daily_rate_calc': 1, 'bill_rate_hourly': 94.705, 'xrate': 1.0, 'hourly_rate_in_usd': 94.705}
 
 QUERY GUIDANCE:
 When filtering by enum-like columns, use the exact values listed above.
@@ -119,63 +117,45 @@ DETAILED ANALYSIS (JSON):
 ================================================================================
 {
   "table_name": "IT_Professional_Services",
-  "schema_name": "public",
-  "analysis_timestamp": "2025-07-26T18:54:18.218882",
+  "schema_name": null,
+  "analysis_timestamp": "2025-07-28T15:58:39.498886",
   "database_info": {
-    "database_name": "PBTest",
-    "host": "localhost",
-    "port": "5432",
-    "connection_string": "postgresql://postgres:***@localhost:5432/PBTest"
+    "database_path": "./data/PBTest.db",
+    "connection_string": "sqlite:///./data/PBTest.db"
   },
   "table_structure": {
     "columns": [
       {
-        "name": "unique_id",
-        "type": "VARCHAR(255)",
-        "nullable": true,
-        "default": "None",
-        "autoincrement": false,
-        "comment": null
-      },
-      {
-        "name": "client",
-        "type": "VARCHAR(255)",
-        "nullable": true,
-        "default": "None",
-        "autoincrement": false,
-        "comment": null
-      },
-      {
         "name": "client_industry",
-        "type": "VARCHAR(255)",
+        "type": "TEXT",
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       },
       {
         "name": "supplier",
-        "type": "VARCHAR(255)",
+        "type": "TEXT",
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       },
       {
         "name": "supplier_market_tier",
-        "type": "VARCHAR(255)",
+        "type": "TEXT",
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       },
       {
         "name": "supplier_market_group",
-        "type": "VARCHAR(255)",
+        "type": "TEXT",
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       },
       {
         "name": "year",
@@ -183,127 +163,143 @@ DETAILED ANALYSIS (JSON):
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       },
       {
         "name": "spend_tier",
-        "type": "VARCHAR(255)",
+        "type": "TEXT",
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
+      },
+      {
+        "name": "spend_tier_lower_limit",
+        "type": "REAL",
+        "nullable": true,
+        "default": "None",
+        "autoincrement": false,
+        "comment": ""
+      },
+      {
+        "name": "spend_tier_upper_limit",
+        "type": "REAL",
+        "nullable": true,
+        "default": "None",
+        "autoincrement": false,
+        "comment": ""
       },
       {
         "name": "contracted_region",
-        "type": "VARCHAR(255)",
+        "type": "TEXT",
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       },
       {
         "name": "country_of_work",
-        "type": "VARCHAR(255)",
+        "type": "TEXT",
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       },
       {
         "name": "service_type",
-        "type": "VARCHAR(255)",
+        "type": "TEXT",
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       },
       {
         "name": "role_title_group",
-        "type": "VARCHAR(255)",
+        "type": "TEXT",
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       },
       {
         "name": "role_title_from_supplier",
-        "type": "VARCHAR(255)",
+        "type": "TEXT",
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       },
       {
         "name": "normalized_role_title",
-        "type": "VARCHAR(255)",
+        "type": "TEXT",
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       },
       {
         "name": "role_seniority",
-        "type": "VARCHAR(255)",
+        "type": "TEXT",
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       },
       {
         "name": "role_specialization",
-        "type": "VARCHAR(255)",
+        "type": "TEXT",
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       },
       {
         "name": "bill_rate_recurrence",
-        "type": "VARCHAR(255)",
+        "type": "TEXT",
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       },
       {
         "name": "rate_in_local_currency",
-        "type": "NUMERIC(12, 5)",
+        "type": "REAL",
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       },
       {
         "name": "currency",
-        "type": "VARCHAR(255)",
+        "type": "TEXT",
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       },
       {
         "name": "data_type",
-        "type": "VARCHAR(255)",
+        "type": "TEXT",
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       },
       {
         "name": "number_of_hours",
-        "type": "NUMERIC(12, 5)",
+        "type": "REAL",
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       },
       {
         "name": "comments",
-        "type": "VARCHAR(255)",
+        "type": "TEXT",
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       },
       {
         "name": "daily_rate_calc",
@@ -311,48 +307,48 @@ DETAILED ANALYSIS (JSON):
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       },
       {
         "name": "bill_rate_hourly",
-        "type": "NUMERIC(12, 5)",
+        "type": "REAL",
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       },
       {
         "name": "xrate",
-        "type": "NUMERIC(12, 5)",
+        "type": "REAL",
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       },
       {
         "name": "hourly_rate_in_usd",
-        "type": "NUMERIC(12, 5)",
+        "type": "REAL",
         "nullable": true,
         "default": "None",
         "autoincrement": false,
-        "comment": null
+        "comment": ""
       }
     ],
     "column_count": 26,
     "data_types": {
-      "VARCHAR(255)": 19,
+      "TEXT": 17,
       "INTEGER": 2,
-      "NUMERIC(12, 5)": 5
+      "REAL": 7
     },
     "nullable_columns": [
-      "unique_id",
-      "client",
       "client_industry",
       "supplier",
       "supplier_market_tier",
       "supplier_market_group",
       "year",
       "spend_tier",
+      "spend_tier_lower_limit",
+      "spend_tier_upper_limit",
       "contracted_region",
       "country_of_work",
       "service_type",
@@ -375,71 +371,13 @@ DETAILED ANALYSIS (JSON):
     "non_nullable_columns": []
   },
   "data_analysis": {
-    "row_count": 73142,
-    "table_size": "21 MB",
+    "row_count": 73168,
+    "table_size": "3.38 MB (estimated)",
     "column_statistics": {
-      "unique_id": {
-        "null_count": 0,
-        "null_percentage": "0.00",
-        "distinct_count": 203,
-        "most_common_values": [
-          {
-            "value": "100289 - 52825",
-            "frequency": 8545
-          },
-          {
-            "value": "100018 -6666",
-            "frequency": 6169
-          },
-          {
-            "value": "100377 - 3676",
-            "frequency": 5881
-          },
-          {
-            "value": "100132 - 7604",
-            "frequency": 3504
-          },
-          {
-            "value": "100216 - 39132",
-            "frequency": 3396
-          }
-        ],
-        "is_enum_like": false,
-        "unique_values": []
-      },
-      "client": {
-        "null_count": 0,
-        "null_percentage": "0.00",
-        "distinct_count": 62,
-        "most_common_values": [
-          {
-            "value": "Ameren Services",
-            "frequency": 12240
-          },
-          {
-            "value": "Rite Aid Corp.",
-            "frequency": 8545
-          },
-          {
-            "value": "Macy's Corporation Services, Inc.",
-            "frequency": 7701
-          },
-          {
-            "value": "Corteva",
-            "frequency": 5930
-          },
-          {
-            "value": "F. Hoffman-La Roche, Ltd.",
-            "frequency": 5479
-          }
-        ],
-        "is_enum_like": false,
-        "unique_values": []
-      },
       "client_industry": {
         "null_count": 0,
-        "null_percentage": "0.00",
-        "distinct_count": 29,
+        "null_percentage": 0.0,
+        "distinct_count": 30,
         "most_common_values": [],
         "is_enum_like": true,
         "unique_values": [
@@ -471,17 +409,18 @@ DETAILED ANALYSIS (JSON):
           "Services",
           "Supply Chain Management",
           "Technology",
-          "Telecom"
+          "Telecom",
+          "Tobacco Company"
         ]
       },
       "supplier": {
         "null_count": 0,
-        "null_percentage": "0.00",
-        "distinct_count": 336,
+        "null_percentage": 0.0,
+        "distinct_count": 337,
         "most_common_values": [
           {
             "value": "TCS",
-            "frequency": 6483
+            "frequency": 6486
           },
           {
             "value": "Accenture",
@@ -505,7 +444,7 @@ DETAILED ANALYSIS (JSON):
       },
       "supplier_market_tier": {
         "null_count": 0,
-        "null_percentage": "0.00",
+        "null_percentage": 0.0,
         "distinct_count": 4,
         "most_common_values": [],
         "is_enum_like": true,
@@ -518,7 +457,7 @@ DETAILED ANALYSIS (JSON):
       },
       "supplier_market_group": {
         "null_count": 0,
-        "null_percentage": "0.00",
+        "null_percentage": 0.0,
         "distinct_count": 11,
         "most_common_values": [],
         "is_enum_like": true,
@@ -527,10 +466,10 @@ DETAILED ANALYSIS (JSON):
           "Emerging/Situational",
           "Global Major",
           "Global Minor",
+          "IT Staffing",
+          "IT staffing",
           "Indian Major",
           "Indian Minor",
-          "IT staffing",
-          "IT Staffing",
           "OEM",
           "Staffing",
           "VAR"
@@ -538,7 +477,7 @@ DETAILED ANALYSIS (JSON):
       },
       "year": {
         "null_count": 0,
-        "null_percentage": "0.00",
+        "null_percentage": 0.0,
         "distinct_count": 10,
         "most_common_values": [],
         "is_enum_like": true,
@@ -553,27 +492,74 @@ DETAILED ANALYSIS (JSON):
           "2027",
           "2028",
           "2029"
-        ],
-        "min_value": 2020,
-        "max_value": 2029,
-        "average": "2022.0188947526728829",
-        "standard_deviation": "1.4645372399081967"
+        ]
       },
       "spend_tier": {
         "null_count": 0,
-        "null_percentage": "0.00",
-        "distinct_count": 3,
+        "null_percentage": 0.0,
+        "distinct_count": 13,
         "most_common_values": [],
         "is_enum_like": true,
         "unique_values": [
+          "$100M - $500M",
+          "$1B - $2B",
+          "$1M - $5M",
+          "$20M - $30M",
+          "$2B - $3B",
+          "$30M - $40M",
+          "$40M - $50M",
+          "$500M \u2013 $1B",
+          "$50M - $60M",
+          "$60M - $70M",
+          "$80M - $90M",
           "-",
-          "$1M-$5M",
           "<$1M"
+        ]
+      },
+      "spend_tier_lower_limit": {
+        "null_count": 48257,
+        "null_percentage": 65.95,
+        "distinct_count": 12,
+        "most_common_values": [],
+        "is_enum_like": true,
+        "unique_values": [
+          "0.0",
+          "1.0",
+          "20.0",
+          "30.0",
+          "40.0",
+          "50.0",
+          "60.0",
+          "80.0",
+          "100.0",
+          "500.0",
+          "1000.0",
+          "2000.0"
+        ]
+      },
+      "spend_tier_upper_limit": {
+        "null_count": 48257,
+        "null_percentage": 65.95,
+        "distinct_count": 11,
+        "most_common_values": [],
+        "is_enum_like": true,
+        "unique_values": [
+          "1.0",
+          "5.0",
+          "30.0",
+          "40.0",
+          "50.0",
+          "60.0",
+          "70.0",
+          "90.0",
+          "500.0",
+          "2000.0",
+          "3000.0"
         ]
       },
       "contracted_region": {
         "null_count": 0,
-        "null_percentage": "0.00",
+        "null_percentage": 0.0,
         "distinct_count": 4,
         "most_common_values": [],
         "is_enum_like": true,
@@ -586,20 +572,20 @@ DETAILED ANALYSIS (JSON):
       },
       "country_of_work": {
         "null_count": 0,
-        "null_percentage": "0.00",
+        "null_percentage": 0.0,
         "distinct_count": 66,
         "most_common_values": [
           {
             "value": "USA",
-            "frequency": 44708
+            "frequency": 44709
           },
           {
             "value": "IND",
-            "frequency": 12915
+            "frequency": 12935
           },
           {
             "value": "GBR",
-            "frequency": 4212
+            "frequency": 4217
           },
           {
             "value": "MEX",
@@ -615,7 +601,7 @@ DETAILED ANALYSIS (JSON):
       },
       "service_type": {
         "null_count": 0,
-        "null_percentage": "0.00",
+        "null_percentage": 0.0,
         "distinct_count": 2,
         "most_common_values": [],
         "is_enum_like": true,
@@ -626,7 +612,7 @@ DETAILED ANALYSIS (JSON):
       },
       "role_title_group": {
         "null_count": 0,
-        "null_percentage": "0.00",
+        "null_percentage": 0.0,
         "distinct_count": 13,
         "most_common_values": [],
         "is_enum_like": true,
@@ -648,20 +634,20 @@ DETAILED ANALYSIS (JSON):
       },
       "role_title_from_supplier": {
         "null_count": 0,
-        "null_percentage": "0.00",
-        "distinct_count": 5851,
+        "null_percentage": 0.0,
+        "distinct_count": 5863,
         "most_common_values": [],
         "is_enum_like": false,
         "unique_values": []
       },
       "normalized_role_title": {
         "null_count": 0,
-        "null_percentage": "0.00",
-        "distinct_count": 229,
+        "null_percentage": 0.0,
+        "distinct_count": 230,
         "most_common_values": [
           {
             "value": "Developer/Programmer",
-            "frequency": 10017
+            "frequency": 10021
           },
           {
             "value": "Engineer",
@@ -669,15 +655,15 @@ DETAILED ANALYSIS (JSON):
           },
           {
             "value": "Architect",
-            "frequency": 4226
+            "frequency": 4230
           },
           {
             "value": "Consultant",
-            "frequency": 3644
+            "frequency": 3645
           },
           {
             "value": "Project Manager",
-            "frequency": 2686
+            "frequency": 2688
           }
         ],
         "is_enum_like": false,
@@ -685,7 +671,7 @@ DETAILED ANALYSIS (JSON):
       },
       "role_seniority": {
         "null_count": 0,
-        "null_percentage": "0.00",
+        "null_percentage": 0.0,
         "distinct_count": 5,
         "most_common_values": [],
         "is_enum_like": true,
@@ -699,12 +685,12 @@ DETAILED ANALYSIS (JSON):
       },
       "role_specialization": {
         "null_count": 0,
-        "null_percentage": "0.00",
+        "null_percentage": 0.0,
         "distinct_count": 134,
         "most_common_values": [
           {
             "value": "-",
-            "frequency": 32993
+            "frequency": 33003
           },
           {
             "value": "Security",
@@ -720,7 +706,7 @@ DETAILED ANALYSIS (JSON):
           },
           {
             "value": "Analytics",
-            "frequency": 1862
+            "frequency": 1864
           }
         ],
         "is_enum_like": false,
@@ -728,7 +714,7 @@ DETAILED ANALYSIS (JSON):
       },
       "bill_rate_recurrence": {
         "null_count": 0,
-        "null_percentage": "0.00",
+        "null_percentage": 0.0,
         "distinct_count": 2,
         "most_common_values": [],
         "is_enum_like": true,
@@ -739,19 +725,15 @@ DETAILED ANALYSIS (JSON):
       },
       "rate_in_local_currency": {
         "null_count": 0,
-        "null_percentage": "0.00",
-        "distinct_count": 8211,
+        "null_percentage": 0.0,
+        "distinct_count": 8217,
         "most_common_values": [],
         "is_enum_like": false,
-        "unique_values": [],
-        "min_value": "7.71000",
-        "max_value": "275000.00000",
-        "average": "180.5705740383090427",
-        "standard_deviation": "2346.593921432095"
+        "unique_values": []
       },
       "currency": {
         "null_count": 0,
-        "null_percentage": "0.00",
+        "null_percentage": 0.0,
         "distinct_count": 9,
         "most_common_values": [],
         "is_enum_like": true,
@@ -769,7 +751,7 @@ DETAILED ANALYSIS (JSON):
       },
       "data_type": {
         "null_count": 0,
-        "null_percentage": "0.00",
+        "null_percentage": 0.0,
         "distinct_count": 2,
         "most_common_values": [],
         "is_enum_like": true,
@@ -779,41 +761,37 @@ DETAILED ANALYSIS (JSON):
         ]
       },
       "number_of_hours": {
-        "null_count": 68087,
-        "null_percentage": "93.09",
+        "null_count": 68108,
+        "null_percentage": 93.08,
         "distinct_count": 940,
         "most_common_values": [
           {
-            "value": "270.27027",
+            "value": "270.2702703",
             "frequency": 369
           },
           {
-            "value": "324.32432",
+            "value": "324.3243243",
             "frequency": 256
           },
           {
-            "value": "162.16216",
+            "value": "162.1621622",
             "frequency": 199
           },
           {
-            "value": "2088.00000",
+            "value": "2088.0",
             "frequency": 183
           },
           {
-            "value": "540.54054",
+            "value": "540.5405405",
             "frequency": 181
           }
         ],
         "is_enum_like": false,
-        "unique_values": [],
-        "min_value": "0.50000",
-        "max_value": "62640.00000",
-        "average": "1454.5022513966369931",
-        "standard_deviation": "3706.824572824015"
+        "unique_values": []
       },
       "comments": {
         "null_count": 0,
-        "null_percentage": "0.00",
+        "null_percentage": 0.0,
         "distinct_count": 22,
         "most_common_values": [],
         "is_enum_like": true,
@@ -825,10 +803,10 @@ DETAILED ANALYSIS (JSON):
           "Data Science & Analytics",
           "Database Operations",
           "Development & Operations",
-          "Engineering Services",
           "ERP Management",
-          "Interface Design",
+          "Engineering Services",
           "IT Strategy & Management Consulting",
+          "Interface Design",
           "Language Specific Developement",
           "Language Specific Development",
           "Networking",
@@ -844,164 +822,92 @@ DETAILED ANALYSIS (JSON):
       },
       "daily_rate_calc": {
         "null_count": 0,
-        "null_percentage": "0.00",
+        "null_percentage": 0.0,
         "distinct_count": 2,
         "most_common_values": [],
         "is_enum_like": true,
         "unique_values": [
           "1",
           "8"
-        ],
-        "min_value": 1,
-        "max_value": 8,
-        "average": "1.2695031582401356",
-        "standard_deviation": "1.3468166004652211"
+        ]
       },
       "bill_rate_hourly": {
         "null_count": 0,
-        "null_percentage": "0.00",
-        "distinct_count": 7779,
+        "null_percentage": 0.0,
+        "distinct_count": 7788,
         "most_common_values": [],
         "is_enum_like": false,
-        "unique_values": [],
-        "min_value": "7.71000",
-        "max_value": "275000.00000",
-        "average": "153.8963268639085614",
-        "standard_deviation": "2323.552375169648"
+        "unique_values": []
       },
       "xrate": {
         "null_count": 0,
-        "null_percentage": "0.00",
-        "distinct_count": 43,
+        "null_percentage": 0.0,
+        "distinct_count": 45,
         "most_common_values": [],
         "is_enum_like": true,
         "unique_values": [
-          "0.72792",
-          "0.77980",
-          "0.78000",
-          "0.80552",
-          "0.82634",
-          "0.83000",
-          "0.85372",
-          "0.91000",
-          "0.93000",
-          "0.93177",
-          "1.00000",
-          "1.08000",
-          "1.25000",
-          "1.26000",
-          "1.27000",
-          "1.35000",
-          "3.87000",
-          "4.36000",
-          "6.94719",
-          "82.72967",
-          "83.21000",
-          "83.96000",
-          "84.21000",
-          "85.21000",
-          "86.21000",
-          "87.21000",
-          "88.21000",
-          "89.21000",
-          "90.21000",
-          "91.21000",
-          "92.21000",
-          "93.21000",
-          "94.21000",
-          "95.21000",
-          "96.21000",
-          "97.21000",
-          "98.21000",
-          "99.21000",
-          "100.21000",
-          "101.21000",
-          "102.21000",
-          "103.21000",
-          "161.47000"
-        ],
-        "min_value": "0.72792",
-        "max_value": "161.47000",
-        "average": "2.0372888896940199",
-        "standard_deviation": "9.1918407941812762"
+          "0.727924876",
+          "0.748697",
+          "0.7798",
+          "0.78",
+          "0.805517",
+          "0.826337",
+          "0.83",
+          "0.853720529",
+          "0.91",
+          "0.93",
+          "0.931766",
+          "1.0",
+          "1.08",
+          "1.25",
+          "1.26",
+          "1.27",
+          "1.35",
+          "3.87",
+          "4.36",
+          "6.947194",
+          "82.729672",
+          "83.21",
+          "83.96",
+          "84.21",
+          "85.21",
+          "85.73",
+          "86.21",
+          "87.21",
+          "88.21",
+          "89.21",
+          "90.21",
+          "91.21",
+          "92.21",
+          "93.21",
+          "94.21",
+          "95.21",
+          "96.21",
+          "97.21",
+          "98.21",
+          "99.21",
+          "100.21",
+          "101.21",
+          "102.21",
+          "103.21",
+          "161.47"
+        ]
       },
       "hourly_rate_in_usd": {
         "null_count": 0,
-        "null_percentage": "0.00",
-        "distinct_count": 8923,
+        "null_percentage": 0.0,
+        "distinct_count": 8935,
         "most_common_values": [],
         "is_enum_like": false,
-        "unique_values": [],
-        "min_value": "8.20227",
-        "max_value": "275000.00000",
-        "average": "123.9058159708512209",
-        "standard_deviation": "2296.504487448542"
+        "unique_values": []
       }
     }
   },
   "column_statistics": {
-    "unique_id": {
-      "null_count": 0,
-      "null_percentage": "0.00",
-      "distinct_count": 203,
-      "most_common_values": [
-        {
-          "value": "100289 - 52825",
-          "frequency": 8545
-        },
-        {
-          "value": "100018 -6666",
-          "frequency": 6169
-        },
-        {
-          "value": "100377 - 3676",
-          "frequency": 5881
-        },
-        {
-          "value": "100132 - 7604",
-          "frequency": 3504
-        },
-        {
-          "value": "100216 - 39132",
-          "frequency": 3396
-        }
-      ],
-      "is_enum_like": false,
-      "unique_values": []
-    },
-    "client": {
-      "null_count": 0,
-      "null_percentage": "0.00",
-      "distinct_count": 62,
-      "most_common_values": [
-        {
-          "value": "Ameren Services",
-          "frequency": 12240
-        },
-        {
-          "value": "Rite Aid Corp.",
-          "frequency": 8545
-        },
-        {
-          "value": "Macy's Corporation Services, Inc.",
-          "frequency": 7701
-        },
-        {
-          "value": "Corteva",
-          "frequency": 5930
-        },
-        {
-          "value": "F. Hoffman-La Roche, Ltd.",
-          "frequency": 5479
-        }
-      ],
-      "is_enum_like": false,
-      "unique_values": []
-    },
     "client_industry": {
       "null_count": 0,
-      "null_percentage": "0.00",
-      "distinct_count": 29,
+      "null_percentage": 0.0,
+      "distinct_count": 30,
       "most_common_values": [],
       "is_enum_like": true,
       "unique_values": [
@@ -1033,17 +939,18 @@ DETAILED ANALYSIS (JSON):
         "Services",
         "Supply Chain Management",
         "Technology",
-        "Telecom"
+        "Telecom",
+        "Tobacco Company"
       ]
     },
     "supplier": {
       "null_count": 0,
-      "null_percentage": "0.00",
-      "distinct_count": 336,
+      "null_percentage": 0.0,
+      "distinct_count": 337,
       "most_common_values": [
         {
           "value": "TCS",
-          "frequency": 6483
+          "frequency": 6486
         },
         {
           "value": "Accenture",
@@ -1067,7 +974,7 @@ DETAILED ANALYSIS (JSON):
     },
     "supplier_market_tier": {
       "null_count": 0,
-      "null_percentage": "0.00",
+      "null_percentage": 0.0,
       "distinct_count": 4,
       "most_common_values": [],
       "is_enum_like": true,
@@ -1080,7 +987,7 @@ DETAILED ANALYSIS (JSON):
     },
     "supplier_market_group": {
       "null_count": 0,
-      "null_percentage": "0.00",
+      "null_percentage": 0.0,
       "distinct_count": 11,
       "most_common_values": [],
       "is_enum_like": true,
@@ -1089,10 +996,10 @@ DETAILED ANALYSIS (JSON):
         "Emerging/Situational",
         "Global Major",
         "Global Minor",
+        "IT Staffing",
+        "IT staffing",
         "Indian Major",
         "Indian Minor",
-        "IT staffing",
-        "IT Staffing",
         "OEM",
         "Staffing",
         "VAR"
@@ -1100,7 +1007,7 @@ DETAILED ANALYSIS (JSON):
     },
     "year": {
       "null_count": 0,
-      "null_percentage": "0.00",
+      "null_percentage": 0.0,
       "distinct_count": 10,
       "most_common_values": [],
       "is_enum_like": true,
@@ -1115,27 +1022,74 @@ DETAILED ANALYSIS (JSON):
         "2027",
         "2028",
         "2029"
-      ],
-      "min_value": 2020,
-      "max_value": 2029,
-      "average": "2022.0188947526728829",
-      "standard_deviation": "1.4645372399081967"
+      ]
     },
     "spend_tier": {
       "null_count": 0,
-      "null_percentage": "0.00",
-      "distinct_count": 3,
+      "null_percentage": 0.0,
+      "distinct_count": 13,
       "most_common_values": [],
       "is_enum_like": true,
       "unique_values": [
+        "$100M - $500M",
+        "$1B - $2B",
+        "$1M - $5M",
+        "$20M - $30M",
+        "$2B - $3B",
+        "$30M - $40M",
+        "$40M - $50M",
+        "$500M \u2013 $1B",
+        "$50M - $60M",
+        "$60M - $70M",
+        "$80M - $90M",
         "-",
-        "$1M-$5M",
         "<$1M"
+      ]
+    },
+    "spend_tier_lower_limit": {
+      "null_count": 48257,
+      "null_percentage": 65.95,
+      "distinct_count": 12,
+      "most_common_values": [],
+      "is_enum_like": true,
+      "unique_values": [
+        "0.0",
+        "1.0",
+        "20.0",
+        "30.0",
+        "40.0",
+        "50.0",
+        "60.0",
+        "80.0",
+        "100.0",
+        "500.0",
+        "1000.0",
+        "2000.0"
+      ]
+    },
+    "spend_tier_upper_limit": {
+      "null_count": 48257,
+      "null_percentage": 65.95,
+      "distinct_count": 11,
+      "most_common_values": [],
+      "is_enum_like": true,
+      "unique_values": [
+        "1.0",
+        "5.0",
+        "30.0",
+        "40.0",
+        "50.0",
+        "60.0",
+        "70.0",
+        "90.0",
+        "500.0",
+        "2000.0",
+        "3000.0"
       ]
     },
     "contracted_region": {
       "null_count": 0,
-      "null_percentage": "0.00",
+      "null_percentage": 0.0,
       "distinct_count": 4,
       "most_common_values": [],
       "is_enum_like": true,
@@ -1148,20 +1102,20 @@ DETAILED ANALYSIS (JSON):
     },
     "country_of_work": {
       "null_count": 0,
-      "null_percentage": "0.00",
+      "null_percentage": 0.0,
       "distinct_count": 66,
       "most_common_values": [
         {
           "value": "USA",
-          "frequency": 44708
+          "frequency": 44709
         },
         {
           "value": "IND",
-          "frequency": 12915
+          "frequency": 12935
         },
         {
           "value": "GBR",
-          "frequency": 4212
+          "frequency": 4217
         },
         {
           "value": "MEX",
@@ -1177,7 +1131,7 @@ DETAILED ANALYSIS (JSON):
     },
     "service_type": {
       "null_count": 0,
-      "null_percentage": "0.00",
+      "null_percentage": 0.0,
       "distinct_count": 2,
       "most_common_values": [],
       "is_enum_like": true,
@@ -1188,7 +1142,7 @@ DETAILED ANALYSIS (JSON):
     },
     "role_title_group": {
       "null_count": 0,
-      "null_percentage": "0.00",
+      "null_percentage": 0.0,
       "distinct_count": 13,
       "most_common_values": [],
       "is_enum_like": true,
@@ -1210,20 +1164,20 @@ DETAILED ANALYSIS (JSON):
     },
     "role_title_from_supplier": {
       "null_count": 0,
-      "null_percentage": "0.00",
-      "distinct_count": 5851,
+      "null_percentage": 0.0,
+      "distinct_count": 5863,
       "most_common_values": [],
       "is_enum_like": false,
       "unique_values": []
     },
     "normalized_role_title": {
       "null_count": 0,
-      "null_percentage": "0.00",
-      "distinct_count": 229,
+      "null_percentage": 0.0,
+      "distinct_count": 230,
       "most_common_values": [
         {
           "value": "Developer/Programmer",
-          "frequency": 10017
+          "frequency": 10021
         },
         {
           "value": "Engineer",
@@ -1231,15 +1185,15 @@ DETAILED ANALYSIS (JSON):
         },
         {
           "value": "Architect",
-          "frequency": 4226
+          "frequency": 4230
         },
         {
           "value": "Consultant",
-          "frequency": 3644
+          "frequency": 3645
         },
         {
           "value": "Project Manager",
-          "frequency": 2686
+          "frequency": 2688
         }
       ],
       "is_enum_like": false,
@@ -1247,7 +1201,7 @@ DETAILED ANALYSIS (JSON):
     },
     "role_seniority": {
       "null_count": 0,
-      "null_percentage": "0.00",
+      "null_percentage": 0.0,
       "distinct_count": 5,
       "most_common_values": [],
       "is_enum_like": true,
@@ -1261,12 +1215,12 @@ DETAILED ANALYSIS (JSON):
     },
     "role_specialization": {
       "null_count": 0,
-      "null_percentage": "0.00",
+      "null_percentage": 0.0,
       "distinct_count": 134,
       "most_common_values": [
         {
           "value": "-",
-          "frequency": 32993
+          "frequency": 33003
         },
         {
           "value": "Security",
@@ -1282,7 +1236,7 @@ DETAILED ANALYSIS (JSON):
         },
         {
           "value": "Analytics",
-          "frequency": 1862
+          "frequency": 1864
         }
       ],
       "is_enum_like": false,
@@ -1290,7 +1244,7 @@ DETAILED ANALYSIS (JSON):
     },
     "bill_rate_recurrence": {
       "null_count": 0,
-      "null_percentage": "0.00",
+      "null_percentage": 0.0,
       "distinct_count": 2,
       "most_common_values": [],
       "is_enum_like": true,
@@ -1301,19 +1255,15 @@ DETAILED ANALYSIS (JSON):
     },
     "rate_in_local_currency": {
       "null_count": 0,
-      "null_percentage": "0.00",
-      "distinct_count": 8211,
+      "null_percentage": 0.0,
+      "distinct_count": 8217,
       "most_common_values": [],
       "is_enum_like": false,
-      "unique_values": [],
-      "min_value": "7.71000",
-      "max_value": "275000.00000",
-      "average": "180.5705740383090427",
-      "standard_deviation": "2346.593921432095"
+      "unique_values": []
     },
     "currency": {
       "null_count": 0,
-      "null_percentage": "0.00",
+      "null_percentage": 0.0,
       "distinct_count": 9,
       "most_common_values": [],
       "is_enum_like": true,
@@ -1331,7 +1281,7 @@ DETAILED ANALYSIS (JSON):
     },
     "data_type": {
       "null_count": 0,
-      "null_percentage": "0.00",
+      "null_percentage": 0.0,
       "distinct_count": 2,
       "most_common_values": [],
       "is_enum_like": true,
@@ -1341,41 +1291,37 @@ DETAILED ANALYSIS (JSON):
       ]
     },
     "number_of_hours": {
-      "null_count": 68087,
-      "null_percentage": "93.09",
+      "null_count": 68108,
+      "null_percentage": 93.08,
       "distinct_count": 940,
       "most_common_values": [
         {
-          "value": "270.27027",
+          "value": "270.2702703",
           "frequency": 369
         },
         {
-          "value": "324.32432",
+          "value": "324.3243243",
           "frequency": 256
         },
         {
-          "value": "162.16216",
+          "value": "162.1621622",
           "frequency": 199
         },
         {
-          "value": "2088.00000",
+          "value": "2088.0",
           "frequency": 183
         },
         {
-          "value": "540.54054",
+          "value": "540.5405405",
           "frequency": 181
         }
       ],
       "is_enum_like": false,
-      "unique_values": [],
-      "min_value": "0.50000",
-      "max_value": "62640.00000",
-      "average": "1454.5022513966369931",
-      "standard_deviation": "3706.824572824015"
+      "unique_values": []
     },
     "comments": {
       "null_count": 0,
-      "null_percentage": "0.00",
+      "null_percentage": 0.0,
       "distinct_count": 22,
       "most_common_values": [],
       "is_enum_like": true,
@@ -1387,10 +1333,10 @@ DETAILED ANALYSIS (JSON):
         "Data Science & Analytics",
         "Database Operations",
         "Development & Operations",
-        "Engineering Services",
         "ERP Management",
-        "Interface Design",
+        "Engineering Services",
         "IT Strategy & Management Consulting",
+        "Interface Design",
         "Language Specific Developement",
         "Language Specific Development",
         "Networking",
@@ -1406,98 +1352,84 @@ DETAILED ANALYSIS (JSON):
     },
     "daily_rate_calc": {
       "null_count": 0,
-      "null_percentage": "0.00",
+      "null_percentage": 0.0,
       "distinct_count": 2,
       "most_common_values": [],
       "is_enum_like": true,
       "unique_values": [
         "1",
         "8"
-      ],
-      "min_value": 1,
-      "max_value": 8,
-      "average": "1.2695031582401356",
-      "standard_deviation": "1.3468166004652211"
+      ]
     },
     "bill_rate_hourly": {
       "null_count": 0,
-      "null_percentage": "0.00",
-      "distinct_count": 7779,
+      "null_percentage": 0.0,
+      "distinct_count": 7788,
       "most_common_values": [],
       "is_enum_like": false,
-      "unique_values": [],
-      "min_value": "7.71000",
-      "max_value": "275000.00000",
-      "average": "153.8963268639085614",
-      "standard_deviation": "2323.552375169648"
+      "unique_values": []
     },
     "xrate": {
       "null_count": 0,
-      "null_percentage": "0.00",
-      "distinct_count": 43,
+      "null_percentage": 0.0,
+      "distinct_count": 45,
       "most_common_values": [],
       "is_enum_like": true,
       "unique_values": [
-        "0.72792",
-        "0.77980",
-        "0.78000",
-        "0.80552",
-        "0.82634",
-        "0.83000",
-        "0.85372",
-        "0.91000",
-        "0.93000",
-        "0.93177",
-        "1.00000",
-        "1.08000",
-        "1.25000",
-        "1.26000",
-        "1.27000",
-        "1.35000",
-        "3.87000",
-        "4.36000",
-        "6.94719",
-        "82.72967",
-        "83.21000",
-        "83.96000",
-        "84.21000",
-        "85.21000",
-        "86.21000",
-        "87.21000",
-        "88.21000",
-        "89.21000",
-        "90.21000",
-        "91.21000",
-        "92.21000",
-        "93.21000",
-        "94.21000",
-        "95.21000",
-        "96.21000",
-        "97.21000",
-        "98.21000",
-        "99.21000",
-        "100.21000",
-        "101.21000",
-        "102.21000",
-        "103.21000",
-        "161.47000"
-      ],
-      "min_value": "0.72792",
-      "max_value": "161.47000",
-      "average": "2.0372888896940199",
-      "standard_deviation": "9.1918407941812762"
+        "0.727924876",
+        "0.748697",
+        "0.7798",
+        "0.78",
+        "0.805517",
+        "0.826337",
+        "0.83",
+        "0.853720529",
+        "0.91",
+        "0.93",
+        "0.931766",
+        "1.0",
+        "1.08",
+        "1.25",
+        "1.26",
+        "1.27",
+        "1.35",
+        "3.87",
+        "4.36",
+        "6.947194",
+        "82.729672",
+        "83.21",
+        "83.96",
+        "84.21",
+        "85.21",
+        "85.73",
+        "86.21",
+        "87.21",
+        "88.21",
+        "89.21",
+        "90.21",
+        "91.21",
+        "92.21",
+        "93.21",
+        "94.21",
+        "95.21",
+        "96.21",
+        "97.21",
+        "98.21",
+        "99.21",
+        "100.21",
+        "101.21",
+        "102.21",
+        "103.21",
+        "161.47"
+      ]
     },
     "hourly_rate_in_usd": {
       "null_count": 0,
-      "null_percentage": "0.00",
-      "distinct_count": 8923,
+      "null_percentage": 0.0,
+      "distinct_count": 8935,
       "most_common_values": [],
       "is_enum_like": false,
-      "unique_values": [],
-      "min_value": "8.20227",
-      "max_value": "275000.00000",
-      "average": "123.9058159708512209",
-      "standard_deviation": "2296.504487448542"
+      "unique_values": []
     }
   },
   "constraints_and_indexes": {
@@ -1514,437 +1446,443 @@ DETAILED ANALYSIS (JSON):
   },
   "data_quality": {
     "completeness": {
-      "unique_id": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
-      },
-      "client": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
-      },
       "client_industry": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
       },
       "supplier": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
       },
       "supplier_market_tier": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
       },
       "supplier_market_group": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
       },
       "year": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
       },
       "spend_tier": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
+      },
+      "spend_tier_lower_limit": {
+        "total_count": 73168,
+        "non_null_count": 24911,
+        "completeness_percentage": 34.05
+      },
+      "spend_tier_upper_limit": {
+        "total_count": 73168,
+        "non_null_count": 24911,
+        "completeness_percentage": 34.05
       },
       "contracted_region": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
       },
       "country_of_work": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
       },
       "service_type": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
       },
       "role_title_group": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
       },
       "role_title_from_supplier": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
       },
       "normalized_role_title": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
       },
       "role_seniority": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
       },
       "role_specialization": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
       },
       "bill_rate_recurrence": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
       },
       "rate_in_local_currency": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
       },
       "currency": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
       },
       "data_type": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
       },
       "number_of_hours": {
-        "total_count": 73142,
-        "non_null_count": 5055,
-        "completeness_percentage": "6.91"
+        "total_count": 73168,
+        "non_null_count": 5060,
+        "completeness_percentage": 6.92
       },
       "comments": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
       },
       "daily_rate_calc": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
       },
       "bill_rate_hourly": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
       },
       "xrate": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
       },
       "hourly_rate_in_usd": {
-        "total_count": 73142,
-        "non_null_count": 73142,
-        "completeness_percentage": "100.00"
+        "total_count": 73168,
+        "non_null_count": 73168,
+        "completeness_percentage": 100.0
       }
     },
     "consistency": {},
     "potential_issues": [
       {
         "type": "low_completeness",
-        "column": "number_of_hours",
-        "description": "Column number_of_hours is only 6.91% complete"
+        "column": "spend_tier_lower_limit",
+        "description": "Column spend_tier_lower_limit is only 34.05% complete"
       },
       {
-        "type": "duplicate_rows",
-        "description": "Table has 73142 total rows but only 65088 distinct rows"
+        "type": "low_completeness",
+        "column": "spend_tier_upper_limit",
+        "description": "Column spend_tier_upper_limit is only 34.05% complete"
+      },
+      {
+        "type": "low_completeness",
+        "column": "number_of_hours",
+        "description": "Column number_of_hours is only 6.92% complete"
       }
     ]
   },
   "sample_data": {
     "rows": [
       {
-        "unique_id": "100430 - 18212",
-        "client": "Zimmer Biomet",
-        "client_industry": "Medical devices",
-        "supplier": "Deloitte",
-        "supplier_market_tier": "Tier 1",
-        "supplier_market_group": "Global Major",
-        "year": 2022,
+        "client_industry": "Education",
+        "supplier": "22nd Century Technologies Inc",
+        "supplier_market_tier": "Tier 4",
+        "supplier_market_group": "IT staffing",
+        "year": 2023,
         "spend_tier": "-",
+        "spend_tier_lower_limit": null,
+        "spend_tier_upper_limit": null,
         "contracted_region": "North America",
-        "country_of_work": "IND",
+        "country_of_work": "USA",
         "service_type": "Consulting",
-        "role_title_group": "Technical Consulting",
-        "role_title_from_supplier": "SAP Associate Consultant",
-        "normalized_role_title": "Consultant",
+        "role_title_group": "Application Design & Programming/Deployment",
+        "role_title_from_supplier": "Application Developer",
+        "normalized_role_title": "Developer/Programmer",
         "role_seniority": "Elementary",
-        "role_specialization": "SAP",
+        "role_specialization": "-",
         "bill_rate_recurrence": "Hourly",
-        "rate_in_local_currency": "29.00000",
+        "rate_in_local_currency": 86.09666667,
         "currency": "USD",
         "data_type": "Proposed",
         "number_of_hours": null,
-        "comments": "ERP Management",
+        "comments": "-",
         "daily_rate_calc": 1,
-        "bill_rate_hourly": "29.00000",
-        "xrate": "1.00000",
-        "hourly_rate_in_usd": "29.00000"
+        "bill_rate_hourly": 86.09666667,
+        "xrate": 1.0,
+        "hourly_rate_in_usd": 86.09666667
       },
       {
-        "unique_id": "100430 - 18212",
-        "client": "Zimmer Biomet",
-        "client_industry": "Medical devices",
-        "supplier": "Deloitte",
-        "supplier_market_tier": "Tier 1",
-        "supplier_market_group": "Global Major",
-        "year": 2022,
+        "client_industry": "Education",
+        "supplier": "22nd Century Technologies Inc",
+        "supplier_market_tier": "Tier 4",
+        "supplier_market_group": "IT staffing",
+        "year": 2023,
         "spend_tier": "-",
-        "contracted_region": "North America",
-        "country_of_work": "IND",
-        "service_type": "Consulting",
-        "role_title_group": "Technical Consulting",
-        "role_title_from_supplier": "SAP Consultant",
-        "normalized_role_title": "Consultant",
-        "role_seniority": "Experienced",
-        "role_specialization": "SAP",
-        "bill_rate_recurrence": "Hourly",
-        "rate_in_local_currency": "39.00000",
-        "currency": "USD",
-        "data_type": "Proposed",
-        "number_of_hours": null,
-        "comments": "ERP Management",
-        "daily_rate_calc": 1,
-        "bill_rate_hourly": "39.00000",
-        "xrate": "1.00000",
-        "hourly_rate_in_usd": "39.00000"
-      },
-      {
-        "unique_id": "100430 - 18212",
-        "client": "Zimmer Biomet",
-        "client_industry": "Medical devices",
-        "supplier": "Deloitte",
-        "supplier_market_tier": "Tier 1",
-        "supplier_market_group": "Global Major",
-        "year": 2022,
-        "spend_tier": "-",
-        "contracted_region": "North America",
-        "country_of_work": "IND",
-        "service_type": "Consulting",
-        "role_title_group": "Technical Consulting",
-        "role_title_from_supplier": "SAP Senior Consultant",
-        "normalized_role_title": "Consultant",
-        "role_seniority": "Advanced",
-        "role_specialization": "SAP",
-        "bill_rate_recurrence": "Hourly",
-        "rate_in_local_currency": "47.00000",
-        "currency": "USD",
-        "data_type": "Proposed",
-        "number_of_hours": null,
-        "comments": "ERP Management",
-        "daily_rate_calc": 1,
-        "bill_rate_hourly": "47.00000",
-        "xrate": "1.00000",
-        "hourly_rate_in_usd": "47.00000"
-      },
-      {
-        "unique_id": "100430 - 18212",
-        "client": "Zimmer Biomet",
-        "client_industry": "Medical devices",
-        "supplier": "Deloitte",
-        "supplier_market_tier": "Tier 1",
-        "supplier_market_group": "Global Major",
-        "year": 2022,
-        "spend_tier": "-",
-        "contracted_region": "North America",
-        "country_of_work": "IND",
-        "service_type": "Consulting",
-        "role_title_group": "Technical Consulting",
-        "role_title_from_supplier": "SAP Lead/Manager",
-        "normalized_role_title": "Technical Lead",
-        "role_seniority": "Expert",
-        "role_specialization": "SAP",
-        "bill_rate_recurrence": "Hourly",
-        "rate_in_local_currency": "62.00000",
-        "currency": "USD",
-        "data_type": "Proposed",
-        "number_of_hours": null,
-        "comments": "ERP Management",
-        "daily_rate_calc": 1,
-        "bill_rate_hourly": "62.00000",
-        "xrate": "1.00000",
-        "hourly_rate_in_usd": "62.00000"
-      },
-      {
-        "unique_id": "100430 - 18212",
-        "client": "Zimmer Biomet",
-        "client_industry": "Medical devices",
-        "supplier": "Deloitte",
-        "supplier_market_tier": "Tier 1",
-        "supplier_market_group": "Global Major",
-        "year": 2022,
-        "spend_tier": "-",
-        "contracted_region": "North America",
-        "country_of_work": "IND",
-        "service_type": "Consulting",
-        "role_title_group": "Technical Consulting",
-        "role_title_from_supplier": "SAP Architect",
-        "normalized_role_title": "Architect",
-        "role_seniority": "Expert",
-        "role_specialization": "SAP",
-        "bill_rate_recurrence": "Hourly",
-        "rate_in_local_currency": "65.00000",
-        "currency": "USD",
-        "data_type": "Proposed",
-        "number_of_hours": null,
-        "comments": "ERP Management",
-        "daily_rate_calc": 1,
-        "bill_rate_hourly": "65.00000",
-        "xrate": "1.00000",
-        "hourly_rate_in_usd": "65.00000"
-      },
-      {
-        "unique_id": "100430 - 18212",
-        "client": "Zimmer Biomet",
-        "client_industry": "Medical devices",
-        "supplier": "Deloitte",
-        "supplier_market_tier": "Tier 1",
-        "supplier_market_group": "Global Major",
-        "year": 2022,
-        "spend_tier": "-",
+        "spend_tier_lower_limit": null,
+        "spend_tier_upper_limit": null,
         "contracted_region": "North America",
         "country_of_work": "USA",
         "service_type": "Consulting",
-        "role_title_group": "Technical Consulting",
-        "role_title_from_supplier": "SAP Associate Consultant",
-        "normalized_role_title": "Consultant",
+        "role_title_group": "Application Design & Programming/Deployment",
+        "role_title_from_supplier": "Application Developer",
+        "normalized_role_title": "Developer/Programmer",
         "role_seniority": "Elementary",
-        "role_specialization": "SAP",
+        "role_specialization": "-",
         "bill_rate_recurrence": "Hourly",
-        "rate_in_local_currency": "89.00000",
+        "rate_in_local_currency": 81.79333333,
         "currency": "USD",
         "data_type": "Proposed",
         "number_of_hours": null,
-        "comments": "ERP Management",
+        "comments": "-",
         "daily_rate_calc": 1,
-        "bill_rate_hourly": "89.00000",
-        "xrate": "1.00000",
-        "hourly_rate_in_usd": "89.00000"
+        "bill_rate_hourly": 81.79333333,
+        "xrate": 1.0,
+        "hourly_rate_in_usd": 81.79333333
       },
       {
-        "unique_id": "100430 - 18212",
-        "client": "Zimmer Biomet",
-        "client_industry": "Medical devices",
-        "supplier": "Deloitte",
-        "supplier_market_tier": "Tier 1",
-        "supplier_market_group": "Global Major",
-        "year": 2022,
+        "client_industry": "Education",
+        "supplier": "22nd Century Technologies Inc",
+        "supplier_market_tier": "Tier 4",
+        "supplier_market_group": "IT staffing",
+        "year": 2023,
         "spend_tier": "-",
+        "spend_tier_lower_limit": null,
+        "spend_tier_upper_limit": null,
         "contracted_region": "North America",
         "country_of_work": "USA",
         "service_type": "Consulting",
-        "role_title_group": "Technical Consulting",
-        "role_title_from_supplier": "SAP Consultant",
-        "normalized_role_title": "Consultant",
+        "role_title_group": "Business/Functional Analysis",
+        "role_title_from_supplier": "Business Analyst",
+        "normalized_role_title": "Business Analyst",
+        "role_seniority": "Elementary",
+        "role_specialization": "-",
+        "bill_rate_recurrence": "Hourly",
+        "rate_in_local_currency": 94.705,
+        "currency": "USD",
+        "data_type": "Proposed",
+        "number_of_hours": null,
+        "comments": "-",
+        "daily_rate_calc": 1,
+        "bill_rate_hourly": 94.705,
+        "xrate": 1.0,
+        "hourly_rate_in_usd": 94.705
+      },
+      {
+        "client_industry": "Education",
+        "supplier": "22nd Century Technologies Inc",
+        "supplier_market_tier": "Tier 4",
+        "supplier_market_group": "IT staffing",
+        "year": 2023,
+        "spend_tier": "-",
+        "spend_tier_lower_limit": null,
+        "spend_tier_upper_limit": null,
+        "contracted_region": "North America",
+        "country_of_work": "USA",
+        "service_type": "Consulting",
+        "role_title_group": "Business/Functional Analysis",
+        "role_title_from_supplier": "Business Analyst",
+        "normalized_role_title": "Business Analyst",
+        "role_seniority": "Elementary",
+        "role_specialization": "-",
+        "bill_rate_recurrence": "Hourly",
+        "rate_in_local_currency": 89.97166667,
+        "currency": "USD",
+        "data_type": "Proposed",
+        "number_of_hours": null,
+        "comments": "-",
+        "daily_rate_calc": 1,
+        "bill_rate_hourly": 89.97166667,
+        "xrate": 1.0,
+        "hourly_rate_in_usd": 89.97166667
+      },
+      {
+        "client_industry": "Education",
+        "supplier": "22nd Century Technologies Inc",
+        "supplier_market_tier": "Tier 4",
+        "supplier_market_group": "IT staffing",
+        "year": 2023,
+        "spend_tier": "-",
+        "spend_tier_lower_limit": null,
+        "spend_tier_upper_limit": null,
+        "contracted_region": "North America",
+        "country_of_work": "USA",
+        "service_type": "Consulting",
+        "role_title_group": "Infrastructure",
+        "role_title_from_supplier": "Cybersecurity Analyst",
+        "normalized_role_title": "Technical Analyst",
         "role_seniority": "Experienced",
-        "role_specialization": "SAP",
+        "role_specialization": "Cyber Security",
         "bill_rate_recurrence": "Hourly",
-        "rate_in_local_currency": "125.00000",
+        "rate_in_local_currency": 103.8233333,
         "currency": "USD",
         "data_type": "Proposed",
         "number_of_hours": null,
-        "comments": "ERP Management",
+        "comments": "Cyber Security & Infrastructure",
         "daily_rate_calc": 1,
-        "bill_rate_hourly": "125.00000",
-        "xrate": "1.00000",
-        "hourly_rate_in_usd": "125.00000"
+        "bill_rate_hourly": 103.8233333,
+        "xrate": 1.0,
+        "hourly_rate_in_usd": 103.8233333
       },
       {
-        "unique_id": "100430 - 18212",
-        "client": "Zimmer Biomet",
-        "client_industry": "Medical devices",
-        "supplier": "Deloitte",
-        "supplier_market_tier": "Tier 1",
-        "supplier_market_group": "Global Major",
-        "year": 2022,
+        "client_industry": "Education",
+        "supplier": "22nd Century Technologies Inc",
+        "supplier_market_tier": "Tier 4",
+        "supplier_market_group": "IT staffing",
+        "year": 2023,
         "spend_tier": "-",
+        "spend_tier_lower_limit": null,
+        "spend_tier_upper_limit": null,
         "contracted_region": "North America",
         "country_of_work": "USA",
         "service_type": "Consulting",
-        "role_title_group": "Technical Consulting",
-        "role_title_from_supplier": "SAP Senior Consultant",
-        "normalized_role_title": "Consultant",
-        "role_seniority": "Advanced",
-        "role_specialization": "SAP",
+        "role_title_group": "Infrastructure",
+        "role_title_from_supplier": "Cybersecurity Analyst",
+        "normalized_role_title": "Technical Analyst",
+        "role_seniority": "Elementary",
+        "role_specialization": "Cyber Security",
         "bill_rate_recurrence": "Hourly",
-        "rate_in_local_currency": "158.00000",
+        "rate_in_local_currency": 98.63,
         "currency": "USD",
         "data_type": "Proposed",
         "number_of_hours": null,
-        "comments": "ERP Management",
+        "comments": "Cyber Security & Infrastructure",
         "daily_rate_calc": 1,
-        "bill_rate_hourly": "158.00000",
-        "xrate": "1.00000",
-        "hourly_rate_in_usd": "158.00000"
+        "bill_rate_hourly": 98.63,
+        "xrate": 1.0,
+        "hourly_rate_in_usd": 98.63
       },
       {
-        "unique_id": "100430 - 18212",
-        "client": "Zimmer Biomet",
-        "client_industry": "Medical devices",
-        "supplier": "Deloitte",
-        "supplier_market_tier": "Tier 1",
-        "supplier_market_group": "Global Major",
-        "year": 2022,
+        "client_industry": "Education",
+        "supplier": "22nd Century Technologies Inc",
+        "supplier_market_tier": "Tier 4",
+        "supplier_market_group": "IT staffing",
+        "year": 2023,
         "spend_tier": "-",
+        "spend_tier_lower_limit": null,
+        "spend_tier_upper_limit": null,
         "contracted_region": "North America",
         "country_of_work": "USA",
         "service_type": "Consulting",
-        "role_title_group": "Technical Consulting",
-        "role_title_from_supplier": "SAP Lead/Manager",
-        "normalized_role_title": "Technical Lead",
-        "role_seniority": "Expert",
-        "role_specialization": "SAP",
+        "role_title_group": "Database Administration",
+        "role_title_from_supplier": "Database Administrator",
+        "normalized_role_title": "Database Administrator",
+        "role_seniority": "Elementary",
+        "role_specialization": "-",
         "bill_rate_recurrence": "Hourly",
-        "rate_in_local_currency": "189.00000",
+        "rate_in_local_currency": 99.69,
         "currency": "USD",
         "data_type": "Proposed",
         "number_of_hours": null,
-        "comments": "ERP Management",
+        "comments": "-",
         "daily_rate_calc": 1,
-        "bill_rate_hourly": "189.00000",
-        "xrate": "1.00000",
-        "hourly_rate_in_usd": "189.00000"
+        "bill_rate_hourly": 99.69,
+        "xrate": 1.0,
+        "hourly_rate_in_usd": 99.69
       },
       {
-        "unique_id": "100430 - 18212",
-        "client": "Zimmer Biomet",
-        "client_industry": "Medical devices",
-        "supplier": "Deloitte",
-        "supplier_market_tier": "Tier 1",
-        "supplier_market_group": "Global Major",
-        "year": 2022,
+        "client_industry": "Education",
+        "supplier": "22nd Century Technologies Inc",
+        "supplier_market_tier": "Tier 4",
+        "supplier_market_group": "IT staffing",
+        "year": 2023,
         "spend_tier": "-",
+        "spend_tier_lower_limit": null,
+        "spend_tier_upper_limit": null,
         "contracted_region": "North America",
         "country_of_work": "USA",
         "service_type": "Consulting",
-        "role_title_group": "Technical Consulting",
-        "role_title_from_supplier": "SAP Architect",
+        "role_title_group": "Database Administration",
+        "role_title_from_supplier": "Database Administrator",
+        "normalized_role_title": "Database Administrator",
+        "role_seniority": "Elementary",
+        "role_specialization": "-",
+        "bill_rate_recurrence": "Hourly",
+        "rate_in_local_currency": 94.70666667,
+        "currency": "USD",
+        "data_type": "Proposed",
+        "number_of_hours": null,
+        "comments": "-",
+        "daily_rate_calc": 1,
+        "bill_rate_hourly": 94.70666667,
+        "xrate": 1.0,
+        "hourly_rate_in_usd": 94.70666667
+      },
+      {
+        "client_industry": "Education",
+        "supplier": "22nd Century Technologies Inc",
+        "supplier_market_tier": "Tier 4",
+        "supplier_market_group": "IT staffing",
+        "year": 2023,
+        "spend_tier": "-",
+        "spend_tier_lower_limit": null,
+        "spend_tier_upper_limit": null,
+        "contracted_region": "North America",
+        "country_of_work": "USA",
+        "service_type": "Consulting",
+        "role_title_group": "Database Administration",
+        "role_title_from_supplier": "Database Architect",
         "normalized_role_title": "Architect",
-        "role_seniority": "Expert",
-        "role_specialization": "SAP",
+        "role_seniority": "Experienced",
+        "role_specialization": "-",
         "bill_rate_recurrence": "Hourly",
-        "rate_in_local_currency": "195.00000",
+        "rate_in_local_currency": 112.0016667,
         "currency": "USD",
         "data_type": "Proposed",
         "number_of_hours": null,
-        "comments": "ERP Management",
+        "comments": "-",
         "daily_rate_calc": 1,
-        "bill_rate_hourly": "195.00000",
-        "xrate": "1.00000",
-        "hourly_rate_in_usd": "195.00000"
+        "bill_rate_hourly": 112.0016667,
+        "xrate": 1.0,
+        "hourly_rate_in_usd": 112.0016667
+      },
+      {
+        "client_industry": "Education",
+        "supplier": "22nd Century Technologies Inc",
+        "supplier_market_tier": "Tier 4",
+        "supplier_market_group": "IT staffing",
+        "year": 2023,
+        "spend_tier": "-",
+        "spend_tier_lower_limit": null,
+        "spend_tier_upper_limit": null,
+        "contracted_region": "North America",
+        "country_of_work": "USA",
+        "service_type": "Consulting",
+        "role_title_group": "Database Administration",
+        "role_title_from_supplier": "Database Architect",
+        "normalized_role_title": "Architect",
+        "role_seniority": "Experienced",
+        "role_specialization": "-",
+        "bill_rate_recurrence": "Hourly",
+        "rate_in_local_currency": 106.4033333,
+        "currency": "USD",
+        "data_type": "Proposed",
+        "number_of_hours": null,
+        "comments": "-",
+        "daily_rate_calc": 1,
+        "bill_rate_hourly": 106.4033333,
+        "xrate": 1.0,
+        "hourly_rate_in_usd": 106.4033333
       }
     ],
     "count": 10
   },
   "statistics": {
-    "generated_at": "2025-07-26T18:54:22.506441",
+    "generated_at": "2025-07-28T15:58:43.199121",
     "summary": {}
   },
   "recommendations": [],

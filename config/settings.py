@@ -12,13 +12,17 @@ load_dotenv()
 # Project Root
 PROJECT_ROOT = Path(__file__).parent.parent
 
-# Database Configuration
+# Database Configuration - Updated for SQLite migration
 DATABASE_CONFIG = {
-    "default_host": os.getenv("DB_HOST", "localhost"),
-    "default_port": int(os.getenv("DB_PORT", "5432")),
-    "connection_timeout": int(os.getenv("DB_CONNECTION_TIMEOUT", "10")),
+    # SQLite configuration (migrated from PostgreSQL)
+    "default_db_path": os.getenv("DB_PATH", str(PROJECT_ROOT / "data" / "PBTest.db")),
+    "connection_timeout": int(os.getenv("DB_CONNECTION_TIMEOUT", "30")),
     "pool_size": int(os.getenv("DB_POOL_SIZE", "10")),
     "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "20")),
+    
+    # Legacy PostgreSQL settings (kept for backward compatibility, not used)
+    "legacy_host": os.getenv("DB_HOST", "localhost"),
+    "legacy_port": int(os.getenv("DB_PORT", "5432")),
 }
 
 # MongoDB Configuration
@@ -61,6 +65,18 @@ VECTOR_STORE_CONFIG = {
     "collection_prefix": "session_",
 }
 
+# Application Settings
+APPLICATION_CONFIG = {
+    "debug": os.getenv("DEBUG", "False").lower() == "true",
+    "environment": os.getenv("ENVIRONMENT", "development"),
+    "max_query_results": int(os.getenv("MAX_QUERY_RESULTS", "1000")),
+    "cache_enabled": os.getenv("CACHE_ENABLED", "true").lower() == "true",
+    "session_timeout_minutes": int(os.getenv("SESSION_TIMEOUT_MINUTES", "60")),
+}
+
+# Ensure data directory exists for SQLite
+os.makedirs(os.path.dirname(DATABASE_CONFIG["default_db_path"]), exist_ok=True)
+
 # Memory Store Configuration
 MEMORY_STORE_CONFIG = {
     "base_dir": os.getenv("MEMORY_STORE_DIR", str(PROJECT_ROOT / "memory_store")),
@@ -88,8 +104,4 @@ LOGGING_CONFIG = {
     "level": os.getenv("LOG_LEVEL", "INFO"),
     "format": os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
     "file_path": os.getenv("LOG_FILE", str(PROJECT_ROOT / "logs" / "app.log")),
-}
-
-# Environment
-ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
-DEBUG = os.getenv("DEBUG", "False").lower() == "true" 
+} 

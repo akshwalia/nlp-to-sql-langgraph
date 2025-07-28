@@ -4,7 +4,7 @@ A simplified, focused database analyzer designed to comprehensively analyze a si
 
 ## Overview
 
-The `SingleTableAnalyzer` is a streamlined version of the original `DatabaseAnalyzer` that focuses on analyzing just one table at a time. It provides comprehensive analysis including structure, data quality, relationships, and generates formatted output suitable for LLM processing.
+The `SingleTableAnalyzer` is a streamlined version of the original `DatabaseAnalyzer` that focuses on analyzing just one table at a time using SQLite databases. It provides comprehensive analysis including structure, data quality, relationships, and generates formatted output suitable for LLM processing.
 
 ## Features
 
@@ -41,13 +41,9 @@ from src.core.database.analysis import SingleTableAnalyzer
 
 # Initialize analyzer (defaults to "IT_Professional_Services")
 analyzer = SingleTableAnalyzer(
-    db_name="your_database",
-    username="your_username", 
-    password="your_password",
-    host="localhost",
-    port="5432",
+    db_path="./data/PBTest.db",
     table_name="IT_Professional_Services",  # Hardcoded for now, adjustable
-    schema_name="public",
+    schema_name=None,  # SQLite doesn't use schemas
     output_file="analysis_output.txt"
 )
 
@@ -65,7 +61,7 @@ else:
 
 ```python
 # Change the table to analyze
-analyzer.set_table_name("users", "public")
+analyzer.set_table_name("users", None)  # SQLite doesn't use schemas
 
 # Re-run analysis
 result = analyzer.analyze_table()
@@ -91,25 +87,30 @@ print(summary)
 
 ### Constructor Parameters
 
-- `db_name`: PostgreSQL database name
-- `username`: Database username
-- `password`: Database password
-- `host`: Database host (default: "localhost")
-- `port`: Database port (default: "5432")
+- `db_path`: Path to SQLite database file
 - `table_name`: Table to analyze (default: "IT_Professional_Services")
-- `schema_name`: Schema name (default: "public")
+- `schema_name`: Schema name (default: None for SQLite)
 - `output_file`: Output file path (default: "single_table_analysis.txt")
+
+### Legacy Parameters (for backward compatibility)
+- `db_name`: Database name (ignored for SQLite)
+- `username`: Database username (ignored for SQLite)
+- `password`: Database password (ignored for SQLite)
+- `host`: Database host (ignored for SQLite)
+- `port`: Database port (ignored for SQLite)
 
 ### Environment Variables
 
 Create a `.env` file with your database connection details:
 
 ```env
-DB_NAME=your_database
-DB_USERNAME=your_username
-DB_PASSWORD=your_password
-DB_HOST=localhost
-DB_PORT=5432
+DB_PATH=./data/PBTest.db
+DB_NAME=PBTest
+# Legacy PostgreSQL variables (ignored for SQLite)
+DB_USERNAME=
+DB_PASSWORD=
+DB_HOST=
+DB_PORT=
 ```
 
 ## Output Format
@@ -124,40 +125,41 @@ The analyzer generates two types of output in the file:
 ### LLM Context Format
 
 ```
-DATABASE TABLE ANALYSIS: public.IT_Professional_Services
+DATABASE TABLE ANALYSIS: IT_Professional_Services
 ================================================================================
 
 BASIC INFORMATION:
-- Database: your_database
-- Table: public.IT_Professional_Services
+- Database Path: ./data/PBTest.db
+- Table: IT_Professional_Services
 - Analysis Date: 2024-01-XX...
 
 TABLE STRUCTURE:
-- Total Columns: 5
-- Data Types: ['INTEGER', 'VARCHAR', 'TIMESTAMP']
+- Total Columns: 26
+- Data Types: ['TEXT', 'REAL', 'INTEGER']
 
 COLUMNS:
-  - id: INTEGER (Nullable: False)
-  - name: VARCHAR (Nullable: True)
-  - created_at: TIMESTAMP (Nullable: False)
+  - supplier: TEXT (Nullable: True)
+  - job_title: TEXT (Nullable: True)
+  - daily_rate_calc: REAL (Nullable: True)
+  - year: INTEGER (Nullable: True)
 
 DATA ANALYSIS:
-- Total Rows: 1000
-- Table Size: 128 kB
+- Total Rows: 73168
+- Table Size: 15 MB
 
 CONSTRAINTS AND INDEXES:
-- Primary Key: ['id']
+- Primary Key: None
 - Foreign Keys: 0
-- Indexes: 2
+- Indexes: 0
 
 RELATIONSHIPS:
-- Related Tables: ['users', 'orders']
-- Outgoing References: 1
+- Related Tables: ['IT_Professional_Services_description']
+- Outgoing References: 0
 - Incoming References: 0
 
 SAMPLE DATA:
-  Row 1: {'id': 1, 'name': 'John Doe', 'created_at': '2024-01-01'}
-  Row 2: {'id': 2, 'name': 'Jane Smith', 'created_at': '2024-01-02'}
+  Row 1: {'supplier': 'TCS', 'job_title': 'Software Engineer', 'daily_rate_calc': 500.0}
+  Row 2: {'supplier': 'Accenture', 'job_title': 'Data Analyst', 'daily_rate_calc': 450.0}
 
 RECOMMENDATIONS:
   - [HIGH] Consider adding a primary key to improve data integrity
@@ -247,14 +249,14 @@ Common issues and solutions:
 - Ensure table exists in specified schema
 
 ### Connection Issues
-- Verify database credentials
-- Check network connectivity
-- Ensure database is running
+- Verify SQLite database file exists at specified path
+- Check file permissions for SQLite database
+- Ensure directory structure exists
 
 ### Permission Issues
-- Verify user has SELECT permissions
-- Check schema access rights
-- Ensure information_schema access
+- Verify file system read permissions for SQLite database
+- Check write permissions if analysis needs to create output files
+- Ensure proper file path access
 
 ## Integration with LLM
 
@@ -262,7 +264,10 @@ The analyzer is designed to work seamlessly with LLM systems:
 
 ```python
 # Get analysis for LLM
-analyzer = SingleTableAnalyzer(...)
+analyzer = SingleTableAnalyzer(
+    db_path="./data/PBTest.db",
+    table_name="IT_Professional_Services"
+)
 result = analyzer.analyze_table()
 
 if result["success"]:
@@ -271,7 +276,7 @@ if result["success"]:
     
     # Send to LLM
     llm_response = your_llm_client.generate_response(
-        prompt=f"Analyze this database table:\n\n{llm_context}"
+        prompt=f"Analyze this SQLite database table:\n\n{llm_context}"
     )
     
     print(llm_response)
@@ -303,11 +308,12 @@ Returns a concise summary of the analysis results.
 
 ## Future Enhancements
 
-- Support for multiple database types (MySQL, SQLite, etc.)
+- Support for additional database types (MySQL, MariaDB, etc.)
 - Advanced data profiling and statistics
 - Performance metrics and optimization suggestions
 - Integration with data quality frameworks
 - Export to different formats (CSV, Excel, etc.)
+- Enhanced SQLite-specific optimizations
 
 ## Contributing
 

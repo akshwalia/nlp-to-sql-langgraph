@@ -1,0 +1,110 @@
+# Environment Variables (CRITICAL - Contains API keys and secrets)
+.env
+.env.*
+*.env
+
+# Database Files (Contains data, not needed for code analysis)
+*.db
+*.sqlite3
+*.sqlite
+data/
+*.dump
+*.bak
+*.backup
+
+# API Keys and Credentials (CRITICAL - Security sensitive)
+*.key
+*.pem
+*.p12
+.google_api_key
+.openai_api_key
+google-credentials.json
+service-account-key.json
+
+# Large Data Files (Too big for AI context)
+*.xlsx
+*.csv
+*.parquet
+*.feather
+*.hdf5
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!next.config.json
+!requirements.json
+
+# Python Cache and Compiled Files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+build/
+dist/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+
+# Node Modules and Dependencies
+node_modules/
+.npm
+yarn.lock
+package-lock.json
+
+# Vector Stores and AI Memory (Large binary files)
+vector_stores/
+memory_store/
+*.bin
+*.chroma
+*.faiss
+chroma.sqlite3
+chroma-collections.sqlite3
+chroma-embeddings.parquet
+
+# Cache Files
+query_cache*.json
+*.cache
+.pytest_cache/
+.next/
+.vercel/
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+
+# IDE and OS Files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# AI/ML Model Files (Large binaries)
+*.model
+*.pkl
+*.pickle
+*.h5
+*.pt
+*.pth
+
+# Temporary Files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Documentation that's auto-generated or very long
+# docs/
+# README.md
+
+# Analysis files (generated content)
+*_analysis.txt
+testtable*.txt
+POSTGRESQL_INTEGRATION_ANALYSIS.md 

@@ -119,7 +119,7 @@ POST /workspaces/{workspace_id}/refresh-schema
 - `refresh_schema_for_table(table_name: str)` - Refresh specific table info
 
 #### Transaction Handling
-- Uses PostgreSQL's native transaction support
+- Uses SQLite's native transaction support
 - Explicit transaction control with `BEGIN`, `COMMIT`, `ROLLBACK`
 - Connection pooling support for better performance
 
@@ -220,8 +220,8 @@ If any query in a multi-query transaction fails:
 No additional environment variables are required. The system uses existing database connection parameters.
 
 ### Database Requirements
-- PostgreSQL database with transaction support
-- Appropriate user permissions for schema operations
+- SQLite database file (version 3.6+ recommended)
+- File system read/write permissions for database operations
 - Connection pooling support (optional but recommended)
 
 ## Monitoring and Debugging

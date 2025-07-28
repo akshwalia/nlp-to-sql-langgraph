@@ -36,7 +36,10 @@ class WorkspaceManager:
             bool: True if workspace created successfully, False otherwise
         """
         logger.info(f"Creating workspace: {workspace_id}")
-        logger.debug(f"Database config: {db_config['db_name']}@{db_config['host']}:{db_config['port']}")
+        if 'db_path' in db_config:
+            logger.debug(f"SQLite database config: {db_config['db_path']}")
+        else:
+            logger.debug(f"Legacy database config: {db_config.get('db_name', 'unknown')}@{db_config.get('host', 'unknown')}:{db_config.get('port', 'unknown')}")
         
         try:
             # Create connection pool
@@ -50,14 +53,30 @@ class WorkspaceManager:
             # Create database analyzer
             logger.info(f"Initializing database analyzer for workspace: {workspace_id}")
             from src.core.database.analysis import DatabaseAnalyzer
-            db_analyzer = DatabaseAnalyzer(
-                db_config['db_name'],
-                db_config['username'],
-                db_config['password'],
-                db_config['host'],
-                db_config['port'],
-                db_config.get('db_type', 'postgresql')
-            )
+            
+            # Handle both SQLite and legacy PostgreSQL configurations
+            if 'db_path' in db_config:
+                # SQLite configuration
+                db_analyzer = DatabaseAnalyzer(
+                    db_path=db_config['db_path'],
+                    db_name=db_config.get('db_name', 'PBTest'),
+                    username=db_config.get('username'),
+                    password=db_config.get('password'),
+                    host=db_config.get('host'),
+                    port=db_config.get('port')
+                )
+            else:
+                # Legacy PostgreSQL configuration (backward compatibility)
+                db_path = f"./data/{db_config.get('db_name', 'PBTest')}.db"
+                logger.warning(f"Legacy PostgreSQL config detected, converting to SQLite: {db_path}")
+                db_analyzer = DatabaseAnalyzer(
+                    db_path=db_path,
+                    db_name=db_config['db_name'],
+                    username=db_config.get('username'),
+                    password=db_config.get('password'),
+                    host=db_config.get('host'),
+                    port=db_config.get('port')
+                )
             
             # Initialize workspace metadata
             self.workspace_metadata[workspace_id] = {
@@ -186,8 +205,21 @@ class WorkspaceManager:
         
         metadata = self.workspace_metadata[workspace_id]
         
-        # Check connection pool status
-        pool_status = self.pool_manager.get_pool_status(workspace_id)
+        # Check connection pool status (with fallback for compatibility)
+        try:
+            pool_status = self.pool_manager.get_pool_status(workspace_id)
+        except AttributeError:
+            # Fallback if get_pool_status doesn't exist
+            try:
+                pool_exists = workspace_id in self.pool_manager.pools
+            except AttributeError:
+                # Even more basic fallback if pools attribute doesn't exist
+                pool_exists = True  # Assume pool exists if workspace was created successfully
+            
+            pool_status = {
+                'pool_exists': pool_exists,
+                'status': 'active' if pool_exists else 'inactive'
+            }
         
         status = {
             'workspace_id': workspace_id,
@@ -196,9 +228,11 @@ class WorkspaceManager:
             'schema_analyzed_at': metadata.get('schema_analyzed_at', 0),
             'pool_status': pool_status,
             'db_config': {
-                'db_name': metadata['db_config']['db_name'],
-                'host': metadata['db_config']['host'],
-                'port': metadata['db_config']['port']
+                'db_path': metadata['db_config'].get('db_path'),
+                'db_name': metadata['db_config'].get('db_name'),
+                'host': metadata['db_config'].get('host'),
+                'port': metadata['db_config'].get('port'),
+                'db_type': 'sqlite' if 'db_path' in metadata['db_config'] else 'legacy'
             }
         }
         

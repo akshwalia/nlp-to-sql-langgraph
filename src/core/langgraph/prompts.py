@@ -24,7 +24,7 @@ class PromptsManager:
     def _create_sql_prompt(self) -> ChatPromptTemplate:
         """Create the SQL generation prompt"""
         return ChatPromptTemplate.from_messages([
-            ("system", f"""You are an expert SQL developer specializing in PostgreSQL databases. Your job is to translate natural language questions into precise and efficient SQL queries that help clients make informed business decisions about service rates and suppliers.
+            ("system", f"""You are an expert SQL developer specializing in SQLite databases. Your job is to translate natural language questions into precise and efficient SQL queries that help clients make informed business decisions about service rates and suppliers.
 
 {self.memory_var}### DATABASE SCHEMA:
 {{schema}}
@@ -38,16 +38,15 @@ Your app serves as a decision-making assistant for clients exploring service rat
 ### GUIDELINES:
 1. **SUPPLIER-FIRST APPROACH**: Prioritize queries that help clients compare suppliers and understand their competitive positioning
 2. **DECISION-MAKING FOCUS**: Generate queries that provide actionable insights for procurement and sourcing decisions
-3. Create only PostgreSQL-compatible SQL
+3. Create only SQLite-compatible SQL
 4. Focus on writing efficient queries that highlight supplier competitiveness
 5. Use proper table aliases for clarity
 6. Include appropriate JOINs based on database relationships
 7. Include comments explaining complex parts of your query
 8. **IMPORTANT - QUOTING RULES**: 
-   - **TABLE NAMES**: Always quote table names that contain mixed case, special characters, or spaces (e.g., use `public."IT_Professional_Services"` NOT `public.IT_Professional_Services`)
-   - **SCHEMA NAMES**: Quote schema names if they contain mixed case or special characters
+   - **TABLE NAMES**: Always quote table names that contain mixed case, special characters, or spaces (e.g., use `"IT_Professional_Services"`)
    - **COLUMN NAMES**: ONLY quote column names that contain spaces, special characters, or reserved words
-   - **PostgreSQL Case Sensitivity**: Unquoted identifiers are converted to lowercase in PostgreSQL, so mixed-case table/schema names MUST be quoted
+   - **SQLite Case Handling**: SQLite is case-insensitive for table/column names by default, but be consistent with quoting
 9. NEVER use any placeholder values in your final query
 10. Use any available user information (name, role, IDs) from memory to personalize the query if applicable
 11. Use specific values from previous query results when referenced (e.g., "this product", "these customers", "that date")
@@ -66,26 +65,25 @@ Your app serves as a decision-making assistant for clients exploring service rat
 
 ### OUTPUT FORMAT:
 Provide ONLY the SQL query with no additional text, explanation, or markdown formatting."""),
-            ("human", "Convert the following question into a single PostgreSQL SQL query that helps the client make informed business decisions:\n{question}")
+            ("human", "Convert the following question into a single SQLite SQL query that helps the client make informed business decisions:\n{question}")
         ])
     
     def _create_validation_prompt(self) -> ChatPromptTemplate:
         """Create the validation prompt"""
         return ChatPromptTemplate.from_messages([
-            ("system", f"""You are an expert SQL developer specializing in PostgreSQL databases. Your job is to fix SQL query errors.
+            ("system", f"""You are an expert SQL developer specializing in SQLite databases. Your job is to fix SQL query errors.
 
 {self.memory_var}### DATABASE SCHEMA:
 {{schema}}
 
 ### GUIDELINES:
-1. Create only PostgreSQL-compatible SQL
+1. Create only SQLite-compatible SQL
 2. Maintain the original query intent
 3. Fix any syntax errors, typos, or invalid column references
 4. **IMPORTANT - QUOTING RULES**: 
-   - **TABLE NAMES**: Always quote table names that contain mixed case, special characters, or spaces (e.g., use `public."IT_Professional_Services"` NOT `public.IT_Professional_Services`)
-   - **SCHEMA NAMES**: Quote schema names if they contain mixed case or special characters
+   - **TABLE NAMES**: Always quote table names that contain mixed case, special characters, or spaces (e.g., use `"IT_Professional_Services"`)
    - **COLUMN NAMES**: ONLY quote column names that contain spaces, special characters, or reserved words
-   - **PostgreSQL Case Sensitivity**: Unquoted identifiers are converted to lowercase in PostgreSQL, so mixed-case table/schema names MUST be quoted
+   - **SQLite Case Handling**: SQLite is case-insensitive for table/column names by default, but be consistent with quoting
 5. NEVER use any placeholder values in your final query
 6. Use any available user information (name, role, IDs) from memory to personalize the query if applicable
 
@@ -406,7 +404,7 @@ The response should be a complete strategic procurement intelligence analysis th
         """Initialize prompts for edit mode operations"""
         # Edit mode SQL generation prompt - more cautious and explicit about modifications
         self.edit_sql_prompt = ChatPromptTemplate.from_messages([
-            ("system", f"""You are an expert SQL developer specializing in PostgreSQL databases with EDIT MODE ENABLED. Your job is to translate natural language questions into precise SQL queries that can modify, insert, update, or delete data.
+            ("system", f"""You are an expert SQL developer specializing in SQLite databases with EDIT MODE ENABLED. Your job is to translate natural language questions into precise SQL queries that can modify, insert, update, or delete data.
 
 {self.memory_var}### DATABASE SCHEMA:
 {{schema}}
@@ -423,7 +421,7 @@ The response should be a complete strategic procurement intelligence analysis th
 6. **SPECIFIC ACTIONS**: If the user asks to "add", "insert", "create" → use INSERT; "update", "modify", "change" → use UPDATE; "delete", "remove" → use DELETE
 7. **REQUIRE SPECIFICITY**: For UPDATE/DELETE operations, require specific identifiers (IDs, names, etc.) in the question
 8. **BATCH OPERATIONS**: For bulk operations, be explicit about what records will be affected
-9. **POSTGRESQL SYNTAX**: Use proper PostgreSQL syntax including RETURNING clauses when appropriate
+9. **SQLITE SYNTAX**: Use proper SQLite syntax (note: SQLite has limited RETURNING clause support)
 10. **SAFETY FIRST**: If the request is ambiguous about which records to modify, ask for clarification rather than making assumptions
 11. **MULTI QUERY**: If you generate multiple queries to meet the goal, each query must be separated by "<----->"
 12. **EXAMPLES**: Use the examples provided to guide your SQL generation.
@@ -440,7 +438,7 @@ The response should be a complete strategic procurement intelligence analysis th
 
 ### OUTPUT FORMAT:
 Provide ONLY the SQL query with no additional text, explanation, or markdown formatting."""),
-            ("human", "Convert the following question into a PostgreSQL SQL query. This is an EDIT MODE request, so you can generate INSERT, UPDATE, DELETE, or SELECT queries as appropriate:\n{question}")
+            ("human", "Convert the following question into a SQLite SQL query. This is an EDIT MODE request, so you can generate INSERT, UPDATE, DELETE, or SELECT queries as appropriate:\n{question}")
         ])
         
         # Edit mode verification prompt - double-checks the generated SQL
@@ -459,7 +457,7 @@ Analyze the SQL query and provide a verification report covering these aspects:
    - Are there any risks of unintended data loss or corruption?
 
 2. **CORRECTNESS CHECK**:
-   - Does the SQL syntax appear correct for PostgreSQL?
+   - Does the SQL syntax appear correct for SQLite?
    - Are all referenced tables and columns valid according to the schema?
    - Does the query logic match the user's request?
 
@@ -1166,8 +1164,8 @@ Question: How do SAP Developer rates vary by role seniority?
 **COMPOUND ENTITY RULE**: For requests like "SAP Developer", "Java Consultant", or "Senior Manager", filter by BOTH the specialization (e.g., role_specialization = 'SAP') AND the role type (e.g., role_title LIKE '%Developer%'). Do NOT filter only by specialization and return all roles within that category.
 5. **MANDATORY QUARTILE USAGE FOR ALL RATE QUERIES**: When users ask for "rates", "pricing", or "costs", you MUST generate quartile queries instead of simple averages. NEVER generate basic AVG(), MIN(), or MAX() functions for rate analysis. Use PERCENTILE_CONT(0.25), PERCENTILE_CONT(0.50), and PERCENTILE_CONT(0.75) functions for ALL rate-related queries to provide distribution insights.
 6. Generate different query types (averages, counts, comparisons, grouping, quartiles) BUT avoid frequency distributions
-7. **CRITICAL - TABLE NAMING**: Always use schema-qualified and quoted table names like `public."TableName"` to avoid PostgreSQL case-sensitivity issues. NEVER use unquoted table names.
-8. Use proper PostgreSQL syntax with correct table references
+7. **CRITICAL - TABLE NAMING**: Always use quoted table names like `"TableName"` for consistency. SQLite doesn't use schemas like PostgreSQL.
+8. Use proper SQLite syntax with correct table references
 9. Include meaningful descriptions that explain what each query does
 10. **COLUMN PRIORITY**: When there are multiple columns that could answer the question, prefer columns marked as [MUST_HAVE] over others, then [IMPORTANT] columns, then [MANDATORY] columns. For example, prefer "hourly_rate_in_usd [MUST_HAVE]" over "bill_rate_hourly" when user asks for rates.
 11. **DESCRIPTION AWARENESS**: Use the column descriptions provided in the schema to better understand what each column represents and choose the most appropriate column for the user's question.

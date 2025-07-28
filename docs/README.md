@@ -46,7 +46,7 @@ The system consists of two main components:
 
 - Python 3.8+
 - MongoDB 4.4+
-- PostgreSQL (for the target databases)
+- SQLite (built into Python, for the target databases)
 - Node.js 16+ (for frontend)
 
 ### Backend Setup
