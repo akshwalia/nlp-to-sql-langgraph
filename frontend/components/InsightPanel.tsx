@@ -1,14 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BarChart2, TrendingUp, AlertCircle, Info, ChevronDown, ChevronUp, Lightbulb, Zap } from 'lucide-react';
 
 interface InsightPanelProps {
-  data: any[];
-  tableName?: string;
+  data: Record<string, unknown>[];
   query?: string;
-  isLoading?: boolean;
 }
 
-const InsightPanel: React.FC<InsightPanelProps> = ({ data, tableName, query, isLoading = false }) => {
+const InsightPanel: React.FC<InsightPanelProps> = ({ data, query, isLoading = false }) => {
   const [insights, setInsights] = useState<{
     general: string[];
     statistical: { column: string; stats: { label: string; value: string | number }[] }[];
@@ -25,22 +23,7 @@ const InsightPanel: React.FC<InsightPanelProps> = ({ data, tableName, query, isL
     patterns: true
   });
 
-  useEffect(() => {
-    if (data && data.length > 0) {
-      // Generate insights based on the data
-      const generatedInsights = generateInsights(data, query || '');
-      setInsights(generatedInsights);
-    }
-  }, [data, query]);
-
-  const toggleSection = (section: 'general' | 'statistical' | 'patterns') => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
-
-  const generateInsights = (data: any[], query: string) => {
+  const generateInsights = useCallback((data: Record<string, unknown>[], query: string) => {
     const general: string[] = [];
     const statistical: { column: string; stats: { label: string; value: string | number }[] }[] = [];
     const patterns: string[] = [];
@@ -139,7 +122,7 @@ const InsightPanel: React.FC<InsightPanelProps> = ({ data, tableName, query, isL
               patterns.push(`The distribution of "${col}" is skewed (mean vs median difference).`);
             }
           }
-        } catch (error) {
+        } catch {
           // Skip this column if there's an error
         }
       });
@@ -159,7 +142,7 @@ const InsightPanel: React.FC<InsightPanelProps> = ({ data, tableName, query, isL
                 `Strong ${correlation > 0 ? 'positive' : 'negative'} correlation (${correlation.toFixed(2)}) between "${col1}" and "${col2}".`
               );
             }
-          } catch (error) {
+          } catch {
             // Skip if error
           }
         }
@@ -167,8 +150,22 @@ const InsightPanel: React.FC<InsightPanelProps> = ({ data, tableName, query, isL
     }
     
     return { general, statistical, patterns };
+  }, []);
+
+  useEffect(() => {
+    if (data && data.length > 0) {
+      const generatedInsights = generateInsights(data, query || '');
+      setInsights(generatedInsights);
+    }
+  }, [data, query, generateInsights]);
+
+  const toggleSection = (section: 'general' | 'statistical' | 'patterns') => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
   };
-  
+
   // Helper function to identify table type
   const identifyTableType = (columns: string[], query: string): string | null => {
     const columnsLower = columns.map(c => c.toLowerCase());
@@ -198,7 +195,7 @@ const InsightPanel: React.FC<InsightPanelProps> = ({ data, tableName, query, isL
   };
   
   // Helper function to check if a string is a date
-  const isDateString = (value: any): boolean => {
+  const isDateString = (value: unknown): boolean => {
     if (typeof value !== 'string') return false;
     const date = new Date(value);
     return !isNaN(date.getTime());
@@ -214,7 +211,7 @@ const InsightPanel: React.FC<InsightPanelProps> = ({ data, tableName, query, isL
   };
   
   // Helper function to calculate correlation
-  const calculateCorrelation = (data: any[], col1: string, col2: string): number => {
+  const calculateCorrelation = (data: Record<string, unknown>[], col1: string, col2: string): number => {
     const pairs = data
       .map(row => [Number(row[col1]), Number(row[col2])])
       .filter(pair => !isNaN(pair[0]) && !isNaN(pair[1]));

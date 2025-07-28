@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Play, Plus, Trash2, PlayCircle, Edit3, Save, X } from 'lucide-react';
+import { Play, Plus, Trash2, PlayCircle, Edit3, Save } from 'lucide-react';
 import { executeSQL } from '../lib/api';
 
 interface SqlCell {
   id: string;
   sql: string;
   isEditing: boolean;
-  result?: any;
+  result?: Record<string, unknown>;
   error?: string;
   isExecuting?: boolean;
 }
@@ -14,7 +14,7 @@ interface SqlCell {
 interface SqlEditorProps {
   sessionId: string;
   initialQueries: string[];
-  onResults: (results: any[]) => void;
+  onResults: (results: Record<string, unknown>[]) => void;
   className?: string;
   requiresConfirmation?: boolean;
 }

@@ -1,7 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
-import { Database, Wifi, WifiOff, BarChart2, Plus, History, RefreshCw, Menu, X, MessageCircle, Shield, Activity, ArrowLeft, User, ChevronLeft, ChevronRight, Mic, MicOff } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Database, Wifi, WifiOff, BarChart2, Plus, History, RefreshCw, Menu, X, MessageCircle, Shield, Activity, User, ChevronLeft, ChevronRight, Mic, MicOff } from 'lucide-react';
 import Message from './Message';
-import SqlResult from './SqlResult';
 import SessionManager from './SessionManager';
 import Dashboard from './Dashboard';
 import SessionsList from './SessionsList';
@@ -9,9 +8,8 @@ import SqlEditor from './SqlEditor';
 import AdminPanel from './AdminPanel';
 import VerificationResult from './VerificationResult';
 import UserProfile from './UserProfile';
-import { executeQuery, getSessionInfo, getPaginatedResults, createSession, getSessionMessages, createSavedQuery, getSavedQueries, deleteSavedQuery, deleteAllSavedQueries, SavedQuery, SavedQueryCreate } from '../lib/api';
+import { executeQuery, getSessionInfo, createSession, getSessionMessages, getSavedQueries, deleteSavedQuery, deleteAllSavedQueries, SavedQuery } from '../lib/api';
 import { useAuth } from '../lib/authContext';
-import { useTheme } from '../lib/themeContext';
 import ThemeToggle from './ThemeToggle';
 
 // PaginationInfo interface to match the API response
@@ -29,7 +27,7 @@ interface TableInfo {
   name: string;
   description: string;
   sql: string;
-  results: any[];
+  results: Record<string, unknown>[];
   row_count: number;
   table_id?: string;
   pagination?: PaginationInfo;
@@ -55,12 +53,12 @@ interface ChatMessage {
   query_type?: 'conversational' | 'sql' | 'edit_sql' | 'analysis' | 'edit_execution';
   sqlResult?: {
     sql: string;
-    data?: any[];
+    data?: Record<string, unknown>[];
     error?: string;
     pagination?: PaginationInfo;
     table_id?: string;
-    visualization_recommendations?: any; // Add LLM chart recommendations
-    saved_charts?: any[]; // Add saved charts
+    visualization_recommendations?: Record<string, unknown>; // Add LLM chart recommendations
+    saved_charts?: Record<string, unknown>[]; // Add saved charts
   };
   analysisResult?: {
     tables: TableInfo[];
@@ -73,12 +71,7 @@ interface ChatMessage {
   verificationResult?: VerificationResult;
 }
 
-// Add a new interface for tracking pagination state
-interface PaginationState {
-  messageId: string;
-  tableId: string;
-  currentPage: number;
-}
+// Removed PaginationState interface as it was unused
 
 interface ChatBotProps {
   autoSessionId?: string | null;
@@ -86,7 +79,6 @@ interface ChatBotProps {
 
 export default function ChatBot({ autoSessionId }: ChatBotProps) {
   const { user, settings } = useAuth();
-  const { theme } = useTheme();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
@@ -98,10 +90,9 @@ export default function ChatBot({ autoSessionId }: ChatBotProps) {
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [sessionInfo, setSessionInfo] = useState<any>(null);
+  const [sessionInfo, setSessionInfo] = useState<Record<string, unknown> | null>(null);
   const [showSessionManager, setShowSessionManager] = useState(false);
   const [showSessionsList, setShowSessionsList] = useState(false);
-  const [paginationState, setPaginationState] = useState<PaginationState | null>(null);
   const [showDashboard, setShowDashboard] = useState(false);
   const [savedQueries, setSavedQueries] = useState<SavedQuery[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -221,27 +212,7 @@ export default function ChatBot({ autoSessionId }: ChatBotProps) {
     }
   }, [messages]);
   
-  useEffect(() => {
-    inputRef.current?.focus();
-    
-    if (sessionId) {
-      fetchSessionInfo();
-    }
-  }, [sessionId]);
-
-  // Handle auto session loading when workspace connects with a session ID
-  useEffect(() => {
-    if (autoSessionId && autoSessionId !== sessionId) {
-      handleSessionSelect(autoSessionId);
-    }
-  }, [autoSessionId]);
-
-  // Load saved queries from database when component mounts or session changes
-  useEffect(() => {
-    loadSavedQueries();
-  }, [sessionId]);
-
-  const fetchSessionInfo = async () => {
+  const fetchSessionInfo = useCallback(async () => {
     if (!sessionId) return;
     
     try {
@@ -265,410 +236,14 @@ export default function ChatBot({ autoSessionId }: ChatBotProps) {
       setSessionId(null);
       setSessionInfo(null);
     }
-  };
+  }, [sessionId]);
 
-  const scrollToBottom = () => {
-    // Use instant scroll if we're paginating to avoid conflicts
-    const behavior = isPaginatingRef.current ? 'auto' : 'smooth';
-    messagesEndRef.current?.scrollIntoView({ behavior });
-  };
-
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!input.trim()) return;
-    
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      isUser: true,
-      text: input,
-      timestamp: new Date(),
-    };
-    
-    setMessages((prev) => [...prev, userMessage]);
-    const currentInput = input;
-    setInput('');
-    setIsProcessing(true);
-    
-    try {
-      let currentSessionId = sessionId;
-      
-      // Auto-create session if none exists
-      if (!currentSessionId) {
-        try {
-          const sessionData = await createSession({
-            name: `Chat Session ${new Date().toLocaleString()}`,
-            description: 'Auto-created session'
-          });
-          
-          currentSessionId = sessionData._id;
-          setSessionId(currentSessionId);
-          
-          const systemMessage: ChatMessage = {
-            id: `system-${Date.now()}`,
-            isUser: false,
-            text: `✅ Created new session: ${sessionData.name}`,
-            timestamp: new Date(),
-          };
-          
-          setMessages((prev) => [...prev, systemMessage]);
-        } catch (error) {
-          console.error('Error auto-creating session:', error);
-          const errorMessage: ChatMessage = {
-            id: `error-${Date.now()}`,
-            isUser: false,
-            text: '❌ Failed to create session. Please try connecting to the workspace again.',
-            timestamp: new Date(),
-          };
-          
-          setMessages((prev) => [...prev, errorMessage]);
-          setIsProcessing(false);
-          return;
-        }
-      }
-      
-      const result = await executeQuery(currentInput, currentSessionId || undefined);
-      
-      let responseMessage = result.text || result.message || 'Query executed successfully.';
-      const botMessage: ChatMessage = {
-        id: result.assistant_message?._id || `response-${Date.now()}`, // Use real message ID from API
-        isUser: false,
-        text: responseMessage,
-        timestamp: new Date(),
-        query_type: result.query_type,
-      };
-      
-      // Handle different response types
-      if (result.query_type === 'sql' || result.query_type === 'edit_sql') {
-        botMessage.sqlResult = {
-          sql: result.sql || '',
-          data: result.data,
-          error: result.error,
-          pagination: result.pagination,
-          table_id: result.table_id || result.pagination?.table_id,
-          visualization_recommendations: result.visualization_recommendations,
-          saved_charts: result.saved_charts,
-        };
-        
-        // Add verification result if available (only for new messages, not loaded ones)
-        if (result.verification_result) {
-          botMessage.verificationResult = result.verification_result;
-        }
-        
-        // Check if this requires SQL editor (edit queries or multiple queries in edit mode)
-        if (user?.role === 'admin' && result.sql) {
-          let shouldShowEditor = false;
-          let queries: string[] = [];
-          
-          // Case 1: Edit SQL query that requires confirmation
-          if (result.query_type === 'edit_sql' || result.is_edit_query || result.requires_confirmation) {
-            shouldShowEditor = true;
-            // Split by <-----> separator for edit queries too
-            queries = result.sql.split('<----->').map((q: string) => q.trim()).filter((q: string) => q);
-            
-            // Add SQL editor to the message
-            botMessage.sqlEditor = {
-              queries: queries,
-              requiresConfirmation: result.requires_confirmation
-            };
-          }
-          // Case 2: Multiple queries in edit mode
-          else if (settings?.settings?.edit_mode_enabled) {
-            const splitQueries = result.sql.split('<----->').map((q: string) => q.trim()).filter((q: string) => q);
-            if (splitQueries.length > 1) {
-              shouldShowEditor = true;
-              queries = splitQueries;
-              
-              // Add SQL editor to the message
-              botMessage.sqlEditor = {
-                queries: queries,
-                requiresConfirmation: false
-              };
-            }
-          }
-        }
-        
-        // Log for debugging
-        console.log('SQL Result with pagination:', {
-          tableId: result.table_id,
-          pagination: result.pagination,
-          queryType: result.query_type,
-          isEditQuery: result.is_edit_query,
-          requiresConfirmation: result.requires_confirmation
-        });
-      } else if (result.query_type === 'analysis') {
-        // Each table should have its own table_id for pagination
-        const tablesWithIds = result.tables.map((table: any) => {
-          console.log('Analysis table:', table);
-          return {
-            ...table,
-            table_id: table.table_id || `table-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-            pagination: table.pagination
-          };
-        });
-        
-        botMessage.analysisResult = {
-          tables: tablesWithIds,
-          analysis_type: result.analysis_type
-        };
-      }
-      // For conversational queries, we just use the text
-      
-      setMessages((prev) => [...prev, botMessage]);
-    } catch (error: any) {
-      const errorMessage: ChatMessage = {
-        id: `error-${Date.now()}`,
-        isUser: false,
-        text: `Error: ${error.message || 'Failed to execute query'}`,
-        timestamp: new Date(),
-      };
-      
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsProcessing(false);
-      inputRef.current?.focus();
-    }
-  };
-
-  const handleSessionCreated = (newSessionId: string) => {
-    setSessionId(newSessionId);
-    
-    const systemMessage: ChatMessage = {
-      id: `system-${Date.now()}`,
-      isUser: false,
-      text: `✅ Connected to database successfully. Session ID: ${newSessionId}`,
-      timestamp: new Date(),
-    };
-    
-    setMessages((prev) => [...prev, systemMessage]);
-  };
-
-  const handlePageChange = async (messageId: string, tableId: string, newPage: number) => {
-    if (!sessionId || !tableId) {
-      console.error('Missing session ID or table ID for pagination', { sessionId, tableId });
-      return;
-    }
-    
-    console.log(`Fetching page ${newPage} for table ${tableId} in session ${sessionId}`);
-    
-    // Capture current scroll position before pagination
-    if (messagesContainerRef.current) {
-      scrollPositionRef.current = messagesContainerRef.current.scrollTop;
-    }
-    
-    setIsProcessing(true);
-    isPaginatingRef.current = true;
-    
-    try {
-      const result = await getPaginatedResults(sessionId, tableId, newPage);
-      console.log('Paginated results:', result);
-      
-      // Make sure we have the current table_id (it might have changed in the response)
-      const currentTableId = result.pagination?.table_id || tableId;
-      
-      // Update the message with the new data
-      setMessages((prevMessages) => 
-        prevMessages.map((msg) => {
-          if (msg.id === messageId && msg.sqlResult) {
-            return {
-              ...msg,
-              sqlResult: {
-                ...msg.sqlResult,
-                data: result.results || result.data, // Use results field from pagination response
-                pagination: result.pagination,
-                table_id: currentTableId,
-                // Explicitly preserve chart-related fields during pagination
-                visualization_recommendations: msg.sqlResult.visualization_recommendations,
-                saved_charts: msg.sqlResult.saved_charts,
-              }
-            };
-          } else if (msg.id === messageId && msg.analysisResult) {
-            // For analysis results, find and update the specific table
-            const updatedTables = msg.analysisResult.tables.map(table => {
-              if (table.table_id === tableId) {
-                return {
-                  ...table,
-                  results: result.results || result.data, // Use results field from pagination response
-                  pagination: result.pagination,
-                  table_id: currentTableId
-                };
-              }
-              return table;
-            });
-            
-            return {
-              ...msg,
-              analysisResult: {
-                ...msg.analysisResult,
-                tables: updatedTables
-              }
-            };
-          }
-          return msg;
-        })
-      );
-      
-      // Update the pagination state
-      setPaginationState({
-        messageId,
-        tableId: currentTableId,
-        currentPage: newPage
-      });
-    } catch (error) {
-      console.error('Error fetching paginated results:', error);
-      const errorMessage: ChatMessage = {
-        id: `pagination-error-${Date.now()}`,
-        isUser: false,
-        text: `Error loading page ${newPage}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        timestamp: new Date(),
-      };
-      
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsProcessing(false);
-      
-      // Restore scroll position after a short delay to ensure DOM is updated
-      setTimeout(() => {
-        if (messagesContainerRef.current && scrollPositionRef.current !== undefined) {
-          messagesContainerRef.current.scrollTop = scrollPositionRef.current;
-        }
-        isPaginatingRef.current = false;
-      }, 50);
-    }
-  };
-
-  // New function to save a query to the dashboard
-  const handleSaveQuery = async (query: any) => {
-    if (!query.sql || !query.data) return;
-    
-    try {
-      const queryData: SavedQueryCreate = {
-        title: query.title || `Query ${new Date().toLocaleString()}`,
-        description: query.description || '',
-        sql: query.sql,
-        data: query.data,
-        table_name: query.table_name || 'results'
-      };
-      
-      const savedQuery = await createSavedQuery(
-        queryData,
-        undefined, // No workspace context
-        sessionId || undefined
-      );
-      
-      // Add to local state
-      setSavedQueries(prev => [savedQuery, ...prev]);
-      
-      // Show success message
-      const successMessage: ChatMessage = {
-        id: `save-success-${Date.now()}`,
-        isUser: false,
-        text: `✅ Query saved successfully: "${savedQuery.title}"`,
-        timestamp: new Date(),
-      };
-      
-      setMessages((prev) => [...prev, successMessage]);
-    } catch (error) {
-      console.error('Error saving query:', error);
-      const errorMessage: ChatMessage = {
-        id: `save-error-${Date.now()}`,
-        isUser: false,
-        text: '❌ Failed to save query. Please try again.',
-        timestamp: new Date(),
-      };
-      
-      setMessages((prev) => [...prev, errorMessage]);
-    }
-  };
-
-  // Function to delete a saved query
-  const handleDeleteQuery = async (queryId: string) => {
-    try {
-      await deleteSavedQuery(queryId);
-      setSavedQueries(prev => prev.filter(q => q.id !== queryId));
-    } catch (error) {
-      console.error('Error deleting saved query:', error);
-    }
-  };
-
-  // Function to clear all saved queries
-  const handleClearAllQueries = async () => {
-    try {
-      await deleteAllSavedQueries(undefined); // No workspace context
-      setSavedQueries([]);
-    } catch (error) {
-      console.error('Error clearing all queries:', error);
-    }
-  };
-
-  const handleNewChat = async () => {
-    try {
-      const sessionData = await createSession({
-        name: `Chat Session ${new Date().toLocaleString()}`,
-        description: 'New chat session'
-      });
-      
-      setSessionId(sessionData._id);
-      setMessages([
-        {
-          id: 'welcome',
-          isUser: false,
-          text: 'Hello! I can help you query your database using natural language. How can I help you today?',
-          timestamp: new Date(),
-        },
-      ]);
-      
-      const systemMessage: ChatMessage = {
-        id: `system-${Date.now()}`,
-        isUser: false,
-        text: `✅ Started new chat session: ${sessionData.name}`,
-        timestamp: new Date(),
-      };
-      
-      setMessages((prev) => [...prev, systemMessage]);
-      setSidebarOpen(false);
-    } catch (error) {
-      console.error('Error creating new chat:', error);
-    }
-  };
-
-  const handleRefreshConnection = async () => {
-    if (!sessionId) return;
-    
-    try {
-      setIsRefreshing(true);
-      // Refresh session info instead of activating workspace
-      await fetchSessionInfo();
-      
-      const systemMessage: ChatMessage = {
-        id: `system-${Date.now()}`,
-        isUser: false,
-        text: '✅ Session refreshed successfully!',
-        timestamp: new Date(),
-      };
-      
-      setMessages((prev) => [...prev, systemMessage]);
-    } catch (error) {
-      console.error('Error refreshing session:', error);
-      const errorMessage: ChatMessage = {
-        id: `error-${Date.now()}`,
-        isUser: false,
-        text: '❌ Failed to refresh session. Please check your connection settings.',
-        timestamp: new Date(),
-      };
-      
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  const loadSessionMessages = async (sessionId: string) => {
+  const loadSessionMessages = useCallback(async (sessionId: string) => {
     try {
       const sessionMessages = await getSessionMessages(sessionId);
       
       // Convert session messages to ChatMessage format
-      const convertedMessages: ChatMessage[] = sessionMessages.map((msg: any) => {
+      const convertedMessages: ChatMessage[] = sessionMessages.map((msg: { query_result?: Record<string, unknown>; question?: string; response?: string; created_at?: string; id?: string }) => {
         const queryResult = msg.query_result;
         
         // Determine query type from the query_result
@@ -763,9 +338,306 @@ export default function ChatBot({ autoSessionId }: ChatBotProps) {
         },
       ]);
     }
+  }, [user?.role]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+    
+    if (sessionId) {
+      fetchSessionInfo();
+    }
+  }, [sessionId, fetchSessionInfo]);
+
+  // Handle auto session loading when workspace connects with a session ID
+  useEffect(() => {
+    if (autoSessionId && autoSessionId !== sessionId) {
+      setSessionId(autoSessionId);
+      setShowSessionsList(false);
+      setSidebarOpen(false);
+      
+      // Clear current messages and show loading
+      setMessages([
+        {
+          id: 'loading',
+          isUser: false,
+          text: 'Loading session messages...',
+          timestamp: new Date(),
+        },
+      ]);
+      
+      // Load session messages and fetch session info
+      const loadAutoSession = async () => {
+        await loadSessionMessages(autoSessionId);
+        fetchSessionInfo();
+      };
+      
+      loadAutoSession();
+    }
+  }, [autoSessionId, sessionId, loadSessionMessages, fetchSessionInfo]);
+
+  // Load saved queries from database when component mounts or session changes
+  useEffect(() => {
+    loadSavedQueries();
+  }, [sessionId]);
+
+  const scrollToBottom = () => {
+    // Use instant scroll if we're paginating to avoid conflicts
+    const behavior = isPaginatingRef.current ? 'auto' : 'smooth';
+    messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
-  const handleSessionSelect = async (selectedSessionId: string) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!input.trim()) return;
+    
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      isUser: true,
+      text: input,
+      timestamp: new Date(),
+    };
+    
+    setMessages((prev) => [...prev, userMessage]);
+    const currentInput = input;
+    setInput('');
+    setIsProcessing(true);
+    
+    try {
+      let currentSessionId = sessionId;
+      
+      // Auto-create session if none exists
+      if (!currentSessionId) {
+        try {
+          const sessionData = await createSession({
+            name: `Chat Session ${new Date().toLocaleString()}`,
+            description: 'Auto-created session'
+          });
+          
+          currentSessionId = sessionData._id;
+          setSessionId(currentSessionId);
+          
+          const systemMessage: ChatMessage = {
+            id: `system-${Date.now()}`,
+            isUser: false,
+            text: `✅ Created new session: ${sessionData.name}`,
+            timestamp: new Date(),
+          };
+          
+          setMessages((prev) => [...prev, systemMessage]);
+        } catch (error) {
+          console.error('Error auto-creating session:', error);
+          const errorMessage: ChatMessage = {
+            id: `error-${Date.now()}`,
+            isUser: false,
+            text: '❌ Failed to create session. Please try connecting to the workspace again.',
+            timestamp: new Date(),
+          };
+          
+          setMessages((prev) => [...prev, errorMessage]);
+          setIsProcessing(false);
+          return;
+        }
+      }
+      
+      const result = await executeQuery(currentInput, currentSessionId || undefined);
+      
+      const responseMessage = result.text || result.message || 'Query executed successfully.';
+      const botMessage: ChatMessage = {
+        id: result.assistant_message?._id || `response-${Date.now()}`, // Use real message ID from API
+        isUser: false,
+        text: responseMessage,
+        timestamp: new Date(),
+        query_type: result.query_type,
+      };
+      
+      // Handle different response types
+      if (result.query_type === 'sql' || result.query_type === 'edit_sql') {
+        botMessage.sqlResult = {
+          sql: result.sql || '',
+          data: result.data,
+          error: result.error,
+          pagination: result.pagination,
+          table_id: result.table_id || result.pagination?.table_id,
+          visualization_recommendations: result.visualization_recommendations,
+          saved_charts: result.saved_charts,
+        };
+        
+        // Add verification result if available (only for new messages, not loaded ones)
+        if (result.verification_result) {
+          botMessage.verificationResult = result.verification_result;
+        }
+        
+        // Check if this requires SQL editor (edit queries or multiple queries in edit mode)
+        if (user?.role === 'admin' && result.sql) {
+          let queries: string[] = [];
+          
+          // Case 1: Edit SQL query that requires confirmation
+          if (result.query_type === 'edit_sql' || result.is_edit_query || result.requires_confirmation) {
+            // Split by <-----> separator for edit queries too
+            queries = result.sql.split('<----->').map((q: string) => q.trim()).filter((q: string) => q);
+            
+            // Add SQL editor to the message
+            botMessage.sqlEditor = {
+              queries: queries,
+              requiresConfirmation: result.requires_confirmation
+            };
+          }
+          // Case 2: Multiple queries in edit mode
+          else if (settings?.settings?.edit_mode_enabled) {
+            const splitQueries = result.sql.split('<----->').map((q: string) => q.trim()).filter((q: string) => q);
+            if (splitQueries.length > 1) {
+              queries = splitQueries;
+              
+              // Add SQL editor to the message
+              botMessage.sqlEditor = {
+                queries: queries,
+                requiresConfirmation: false
+              };
+            }
+          }
+        }
+        
+        // Log for debugging
+        console.log('SQL Result with pagination:', {
+          tableId: result.table_id,
+          pagination: result.pagination,
+          queryType: result.query_type,
+          isEditQuery: result.is_edit_query,
+          requiresConfirmation: result.requires_confirmation
+        });
+      } else if (result.query_type === 'analysis') {
+        // Each table should have its own table_id for pagination
+        const tablesWithIds = result.tables.map((table: TableInfo) => {
+          console.log('Analysis table:', table);
+          return {
+            ...table,
+            table_id: table.table_id || `table-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+            pagination: table.pagination
+          };
+        });
+        
+        botMessage.analysisResult = {
+          tables: tablesWithIds,
+          analysis_type: result.analysis_type
+        };
+      }
+      // For conversational queries, we just use the text
+      
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (error: unknown) {
+      const errorMessage: ChatMessage = {
+        id: `error-${Date.now()}`,
+        isUser: false,
+        text: `Error: ${error instanceof Error ? error.message : 'Failed to execute query'}`,
+        timestamp: new Date(),
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsProcessing(false);
+      inputRef.current?.focus();
+    }
+  };
+
+  const handleSessionCreated = (newSessionId: string) => {
+    setSessionId(newSessionId);
+    
+    const systemMessage: ChatMessage = {
+      id: `system-${Date.now()}`,
+      isUser: false,
+      text: `✅ Connected to database successfully. Session ID: ${newSessionId}`,
+      timestamp: new Date(),
+    };
+    
+    setMessages((prev) => [...prev, systemMessage]);
+  };
+
+  // Removed handlePageChange and handleSaveQuery functions as they were unused
+
+  // Function to delete a saved query
+  const handleDeleteQuery = async (queryId: string) => {
+    try {
+      await deleteSavedQuery(queryId);
+      setSavedQueries(prev => prev.filter(q => q.id !== queryId));
+    } catch (error) {
+      console.error('Error deleting saved query:', error);
+    }
+  };
+
+  // Function to clear all saved queries
+  const handleClearAllQueries = async () => {
+    try {
+      await deleteAllSavedQueries(undefined); // No workspace context
+      setSavedQueries([]);
+    } catch (error) {
+      console.error('Error clearing all queries:', error);
+    }
+  };
+
+  const handleNewChat = async () => {
+    try {
+      const sessionData = await createSession({
+        name: `Chat Session ${new Date().toLocaleString()}`,
+        description: 'New chat session'
+      });
+      
+      setSessionId(sessionData._id);
+      setMessages([
+        {
+          id: 'welcome',
+          isUser: false,
+          text: 'Hello! I can help you query your database using natural language. How can I help you today?',
+          timestamp: new Date(),
+        },
+      ]);
+      
+      const systemMessage: ChatMessage = {
+        id: `system-${Date.now()}`,
+        isUser: false,
+        text: `✅ Started new chat session: ${sessionData.name}`,
+        timestamp: new Date(),
+      };
+      
+      setMessages((prev) => [...prev, systemMessage]);
+      setSidebarOpen(false);
+    } catch (error) {
+      console.error('Error creating new chat:', error);
+    }
+  };
+
+  const handleRefreshConnection = async () => {
+    if (!sessionId) return;
+    
+    try {
+      setIsRefreshing(true);
+      // Refresh session info instead of activating workspace
+      await fetchSessionInfo();
+      
+      const systemMessage: ChatMessage = {
+        id: `system-${Date.now()}`,
+        isUser: false,
+        text: '✅ Session refreshed successfully!',
+        timestamp: new Date(),
+      };
+      
+      setMessages((prev) => [...prev, systemMessage]);
+    } catch (error) {
+      console.error('Error refreshing session:', error);
+      const errorMessage: ChatMessage = {
+        id: `error-${Date.now()}`,
+        isUser: false,
+        text: '❌ Failed to refresh session. Please check your connection settings.',
+        timestamp: new Date(),
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleSessionSelect = useCallback(async (selectedSessionId: string) => {
     setSessionId(selectedSessionId);
     setShowSessionsList(false);
     setSidebarOpen(false);
@@ -785,13 +657,13 @@ export default function ChatBot({ autoSessionId }: ChatBotProps) {
     
     // Fetch session info
     fetchSessionInfo();
-  };
+  }, [fetchSessionInfo, loadSessionMessages]);
   
-  const handleSqlEditorResults = (messageId: string, results: any[]) => {
+  const handleSqlEditorResults = (messageId: string, results: Record<string, unknown>[]) => {
     // Handle the new transaction response format
     results.forEach((result, index) => {
       let text = '';
-      let query_type: 'edit_execution' | 'sql' = 'edit_execution';
+      const query_type: 'edit_execution' | 'sql' = 'edit_execution';
       
       if (result.success) {
         // Success case
@@ -839,7 +711,7 @@ export default function ChatBot({ autoSessionId }: ChatBotProps) {
   };
 
   // Voice-to-text functions
-  const initializeSpeechRecognition = () => {
+  const initializeSpeechRecognition = useCallback(() => {
     if (typeof window === 'undefined' || !speechSupported) {
       return null;
     }
@@ -923,9 +795,17 @@ export default function ChatBot({ autoSessionId }: ChatBotProps) {
     };
 
     return recognition;
-  };
+  }, [speechSupported]);
 
-  const startListening = () => {
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+  }, []);
+
+  const startListening = useCallback(() => {
     if (!speechSupported) {
       setSpeechError('Speech recognition is not supported in your browser.');
       setTimeout(() => setSpeechError(null), 3000);
@@ -948,15 +828,7 @@ export default function ChatBot({ autoSessionId }: ChatBotProps) {
         setTimeout(() => setSpeechError(null), 3000);
       }
     }
-  };
-
-  const stopListening = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
-    }
-    setIsListening(false);
-  };
+  }, [speechSupported, isListening, stopListening, initializeSpeechRecognition]);
 
   // Cleanup speech recognition on unmount
   useEffect(() => {
@@ -985,7 +857,7 @@ export default function ChatBot({ autoSessionId }: ChatBotProps) {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [speechSupported, isProcessing, isListening]);
+  }, [speechSupported, isProcessing, isListening, startListening, stopListening]);
 
   const navigationItems = [
     {

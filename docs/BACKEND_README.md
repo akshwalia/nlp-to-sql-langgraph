@@ -17,7 +17,7 @@ This is the backend service for the NLP to SQL application, which allows users t
 
 - Python 3.8+
 - MongoDB 4.4+
-- PostgreSQL (for the target databases)
+- SQLite (built into Python, for the target databases)
 
 ### Environment Variables
 
@@ -120,12 +120,9 @@ Request body:
   "name": "My Workspace",
   "description": "Description of the workspace",
   "db_connection": {
-    "db_name": "postgres",
-    "username": "postgres",
-    "password": "password",
-    "host": "localhost",
-    "port": "5432",
-    "db_type": "postgresql"
+    "db_name": "PBTest",
+    "db_path": "./data/PBTest.db",
+    "db_type": "sqlite"
   }
 }
 ```
@@ -230,12 +227,9 @@ The application uses MongoDB with the following collections:
   "description": "Workspace Description",
   "user_id": ObjectId,
   "db_connection": {
-    "db_name": "postgres",
-    "username": "postgres",
-    "password": "password",
-    "host": "localhost",
-    "port": "5432",
-    "db_type": "postgresql"
+    "db_name": "PBTest",
+    "db_path": "./data/PBTest.db",
+    "db_type": "sqlite"
   },
   "created_at": ISODate,
   "updated_at": ISODate,
@@ -292,7 +286,7 @@ The application includes a fallback mode that uses in-memory storage if MongoDB 
 
 ## Security Considerations
 
-- Database passwords are stored in MongoDB. In a production environment, consider encrypting these passwords.
+- SQLite database files are stored locally. In a production environment, ensure proper file permissions and backup strategies.
 - JWT tokens have a 24-hour expiration by default. Adjust this as needed for your security requirements.
 - The API uses CORS with "*" as the allowed origin. In production, specify your frontend domains.
 

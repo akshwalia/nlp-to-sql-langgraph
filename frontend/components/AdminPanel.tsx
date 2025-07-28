@@ -6,7 +6,7 @@ import { searchUser, promoteUser } from '../lib/api';
 export default function AdminPanel({ className = '' }: { className?: string }) {
   const { user, settings, toggleEditMode, refreshSettings } = useAuth();
   const [searchEmail, setSearchEmail] = useState('');
-  const [searchResult, setSearchResult] = useState<any>(null);
+  const [searchResult, setSearchResult] = useState<{ id: string; email: string; role: string; first_name?: string; last_name?: string } | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [isPromoting, setIsPromoting] = useState(false);
   const [isTogglingEditMode, setIsTogglingEditMode] = useState(false);

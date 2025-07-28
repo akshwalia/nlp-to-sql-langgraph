@@ -65,7 +65,7 @@ NLP_TO_SQL/
 ### Prerequisites
 
 - Python 3.9+
-- PostgreSQL database
+- SQLite database (built into Python)
 - MongoDB
 - Node.js 18+ (for frontend)
 

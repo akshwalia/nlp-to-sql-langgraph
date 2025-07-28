@@ -434,8 +434,8 @@ Results: [Result 1: IND-only data with Q1=25, Q3=35], [Result 2: USA-only data w
 **COMPOUND ENTITY RULE**: For requests like "SAP Developer", "Java Consultant", or "Senior Manager", filter by BOTH the specialization (e.g., role_specialization = 'SAP') AND the role type (e.g., role_title LIKE '%Developer%'). Do NOT filter only by specialization and return all roles within that category.
 5. **MANDATORY QUARTILE USAGE FOR ALL RATE QUERIES**: When users ask for "rates", "pricing", or "costs", you MUST generate quartile queries instead of simple averages. NEVER generate basic AVG(), MIN(), or MAX() functions for rate analysis. Use PERCENTILE_CONT(0.25), PERCENTILE_CONT(0.50), and PERCENTILE_CONT(0.75) functions for ALL rate-related queries to provide distribution insights.
 6. Generate different query types (averages, counts, comparisons, grouping, quartiles) BUT avoid frequency distributions
-7. **CRITICAL - TABLE NAMING**: Always use schema-qualified and quoted table names like `public."TableName"` to avoid PostgreSQL case-sensitivity issues. NEVER use unquoted table names.
-8. Use proper PostgreSQL syntax with correct table references
+7. **CRITICAL - TABLE NAMING**: Always use quoted table names like `"TableName"` for consistency. SQLite doesn't use schemas like PostgreSQL.
+8. Use proper SQLite syntax with correct table references
 9. Include meaningful descriptions that explain what each query does
 10. **SINGLE DIMENSION GROUPING**: When using GROUP BY, focus on ONE dimension only (e.g., GROUP BY supplier OR GROUP BY role_seniority, not both combined)
 11. **COLUMN PRIORITY**: When there are multiple columns that could answer the question, prefer columns marked as [MUST_HAVE] over others, then [IMPORTANT] columns, then [MANDATORY] columns. For example, prefer "hourly_rate_in_usd [MUST_HAVE]" over "bill_rate_hourly" when user asks for rates.

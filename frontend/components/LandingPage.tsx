@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { ArrowRight, Database, Brain, BarChart3, MessageSquare, TrendingUp, Sparkles, Zap } from 'lucide-react';
-import { useTheme } from '../lib/themeContext';
 import ThemeToggle from './ThemeToggle';
 
 interface LandingPageProps {
@@ -56,8 +55,6 @@ const features = [
 ];
 
 export default function LandingPage({ onLoginClick, onRegisterClick }: LandingPageProps) {
-  const { theme } = useTheme();
-  
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-white overflow-hidden relative transition-colors duration-300">
       {/* Animated Background Bubbles */}

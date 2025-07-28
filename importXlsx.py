@@ -1,21 +1,23 @@
 import pandas as pd
-import psycopg2
+import sqlite3
 from sqlalchemy import create_engine, text
 import re
 import os
 
-# Database connection parameters
+# Database connection parameters - Updated for SQLite
 DB_CONFIG = {
+    'db_path': './data/PBTest.db',  # SQLite database file path
+    # Legacy PostgreSQL parameters (not used)
     'host': 'localhost',
     'port': '5432',
     'database': 'PBTest',
-    'user': 'postgres',
-    'password': 'Arjit#195'
+    'user': 'admin123',
+    'password': 'arjit'
 }
 
 FILE_CONFIG = {
     'data_file_path': 'GR_IT_Professional_Services_Spend2025.xlsx',
-    'data_sheet_name': 'GR_IT_Professional_Services_til',
+    'data_sheet_name': 'GR_IT_Professional_Services_Spe',
     'description_file_path': 'ImportantColumns_PriceBenchmarks.xlsx',  # New field for description file
     'description_sheet_name': 'IT|Professional Services',  # Updated to correct sheet name
     'table_name': 'IT_Professional_Services',
@@ -31,8 +33,11 @@ FILE_CONFIG = {
     }
 }
 
-# Create connection string
-connection_string = f"postgresql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}"
+# Ensure database directory exists
+os.makedirs(os.path.dirname(DB_CONFIG['db_path']), exist_ok=True)
+
+# Create SQLite connection string
+connection_string = f"sqlite:///{DB_CONFIG['db_path']}"
 
 def parse_spend_range(spend_str):
     """
@@ -169,21 +174,21 @@ def convert_boolean_field(value):
         # Default to False for any other value
         return False
 
-def get_postgres_datatype(col_name, sample_data):
-    """Determine appropriate PostgreSQL data type based on column name and sample data"""
+def get_sqlite_datatype(col_name, sample_data):
+    """Determine appropriate SQLite data type based on column name and sample data"""
     col_lower = col_name.lower()
     
     # Check if it's clearly a string type from the original header
     if '|string' in col_name.lower():
-        return 'VARCHAR(255)'
+        return 'TEXT'
     elif '|integer' in col_name.lower() or '|int' in col_name.lower():
         return 'INTEGER'
     elif '|decimal' in col_name.lower() or '|float' in col_name.lower():
-        return 'DECIMAL(12,5)'
+        return 'REAL'
     elif '|date' in col_name.lower():
-        return 'DATE'
+        return 'TEXT'  # SQLite stores dates as TEXT
     elif '|boolean' in col_name.lower() or '|bool' in col_name.lower():
-        return 'BOOLEAN'
+        return 'INTEGER'  # SQLite uses INTEGER for booleans (0/1)
     elif '|spend' in col_name.lower():
         return 'SPEND'  # Special marker for spend columns
     
@@ -192,18 +197,18 @@ def get_postgres_datatype(col_name, sample_data):
     non_null_sample = sample_data.dropna()
     
     if len(non_null_sample) == 0:
-        # If all values are NaN, default to VARCHAR
-        return 'VARCHAR(255)'
+        # If all values are NaN, default to TEXT
+        return 'TEXT'
     
     if pd.api.types.is_numeric_dtype(non_null_sample):
         if pd.api.types.is_integer_dtype(non_null_sample):
             return 'INTEGER'
         else:
-            return 'DECIMAL(10,2)'
+            return 'REAL'
     elif pd.api.types.is_datetime64_any_dtype(non_null_sample):
-        return 'TIMESTAMP'
+        return 'TEXT'  # SQLite stores timestamps as TEXT
     else:
-        return 'VARCHAR(255)'
+        return 'TEXT'
 
 def import_description_table(description_file_path, description_table_name, sheet_name=0):
     """Import the description/metadata table"""
@@ -283,16 +288,13 @@ def import_description_table(description_file_path, description_table_name, shee
     print(f"\nSample processed data:")
     print(processed_df.head())
     
-    # Create SQLAlchemy engine
+    # Create SQLAlchemy engine for SQLite
     engine = create_engine(
         connection_string,
-        pool_size=10,
-        max_overflow=20,
         pool_pre_ping=True,
-        pool_recycle=3600,
         connect_args={
-            "connect_timeout": FILE_CONFIG['timeout'],
-            "options": f"-c statement_timeout={FILE_CONFIG['timeout'] * 1000}ms"
+            "timeout": FILE_CONFIG['timeout'],
+            "check_same_thread": False  # Allow SQLite to be used across threads
         }
     )
     
@@ -304,12 +306,12 @@ def import_description_table(description_file_path, description_table_name, shee
     # Create description table
     create_table_sql = f'''
     CREATE TABLE "{description_table_name}" (
-        "column_name" VARCHAR(255) PRIMARY KEY,
-        "common_name" VARCHAR(255),
+        "column_name" TEXT PRIMARY KEY,
+        "common_name" TEXT,
         "description" TEXT,
-        "is_important" BOOLEAN,
-        "must_have" BOOLEAN,
-        "mandatory_entity" BOOLEAN
+        "is_important" INTEGER,
+        "must_have" INTEGER,
+        "mandatory_entity" INTEGER
     );
     '''
     
@@ -342,8 +344,8 @@ def import_description_table(description_file_path, description_table_name, shee
     
     return True
 
-def import_excel_to_postgres(excel_file_path, table_name, sheet_name=0):
-    """Import Excel file to PostgreSQL with proper column names and data types"""
+def import_excel_to_sqlite(excel_file_path, table_name, sheet_name=0):
+    """Import Excel file to SQLite with proper column names and data types"""
     
     # Read Excel file
     print(f"Reading Excel file: {excel_file_path}")
@@ -364,16 +366,13 @@ def import_excel_to_postgres(excel_file_path, table_name, sheet_name=0):
     
     print(f"Cleaned columns: {list(df.columns)}")
     
-    # Create SQLAlchemy engine with better connection handling
+    # Create SQLAlchemy engine for SQLite
     engine = create_engine(
         connection_string,
-        pool_size=10,
-        max_overflow=20,
         pool_pre_ping=True,
-        pool_recycle=3600,
         connect_args={
-            "connect_timeout": FILE_CONFIG['timeout'],
-            "options": f"-c statement_timeout={FILE_CONFIG['timeout'] * 1000}ms"  # Convert to milliseconds
+            "timeout": FILE_CONFIG['timeout'],
+            "check_same_thread": False  # Allow SQLite to be used across threads
         }
     )
     
@@ -387,13 +386,13 @@ def import_excel_to_postgres(excel_file_path, table_name, sheet_name=0):
     column_definitions = []
     
     for original_col, clean_col in column_mapping.items():
-        data_type = get_postgres_datatype(original_col, df[clean_col])
+        data_type = get_sqlite_datatype(original_col, df[clean_col])
         
         if data_type == 'SPEND':
             # For spend columns, create 3 columns: original, lower_limit, upper_limit
-            column_definitions.append(f'    "{clean_col}" VARCHAR(255)')  # Original string value
-            column_definitions.append(f'    "{clean_col}_lower_limit" DECIMAL(12,3)')  # Lower limit in millions
-            column_definitions.append(f'    "{clean_col}_upper_limit" DECIMAL(12,3)')  # Upper limit in millions
+            column_definitions.append(f'    "{clean_col}" TEXT')  # Original string value
+            column_definitions.append(f'    "{clean_col}_lower_limit" REAL')  # Lower limit in millions
+            column_definitions.append(f'    "{clean_col}_upper_limit" REAL')  # Upper limit in millions
         else:
             column_definitions.append(f'    "{clean_col}" {data_type}')
     
@@ -413,7 +412,7 @@ def import_excel_to_postgres(excel_file_path, table_name, sheet_name=0):
     print("Cleaning data and handling empty cells...")
     
     for original_col, clean_col in column_mapping.items():
-        data_type = get_postgres_datatype(original_col, df[clean_col])
+        data_type = get_sqlite_datatype(original_col, df[clean_col])
         
         if data_type == 'SPEND':
             # For spend columns, parse the values and create additional columns
@@ -456,15 +455,15 @@ def import_excel_to_postgres(excel_file_path, table_name, sheet_name=0):
                 print(f"Column '{clean_col}' ({data_type}): replaced empty cells with {default_val}")
             else:
                 print(f"Column '{clean_col}' ({data_type}): keeping empty cells as NULL")
-        elif 'DECIMAL' in data_type:
-            # For decimal columns, replace NaN with configured default
+        elif 'REAL' in data_type:
+            # For real/decimal columns, replace NaN with configured default
             default_val = FILE_CONFIG['default_values']['decimal']
             if default_val is not None:
                 df[clean_col] = df[clean_col].fillna(default_val)
                 print(f"Column '{clean_col}' ({data_type}): replaced empty cells with {default_val}")
             else:
                 print(f"Column '{clean_col}' ({data_type}): keeping empty cells as NULL")
-        elif 'DATE' in data_type or 'TIMESTAMP' in data_type:
+        elif 'TEXT' in data_type and ('date' in original_col.lower() or 'timestamp' in original_col.lower()):
             # For date columns, replace NaN with configured default (None = NULL)
             default_val = FILE_CONFIG['default_values']['date']
             if default_val is not None:
@@ -472,8 +471,8 @@ def import_excel_to_postgres(excel_file_path, table_name, sheet_name=0):
                 print(f"Column '{clean_col}' ({data_type}): replaced empty cells with {default_val}")
             else:
                 print(f"Column '{clean_col}' ({data_type}): keeping empty cells as NULL")
-        elif 'BOOLEAN' in data_type:
-            # For boolean columns, replace NaN with configured default
+        elif 'INTEGER' in data_type and ('boolean' in original_col.lower() or 'bool' in original_col.lower()):
+            # For boolean columns (stored as INTEGER in SQLite), replace NaN with configured default
             default_val = FILE_CONFIG['default_values']['boolean']
             if default_val is not None:
                 df[clean_col] = df[clean_col].fillna(default_val)
@@ -494,7 +493,7 @@ def import_excel_to_postgres(excel_file_path, table_name, sheet_name=0):
     # Validate and convert data types after cleaning
     print("Validating and converting data types...")
     for original_col, clean_col in column_mapping.items():
-        data_type = get_postgres_datatype(original_col, df[clean_col])
+        data_type = get_sqlite_datatype(original_col, df[clean_col])
         
         try:
             if data_type == 'SPEND':
@@ -514,12 +513,12 @@ def import_excel_to_postgres(excel_file_path, table_name, sheet_name=0):
             elif 'INTEGER' in data_type:
                 # Ensure the column can be converted to integers
                 df[clean_col] = df[clean_col].astype('Int64')
-            elif 'DECIMAL' in data_type:
+            elif 'REAL' in data_type:
                 # Ensure the column can be converted to floats
                 df[clean_col] = df[clean_col].astype('float64')
-            elif 'BOOLEAN' in data_type:
-                # Convert to boolean
-                df[clean_col] = df[clean_col].astype('bool')
+            elif 'INTEGER' in data_type and ('boolean' in original_col.lower() or 'bool' in original_col.lower()):
+                # Convert to boolean using integers (SQLite uses 0/1 for booleans)
+                df[clean_col] = df[clean_col].astype('bool').astype('int')
                 
         except Exception as e:
             print(f"Warning: Could not convert column '{clean_col}' to {data_type}: {e}")
@@ -651,7 +650,7 @@ def import_both_tables():
     print("STEP 2: IMPORTING MAIN DATA TABLE")
     print("="*60)
     
-    column_mapping = import_excel_to_postgres(
+    column_mapping = import_excel_to_sqlite(
         data_file_path, 
         data_table_name, 
         FILE_CONFIG['data_sheet_name']

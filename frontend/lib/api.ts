@@ -61,7 +61,7 @@ export const getCurrentUser = async () => {
   }
 };
 
-export const register = async (user: { email: string; password: string; name: string }): Promise<any> => {
+export const register = async (user: { email: string; password: string; name: string }): Promise<{ success: boolean; message: string; user_id?: string }> => {
   try {
     const response = await axios.post('/register', user);
     return response.data;
@@ -76,10 +76,10 @@ interface TableResponse {
   name: string;
   description: string;
   sql: string;
-  results: any[];
+  results: Record<string, unknown>[];
   row_count: number;
   table_id?: string;
-  [key: string]: any; // Allow any additional fields
+  [key: string]: unknown; // Allow any additional fields
 }
 
 // Types for API requests and responses
@@ -102,7 +102,7 @@ export interface SessionRequest {
 }
 
 // Session management
-export const createSession = async (params: SessionRequest) => {
+export const createSession = async (params: SessionRequest & { workspace_id?: string }) => {
   try {
     // First, try direct session creation (old API)
     if (!params.workspace_id) {
@@ -331,7 +331,7 @@ export interface SavedQueryCreate {
   title: string;
   description?: string;
   sql: string;
-  data: any[];
+  data: Record<string, unknown>[];
   table_name?: string;
 }
 
@@ -340,7 +340,7 @@ export interface SavedQuery {
   title: string;
   description?: string;
   sql: string;
-  data: any[];
+  data: Record<string, unknown>[];
   table_name?: string;
   user_id: string;
   session_id?: string;
@@ -353,7 +353,7 @@ export const createSavedQuery = async (
   sessionId?: string
 ): Promise<SavedQuery> => {
   try {
-    const params: any = {};
+    const params: Record<string, string> = {};
     if (sessionId) {
       params.session_id = sessionId;
     }
@@ -370,7 +370,7 @@ export const getSavedQueries = async (
   sessionId?: string
 ): Promise<SavedQuery[]> => {
   try {
-    const params: any = {};
+    const params: Record<string, string> = {};
     if (sessionId) {
       params.session_id = sessionId;
     }
@@ -425,7 +425,7 @@ export const deleteAllSavedQueries = async (): Promise<void> => {
 };
 
 // Chart management APIs
-export const saveChartToMessage = async (messageId: string, chartData: any) => {
+export const saveChartToMessage = async (messageId: string, chartData: Record<string, unknown>) => {
   try {
     const response = await axios.post(`/messages/${messageId}/charts`, chartData);
     return response.data;

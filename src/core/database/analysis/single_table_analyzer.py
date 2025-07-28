@@ -12,66 +12,75 @@ logger = logging.getLogger(__name__)
 class SingleTableAnalyzer:
     """
     Simplified analyzer focused on analyzing a single table comprehensively
+    Migrated from PostgreSQL to SQLite
     """
     
     def __init__(
         self,
-        db_name: str,
-        username: str,
-        password: str,
-        host: str = "localhost",
-        port: str = "5432",
+        db_path: str = "./data/PBTest.db",
         table_name: str = "IT_Professional_Services",
-        schema_name: str = "public",
+        schema_name: Optional[str] = None,  # SQLite doesn't use schemas
         output_file: str = "single_table_analysis.txt",
-        enum_threshold: int = 50
+        enum_threshold: int = 50,
+        # Legacy parameters for backward compatibility (not used)
+        db_name: Optional[str] = None,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        host: Optional[str] = None,
+        port: Optional[str] = None,
     ):
         """
-        Initialize the single table analyzer
+        Initialize the single table analyzer for SQLite
         
         Args:
-            db_name: PostgreSQL database name
-            username: PostgreSQL username
-            password: PostgreSQL password
-            host: PostgreSQL host
-            port: PostgreSQL port
+            db_path: Path to SQLite database file
             table_name: Name of the table to analyze
-            schema_name: Schema name (defaults to 'public')
+            schema_name: Schema name (not used in SQLite, kept for compatibility)
             output_file: Path to the output text file for analysis results
             enum_threshold: Maximum number of unique values to treat as enum (default: 50)
+            db_name, username, password, host, port: Legacy PostgreSQL parameters (ignored)
         """
-        self.db_name = db_name
-        self.username = username
-        self.password = password
-        self.host = host
-        self.port = port
+        self.db_path = db_path
         self.table_name = table_name
-        self.schema_name = schema_name
+        self.schema_name = schema_name  # Not used in SQLite but kept for compatibility
         self.output_file = output_file
         self.enum_threshold = enum_threshold
         
-        # Create database connection
-        self.connection_string = f"postgresql://{username}:{password}@{host}:{port}/{db_name}"
-        self.engine = create_engine(self.connection_string)
+        # Legacy attributes for backward compatibility
+        self.db_name = db_name or os.path.basename(db_path).replace('.db', '')
+        self.username = username  # Not used in SQLite
+        self.password = password  # Not used in SQLite
+        self.host = host         # Not used in SQLite
+        self.port = port         # Not used in SQLite
+        
+        # Ensure database directory exists
+        db_dir = os.path.dirname(self.db_path)
+        if db_dir:
+            os.makedirs(db_dir, exist_ok=True)
+        
+        # Create SQLite database connection
+        self.connection_string = f"sqlite:///{self.db_path}"
+        self.engine = create_engine(self.connection_string, echo=False)
         self.inspector = inspect(self.engine)
         
         # Analysis results
         self.table_analysis = None
         self.llm_context = None
         
-        logger.info(f"Initialized SingleTableAnalyzer for table: {schema_name}.{table_name}")
+        logger.info(f"Initialized SingleTableAnalyzer for SQLite database: {self.db_path}")
+        logger.info(f"Target table: {self.table_name}")
     
-    def set_table_name(self, table_name: str, schema_name: str = "public"):
+    def set_table_name(self, table_name: str, schema_name: Optional[str] = None):
         """
         Set a new table name to analyze
         
         Args:
             table_name: Name of the table to analyze
-            schema_name: Schema name (defaults to 'public')
+            schema_name: Schema name (not used in SQLite, kept for compatibility)
         """
         self.table_name = table_name
         self.schema_name = schema_name
-        logger.info(f"Table name updated to: {schema_name}.{table_name}")
+        logger.info(f"Table name updated to: {table_name}")
     
     def analyze_table(self, save_to_file: bool = True) -> Dict[str, Any]:
         """
@@ -83,12 +92,12 @@ class SingleTableAnalyzer:
         Returns:
             Dictionary containing comprehensive table analysis
         """
-        logger.info(f"Starting comprehensive analysis for table: {self.schema_name}.{self.table_name}")
+        logger.info(f"Starting comprehensive analysis for table: {self.table_name}")
         
         try:
             # Check if table exists
             if not self._table_exists():
-                error_msg = f"Table {self.schema_name}.{self.table_name} does not exist"
+                error_msg = f"Table {self.table_name} does not exist in {self.db_path}"
                 logger.error(error_msg)
                 return {"error": error_msg, "success": False}
             
@@ -111,7 +120,7 @@ class SingleTableAnalyzer:
                     "success": True
                 }
                 
-                logger.info(f"Analysis completed successfully for table: {self.schema_name}.{self.table_name}")
+                logger.info(f"Analysis completed successfully for table: {self.table_name}")
                 
                 # Generate LLM context
                 self.llm_context = self._generate_llm_context()
@@ -129,9 +138,9 @@ class SingleTableAnalyzer:
     def _table_exists(self) -> bool:
         """Check if the table exists"""
         try:
-            table_names = self.inspector.get_table_names(schema=self.schema_name)
+            table_names = self.inspector.get_table_names()
             exists = self.table_name in table_names
-            logger.debug(f"Table {self.schema_name}.{self.table_name} exists: {exists}")
+            logger.debug(f"Table {self.table_name} exists in {self.db_path}: {exists}")
             return exists
         except Exception as e:
             logger.error(f"Error checking if table exists: {e}")
@@ -141,10 +150,8 @@ class SingleTableAnalyzer:
         """Get basic database information"""
         logger.debug("Getting database information")
         return {
-            "database_name": self.db_name,
-            "host": self.host,
-            "port": self.port,
-            "connection_string": self.connection_string.replace(f":{self.password}@", ":***@")
+            "database_path": self.db_path,
+            "connection_string": self.connection_string
         }
     
     def _analyze_table_structure(self, connection) -> Dict[str, Any]:
@@ -161,7 +168,7 @@ class SingleTableAnalyzer:
         
         try:
             # Get column information
-            columns = self.inspector.get_columns(self.table_name, schema=self.schema_name)
+            columns = self.inspector.get_columns(self.table_name)
             structure["column_count"] = len(columns)
             
             for column in columns:
@@ -208,19 +215,24 @@ class SingleTableAnalyzer:
         
         try:
             # Get row count
-            result = connection.execute(text(f'SELECT COUNT(*) FROM "{self.schema_name}"."{self.table_name}"'))
+            result = connection.execute(text(f'SELECT COUNT(*) FROM "{self.table_name}"'))
             data_analysis["row_count"] = result.scalar()
             logger.info(f"Table has {data_analysis['row_count']} rows")
             
-            # Get table size
+            # Get table size (SQLite estimation)
             try:
+                # SQLite doesn't have built-in table size functions like PostgreSQL
+                # We'll estimate based on row count and average row length
                 result = connection.execute(text(f"""
-                    SELECT pg_size_pretty(pg_total_relation_size('"{self.schema_name}"."{self.table_name}"'))
+                    SELECT AVG(LENGTH(CAST(rowid AS TEXT))) FROM "{self.table_name}"
                 """))
-                data_analysis["table_size"] = result.scalar()
+                avg_row_length = result.scalar() or 10  # Default estimate
+                estimated_bytes = data_analysis["row_count"] * avg_row_length * 10  # Rough estimate
+                data_analysis["table_size"] = f"{estimated_bytes / 1024 / 1024:.2f} MB (estimated)"
                 logger.debug(f"Table size: {data_analysis['table_size']}")
             except Exception as e:
-                logger.warning(f"Could not get table size: {e}")
+                logger.warning(f"Could not estimate table size: {e}")
+                data_analysis["table_size"] = "Unknown"
             
             # Analyze column statistics if table has data
             if data_analysis["row_count"] > 0:
@@ -237,7 +249,7 @@ class SingleTableAnalyzer:
         logger.info("Analyzing column statistics")
         
         column_stats = {}
-        columns = self.inspector.get_columns(self.table_name, schema=self.schema_name)
+        columns = self.inspector.get_columns(self.table_name)
         
         for column in columns:
             col_name = column["name"]
@@ -260,7 +272,7 @@ class SingleTableAnalyzer:
                     SELECT 
                         COUNT(*) - COUNT("{col_name}") as null_count,
                         ROUND(((COUNT(*) - COUNT("{col_name}")) * 100.0 / COUNT(*)), 2) as null_percentage
-                    FROM "{self.schema_name}"."{self.table_name}"
+                    FROM "{self.table_name}"
                 """))
                 row = result.first()
                 if row:
@@ -270,7 +282,7 @@ class SingleTableAnalyzer:
                 # Get distinct count
                 result = connection.execute(text(f"""
                     SELECT COUNT(DISTINCT "{col_name}") as distinct_count
-                    FROM "{self.schema_name}"."{self.table_name}"
+                    FROM "{self.table_name}"
                 """))
                 stats["distinct_count"] = result.scalar()
                 
@@ -285,7 +297,7 @@ class SingleTableAnalyzer:
                     try:
                         result = connection.execute(text(f"""
                             SELECT DISTINCT "{col_name}"
-                            FROM "{self.schema_name}"."{self.table_name}"
+                            FROM "{self.table_name}"
                             WHERE "{col_name}" IS NOT NULL
                             ORDER BY "{col_name}"
                         """))
@@ -304,7 +316,7 @@ class SingleTableAnalyzer:
                                 MAX("{col_name}") as max_val,
                                 AVG("{col_name}") as avg_val,
                                 STDDEV("{col_name}") as stddev_val
-                            FROM "{self.schema_name}"."{self.table_name}"
+                            FROM "{self.table_name}"
                             WHERE "{col_name}" IS NOT NULL
                         """))
                         row = result.first()
@@ -325,7 +337,7 @@ class SingleTableAnalyzer:
                     try:
                         result = connection.execute(text(f"""
                             SELECT "{col_name}", COUNT(*) as frequency
-                            FROM "{self.schema_name}"."{self.table_name}"
+                            FROM "{self.table_name}"
                             WHERE "{col_name}" IS NOT NULL
                             GROUP BY "{col_name}"
                             ORDER BY frequency DESC
@@ -361,18 +373,18 @@ class SingleTableAnalyzer:
         
         try:
             # Primary key
-            pk_constraint = self.inspector.get_pk_constraint(self.table_name, schema=self.schema_name)
+            pk_constraint = self.inspector.get_pk_constraint(self.table_name)
             if pk_constraint and pk_constraint.get('constrained_columns'):
                 constraints_indexes["primary_key"] = pk_constraint['constrained_columns']
                 logger.debug(f"Primary key: {constraints_indexes['primary_key']}")
             
             # Foreign keys
-            foreign_keys = self.inspector.get_foreign_keys(self.table_name, schema=self.schema_name)
+            foreign_keys = self.inspector.get_foreign_keys(self.table_name)
             for fk in foreign_keys:
                 fk_info = {
                     "constrained_columns": fk["constrained_columns"],
                     "referred_table": fk["referred_table"],
-                    "referred_schema": fk.get("referred_schema", self.schema_name),
+                    "referred_schema": fk.get("referred_schema", ""),
                     "referred_columns": fk["referred_columns"],
                     "name": fk.get("name", "")
                 }
@@ -380,7 +392,7 @@ class SingleTableAnalyzer:
                 logger.debug(f"Foreign key: {fk_info}")
             
             # Unique constraints
-            unique_constraints = self.inspector.get_unique_constraints(self.table_name, schema=self.schema_name)
+            unique_constraints = self.inspector.get_unique_constraints(self.table_name)
             for uc in unique_constraints:
                 constraints_indexes["unique_constraints"].append({
                     "name": uc.get("name", ""),
@@ -388,7 +400,7 @@ class SingleTableAnalyzer:
                 })
             
             # Check constraints
-            check_constraints = self.inspector.get_check_constraints(self.table_name, schema=self.schema_name)
+            check_constraints = self.inspector.get_check_constraints(self.table_name)
             for cc in check_constraints:
                 constraints_indexes["check_constraints"].append({
                     "name": cc.get("name", ""),
@@ -396,7 +408,7 @@ class SingleTableAnalyzer:
                 })
             
             # Indexes
-            indexes = self.inspector.get_indexes(self.table_name, schema=self.schema_name)
+            indexes = self.inspector.get_indexes(self.table_name)
             for idx in indexes:
                 constraints_indexes["indexes"].append({
                     "name": idx["name"],
@@ -423,25 +435,25 @@ class SingleTableAnalyzer:
         
         try:
             # Get outgoing references (foreign keys from this table)
-            foreign_keys = self.inspector.get_foreign_keys(self.table_name, schema=self.schema_name)
+            foreign_keys = self.inspector.get_foreign_keys(self.table_name)
             for fk in foreign_keys:
                 relationships["outgoing_references"].append({
-                    "to_table": f"{fk.get('referred_schema', self.schema_name)}.{fk['referred_table']}",
+                    "to_table": f"{fk.get('referred_schema', '')}.{fk['referred_table']}",
                     "from_columns": fk["constrained_columns"],
                     "to_columns": fk["referred_columns"]
                 })
             
             # Get incoming references (other tables that reference this table)
             # This requires checking all tables in the schema
-            all_tables = self.inspector.get_table_names(schema=self.schema_name)
+            all_tables = self.inspector.get_table_names()
             for table in all_tables:
                 if table != self.table_name:
                     try:
-                        table_fks = self.inspector.get_foreign_keys(table, schema=self.schema_name)
+                        table_fks = self.inspector.get_foreign_keys(table)
                         for fk in table_fks:
                             if fk["referred_table"] == self.table_name:
                                 relationships["incoming_references"].append({
-                                    "from_table": f"{self.schema_name}.{table}",
+                                    "from_table": f"{self.inspector.get_schema_names()[0]}.{table}", # Assuming default schema for incoming
                                     "from_columns": fk["constrained_columns"],
                                     "to_columns": fk["referred_columns"]
                                 })
@@ -475,7 +487,7 @@ class SingleTableAnalyzer:
         }
         
         try:
-            columns = self.inspector.get_columns(self.table_name, schema=self.schema_name)
+            columns = self.inspector.get_columns(self.table_name)
             
             # Check completeness (null values)
             for column in columns:
@@ -486,7 +498,7 @@ class SingleTableAnalyzer:
                             COUNT(*) as total_count,
                             COUNT("{col_name}") as non_null_count,
                             ROUND(((COUNT("{col_name}") * 100.0) / COUNT(*)), 2) as completeness_percentage
-                        FROM "{self.schema_name}"."{self.table_name}"
+                        FROM "{self.table_name}"
                     """))
                     row = result.first()
                     if row:
@@ -511,10 +523,9 @@ class SingleTableAnalyzer:
                 # First get all column names for the table
                 columns_result = connection.execute(text(f"""
                     SELECT column_name 
-                    FROM information_schema.columns 
-                    WHERE table_name = '{self.table_name}' 
-                    AND table_schema = '{self.schema_name}'
-                    ORDER BY ordinal_position
+                    FROM sqlite_master 
+                    WHERE type='table' AND name='{self.table_name}'
+                    ORDER BY cid
                 """))
                 columns = [row[0] for row in columns_result.fetchall()]
                 
@@ -527,7 +538,7 @@ class SingleTableAnalyzer:
                         SELECT 
                             COUNT(*) as total_rows,
                             COUNT(DISTINCT MD5(CONCAT({columns_concat}))) as distinct_rows
-                        FROM "{self.schema_name}"."{self.table_name}"
+                        FROM "{self.table_name}"
                     """))
                     row = result.first()
                     if row and row[0] != row[1]:
@@ -545,10 +556,10 @@ class SingleTableAnalyzer:
                     result = connection.execute(text(f"""
                         WITH duplicate_check AS (
                             SELECT *, ROW_NUMBER() OVER (PARTITION BY * ORDER BY (SELECT NULL)) as rn
-                            FROM "{self.schema_name}"."{self.table_name}"
+                            FROM "{self.table_name}"
                         )
                         SELECT 
-                            (SELECT COUNT(*) FROM "{self.schema_name}"."{self.table_name}") as total_rows,
+                            (SELECT COUNT(*) FROM "{self.table_name}") as total_rows,
                             COUNT(*) as distinct_rows
                         FROM duplicate_check
                         WHERE rn = 1
@@ -578,7 +589,7 @@ class SingleTableAnalyzer:
         }
         
         try:
-            result = connection.execute(text(f'SELECT * FROM "{self.schema_name}"."{self.table_name}" LIMIT {limit}'))
+            result = connection.execute(text(f'SELECT * FROM "{self.table_name}" LIMIT {limit}'))
             
             # Convert rows to dictionaries
             for row in result:
@@ -695,14 +706,14 @@ class SingleTableAnalyzer:
         context_parts = []
         
         # Header
-        context_parts.append(f"DATABASE TABLE ANALYSIS: {self.schema_name}.{self.table_name}")
+        context_parts.append(f"DATABASE TABLE ANALYSIS: {self.table_name}")
         context_parts.append("=" * 80)
         context_parts.append("")
         
         # Basic Information
         context_parts.append("BASIC INFORMATION:")
-        context_parts.append(f"- Database: {self.db_name}")
-        context_parts.append(f"- Table: {self.schema_name}.{self.table_name}")
+        context_parts.append(f"- Database Path: {self.db_path}")
+        context_parts.append(f"- Table: {self.table_name}")
         context_parts.append(f"- Analysis Date: {self.table_analysis['analysis_timestamp']}")
         context_parts.append("")
         
@@ -848,7 +859,7 @@ class SingleTableAnalyzer:
             return {"error": "No analysis performed yet"}
         
         return {
-            "table_name": f"{self.schema_name}.{self.table_name}",
+            "table_name": self.table_name,
             "success": self.table_analysis.get("success", False),
             "statistics": self.table_analysis.get("statistics", {}),
             "recommendations_count": len(self.table_analysis.get("recommendations", [])),
@@ -866,21 +877,15 @@ if __name__ == "__main__":
     load_dotenv()
     
     # Database connection parameters
-    db_name = os.getenv("DB_NAME", "postgres")
-    username = os.getenv("DB_USERNAME", "postgres")
-    password = os.getenv("DB_PASSWORD", "postgres")
-    host = os.getenv("DB_HOST", "localhost")
-    port = os.getenv("DB_PORT", "5432")
+    db_path = os.getenv("DB_PATH", "./data/PBTest.db")
+    table_name = os.getenv("TABLE_NAME", "IT_Professional_Services")
+    schema_name = os.getenv("SCHEMA_NAME", "public") # SQLite doesn't use schemas
     
     # Initialize analyzer
     analyzer = SingleTableAnalyzer(
-        db_name=db_name,
-        username=username,
-        password=password,
-        host=host,
-        port=port,
-        table_name="IT_Professional_Services",
-        schema_name="public",
+        db_path=db_path,
+        table_name=table_name,
+        schema_name=schema_name,
         output_file="single_table_analysis.txt"
     )
     

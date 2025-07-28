@@ -1,8 +1,17 @@
-import { useState, useEffect } from 'react';
-import { X, LayoutGrid, ArrowUpDown, AlertCircle, BarChart2, Calendar, Clock, Database, Trash2, Maximize2, Eye } from 'lucide-react';
+import { useState } from 'react';
+import { X, LayoutGrid, ArrowUpDown, AlertCircle, BarChart2, Calendar, Database, Trash2, Eye } from 'lucide-react';
 import Visualization from './Visualization';
 import InsightPanel from './InsightPanel';
-import { SavedQuery } from '../lib/api';
+
+interface SavedQuery {
+  id: string;
+  title: string;
+  description?: string;
+  data: Record<string, unknown>[];
+  sql: string;
+  created_at: string;
+  tableName?: string;
+}
 
 interface DashboardProps {
   isOpen: boolean;
@@ -10,12 +19,12 @@ interface DashboardProps {
   onAddQuery?: (query: SavedQuery) => void;
   onDeleteQuery?: (queryId: string) => void;
   onClearAllQueries?: () => void;
-  currentData?: any[];
+  currentData?: Record<string, unknown>[];
   currentSql?: string;
   currentTableName?: string;
   savedQueries?: SavedQuery[];
   databaseType?: string;
-  tableSchema?: any;
+  tableSchema?: Record<string, unknown>;
   isLoading?: boolean;
 }
 
@@ -31,7 +40,6 @@ export default function Dashboard({
 }: DashboardProps) {
   const [selectedQuery, setSelectedQuery] = useState<SavedQuery | null>(null);
   const [showVisualization, setShowVisualization] = useState(false);
-  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [searchTerm, setSearchTerm] = useState('');
   
   // Sort and filter queries
@@ -107,7 +115,7 @@ export default function Dashboard({
                 Run queries and save them to build your analytics dashboard.
               </p>
               <p className="text-gray-400 mt-4 max-w-md text-sm">
-                Click the "Save to Dashboard" button on any query result to add it here.
+                Click the &quot;Save to Dashboard&quot; button on any query result to add it here.
               </p>
             </div>
           ) : (
@@ -270,7 +278,7 @@ export default function Dashboard({
                           <tbody className="bg-gray-700/30 divide-y divide-gray-600">
                             {selectedQuery.data.slice(0, 10).map((row, rowIndex) => (
                               <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-gray-700/30' : 'bg-gray-700/50'}>
-                                {Object.entries(row).map(([key, value], cellIndex) => (
+                                {Object.entries(row).map(([, value], cellIndex) => (
                                   <td key={`${rowIndex}-${cellIndex}`} className="px-4 py-2 text-sm text-gray-300">
                                     {String(value)}
                                   </td>

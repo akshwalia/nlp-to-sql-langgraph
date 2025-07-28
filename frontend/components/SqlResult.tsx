@@ -4,7 +4,7 @@ import Visualization from './Visualization';
 import InsightPanel from './InsightPanel';
 
 // Utility function to format numerical values to 2 decimal places
-const formatNumber = (value: any): string => {
+const formatNumber = (value: unknown): string => {
   if (value === null || value === undefined) return '';
   
   // Check if it's a number
@@ -30,7 +30,7 @@ interface PaginationInfo {
 
 interface SqlResultProps {
   sql: string;
-  data?: any[];
+  data?: Record<string, unknown>[];
   error?: string;
   title?: string;
   description?: string;
@@ -38,12 +38,20 @@ interface SqlResultProps {
   onPageChange?: (page: number) => void;
   sessionId?: string;
   tableId?: string;
-  onSaveToAnalytics?: (query: any) => void;
+  onSaveToAnalytics?: (query: {
+    id: string;
+    title: string;
+    description: string;
+    sql: string;
+    data: Record<string, unknown>[];
+    timestamp: string;
+    tableName?: string;
+  }) => void;
   databaseType?: string;
-  tableSchema?: any;
+  tableSchema?: Record<string, unknown>;
   messageId?: string; // Add message ID for chart saving
-  visualizationRecommendations?: any; // Add LLM recommendations
-  savedCharts?: any[]; // Add saved charts
+  visualizationRecommendations?: Record<string, unknown>; // Add LLM recommendations
+  savedCharts?: Record<string, unknown>[]; // Add saved charts
 }
 
 export default function SqlResult({ 
@@ -54,7 +62,6 @@ export default function SqlResult({
   description,
   pagination,
   onPageChange,
-  sessionId,
   tableId,
   onSaveToAnalytics,
   databaseType,
