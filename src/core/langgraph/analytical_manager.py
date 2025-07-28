@@ -6,7 +6,6 @@ from decimal import Decimal
 from datetime import datetime, date
 from typing import Dict, List, Any, Optional
 from langchain_core.language_models import BaseLanguageModel
-from ..database.connection.workspace_manager import WorkspaceManager
 from .memory import MemoryManager
 from .prompts import PromptsManager
 from .sql_generation import SQLGenerationManager
@@ -30,8 +29,7 @@ class DecimalEncoder(json.JSONEncoder):
 class AnalyticalManager:
     """Manages analytical question generation and comprehensive analysis"""
     
-    def __init__(self, workspace_manager: WorkspaceManager, memory_manager: MemoryManager, prompts_manager: PromptsManager):
-        self.workspace_manager = workspace_manager
+    def __init__(self, memory_manager: MemoryManager, prompts_manager: PromptsManager):
         self.memory_manager = memory_manager
         self.prompts_manager = prompts_manager
         self.llm = None

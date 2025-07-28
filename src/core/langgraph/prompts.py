@@ -360,6 +360,7 @@ Results: [Result 1: IND-only data with Q1=25, Q3=35], [Result 2: USA-only data w
 - Prevents loss of entity-specific insights through aggregation
 
 ### CRITICAL RULES:
+- **MANDATORY - USE ALL DATA**: Use ALL available data that you have in the results to answer the user's question. Do not skip any data. Unless the data is not at all relevant to the user's question, then you can skip it.
 - **UNIQUE VALUE PER SECTION**: Each section must provide distinct, non-redundant insights. If data dimensions overlap (same rate ranges), consolidate into fewer sections
 - **QUESTION-FOCUSED RESPONSE**: Directly answer what the user asked for without unnecessary sections that repeat information
 - **SMART TABLE USAGE**: Only create tables for 3+ rows; integrate 1-2 rows into paragraph text with bold formatting
@@ -436,20 +437,33 @@ Results: [Result 1: IND-only data with Q1=25, Q3=35], [Result 2: USA-only data w
 7. **CRITICAL - TABLE NAMING**: Always use schema-qualified and quoted table names like `public."TableName"` to avoid PostgreSQL case-sensitivity issues. NEVER use unquoted table names.
 8. Use proper PostgreSQL syntax with correct table references
 9. Include meaningful descriptions that explain what each query does
-10. **COLUMN PRIORITY**: When there are multiple columns that could answer the question, prefer columns marked as [MUST_HAVE] over others, then [IMPORTANT] columns, then [MANDATORY] columns. For example, prefer "hourly_rate_in_usd [MUST_HAVE]" over "bill_rate_hourly" when user asks for rates.
-11. **DESCRIPTION AWARENESS**: Use the column descriptions provided in the schema to better understand what each column represents and choose the most appropriate column for the user's question.
-12. **AGGREGATED FOCUS**: Focus on queries that produce aggregated insights rather than individual value distributions.
-13. **SUPPLIER ANALYSIS MANDATE**: ALWAYS generate supplier/vendor/partner comparison queries as the PRIMARY approach unless the user explicitly asks for very specific non-supplier analysis. Supplier-focused queries should be the DEFAULT for all rate-related questions. **EXCEPTION**: Only skip supplier analysis when user specifically requests pure geographic, temporal, or role seniority analysis without supplier context.
-14. **YEARWISE TRENDS PRIORITY**: Include year-over-year analysis for the past 2-3 years (2022-2024) where applicable to show temporal trends and changes.
-15. **AVOID INDUSTRY ANALYSIS**: Do NOT generate industry/sector analysis queries unless the user explicitly requests industry insights.
-16. **EXACT VALUES FROM EXPLORATION**: If the schema contains "COLUMN EXPLORATION RESULTS" with actual database values, you MUST use those exact values without any expansion, interpretation, or modification. For example, if you see "BI Developer" in the exploration results, use exactly "BI Developer" in your WHERE clause, NOT "Business Intelligence Developer".
+10. **SINGLE DIMENSION GROUPING**: When using GROUP BY, focus on ONE dimension only (e.g., GROUP BY supplier OR GROUP BY role_seniority, not both combined)
+11. **COLUMN PRIORITY**: When there are multiple columns that could answer the question, prefer columns marked as [MUST_HAVE] over others, then [IMPORTANT] columns, then [MANDATORY] columns. For example, prefer "hourly_rate_in_usd [MUST_HAVE]" over "bill_rate_hourly" when user asks for rates.
+12. **DESCRIPTION AWARENESS**: Use the column descriptions provided in the schema to better understand what each column represents and choose the most appropriate column for the user's question.
+13. **AGGREGATED FOCUS**: Focus on queries that produce aggregated insights rather than individual value distributions.
+14. **SUPPLIER ANALYSIS MANDATE**: ALWAYS generate supplier/vendor/partner comparison queries as the PRIMARY approach unless the user explicitly asks for very specific non-supplier analysis. Supplier-focused queries should be the DEFAULT for all rate-related questions. **EXCEPTION**: Only skip supplier analysis when user specifically requests pure geographic, temporal, or role seniority analysis without supplier context.
+15. **YEARWISE TRENDS PRIORITY**: Include year-over-year analysis for the past 2-3 years (2022-2024) where applicable to show temporal trends and changes.
+16. **AVOID INDUSTRY ANALYSIS**: Do NOT generate industry/sector analysis queries unless the user explicitly requests industry insights.
+17. **EXACT VALUES FROM EXPLORATION**: If the schema contains "COLUMN EXPLORATION RESULTS" with actual database values, you MUST use those exact values without any expansion, interpretation, or modification. For example, if you see "BI Developer" in the exploration results, use exactly "BI Developer" in your WHERE clause, NOT "Business Intelligence Developer".
 
-17. **CRITICAL - USE EXACT EQUALITY FOR ENUM VALUES**: Since column enum values are provided in the schema, you MUST use exact equality (=) operators, NOT LIKE patterns. When "COLUMN EXPLORATION RESULTS" section provides exact values for a column, you MUST use those exact values with equality operators. Only use LIKE patterns when no exact values are available and you need pattern matching.
+18. **CRITICAL - USE EXACT EQUALITY FOR ENUM VALUES**: Since column enum values are provided in the schema, you MUST use exact equality (=) operators, NOT LIKE patterns. When "COLUMN EXPLORATION RESULTS" section provides exact values for a column, you MUST use those exact values with equality operators. Only use LIKE patterns when no exact values are available and you need pattern matching.
 
-18. **CRITICAL - SUPPLIER-FIRST GROUPING STRATEGY**: 
+19. **CRITICAL - SUPPLIER-FIRST GROUPING STRATEGY**: 
    - **DEFAULT SUPPLIER FOCUS**: ALWAYS start with supplier grouping (GROUP BY supplier_company) as the primary query unless user explicitly asks for non-supplier analysis
    - **DIMENSION FOCUS**: For subsequent queries, group by other dimensions (role_seniority, country_of_work, work_start_year) to provide diverse insights
    - **SUPPLIER MANDATE**: Generate at least ONE supplier comparison query for any rate-related question unless user specifically requests otherwise
+
+20. **ABSOLUTE ENTITY SEPARATION RULE**: 
+   - **NEVER COMBINE ENTITIES**: When user mentions multiple entities (countries, suppliers, roles), NEVER use `IN` clauses to combine them
+   - **MANDATORY SEPARATION**: Generate separate queries for each entity mentioned in the comparison
+   - **APPLIES TO ALL DIMENSIONS**: This rule applies to supplier analysis, role seniority, temporal trends, and any other grouping
+   - **NO EXCEPTIONS**: Even if it seems more efficient, always separate entities for clear comparison
+
+21. **SINGLE DIMENSION FOCUS RULE**:
+   - **ONE DIMENSION PER QUERY**: Each query should focus on ONE dimension only (supplier OR role_seniority OR temporal, not combinations)
+   - **NO MULTI-DIMENSIONAL GROUPING**: NEVER use `GROUP BY dimension1, dimension2` unless user specifically asks for cross-dimensional analysis
+   - **KEEP QUERIES SIMPLE**: Generate separate queries for each dimension rather than combining them
+   - **CLEAR INSIGHTS**: Single-dimension queries provide clearer, more actionable insights than complex multi-dimensional breakdowns
 
 ### EXACT MATCH PRIORITY RULES:
 - ✅ **PREFERRED**: `WHERE role_specialization = 'SAP'` (using exact enum value)
@@ -471,11 +485,15 @@ Results: [Result 1: IND-only data with Q1=25, Q3=35], [Result 2: USA-only data w
 - This ensures users see distinct, comparable results for each entity
 
 **MANDATORY QUERY STRUCTURE FOR ENTITY COMPARISONS:**
-For rate-related entity comparisons, generate these query types FOR EACH ENTITY:
-1. **Supplier analysis query for Entity 1** (GROUP BY supplier + WHERE entity1)
-2. **Supplier analysis query for Entity 2** (GROUP BY supplier + WHERE entity2)
+For rate-related entity comparisons, generate these SEPARATE, SINGLE-DIMENSION query types FOR EACH ENTITY:
+1. **Supplier analysis query for Entity 1** (GROUP BY supplier ONLY + WHERE entity1)
+2. **Supplier analysis query for Entity 2** (GROUP BY supplier ONLY + WHERE entity2)
 3. **Overall range query for Entity 1** (no GROUP BY + WHERE entity1)
 4. **Overall range query for Entity 2** (no GROUP BY + WHERE entity2)
+5. **Role seniority analysis for Entity 1** (GROUP BY role_seniority ONLY + WHERE entity1) - if relevant
+6. **Role seniority analysis for Entity 2** (GROUP BY role_seniority ONLY + WHERE entity2) - if relevant
+
+**CRITICAL**: Each query focuses on ONE dimension only. NEVER combine multiple GROUP BY columns (e.g., GROUP BY supplier, role_seniority).
 
 **EXAMPLES:**
 
@@ -526,6 +544,30 @@ FROM public."IT_Professional_Services"
 WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work = 'USA'
 ```
 
+Query 5: Role seniority analysis for India (if needed)
+```sql
+SELECT 
+  role_seniority,
+  PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
+  PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
+  PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
+FROM public."IT_Professional_Services" 
+WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work = 'IND'
+GROUP BY role_seniority
+```
+
+Query 6: Role seniority analysis for USA (if needed)
+```sql
+SELECT 
+  role_seniority,
+  PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
+  PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
+  PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
+FROM public."IT_Professional_Services" 
+WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work = 'USA'
+GROUP BY role_seniority
+```
+
 ❌ WRONG (Combined entity analysis):
 ```sql
 SELECT 
@@ -537,6 +579,21 @@ FROM public."IT_Professional_Services"
 WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work IN ('IND', 'USA')
 GROUP BY country_of_work
 ```
+
+❌ WRONG (Combined role seniority analysis):
+```sql
+SELECT role_seniority, PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1, PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median, PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3 FROM public."IT_Professional_Services" WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work IN ('IND', 'USA') GROUP BY role_seniority
+```
+This combines both countries and loses entity-specific insights. Users cannot see how role seniority differs between India and USA separately.
+
+❌ WRONG (Any analysis combining entities):
+ANY query that uses `WHERE entity_column IN (entity1, entity2)` for entity comparisons.
+
+❌ WRONG (Multi-dimensional grouping):
+```sql
+SELECT role_seniority, supplier, PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1, PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median, PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3 FROM public."IT_Professional_Services" WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work = 'USA' GROUP BY role_seniority, supplier
+```
+This combines two dimensions and creates overly complex results. Keep dimensions separate for clarity.
 
 ❌ WRONG (Supplier analysis for only one entity):
 Only generating supplier analysis for USA but not India, or vice versa.
@@ -563,9 +620,12 @@ When you detect entity comparison requests:
 2. **Generate supplier analysis for EACH entity** - one supplier query per entity
 3. **Generate overall analysis for EACH entity** - one overall range query per entity
 4. **Use identical analysis structure** for each entity (same quartile calculations)
-5. **DO NOT use GROUP BY** to combine entities in a single query
-6. **Focus on the specific entity** in each query's WHERE clause
-7. **ENSURE EQUAL TREATMENT**: Each entity must receive the same depth of analysis (supplier + overall)
+5. **ABSOLUTE PROHIBITION**: NEVER use `WHERE entity_column IN (entity1, entity2)` for entity comparisons
+6. **MANDATORY SEPARATE FILTERING**: Each query must use `WHERE entity_column = 'single_entity'` only
+7. **DO NOT use GROUP BY** to combine entities in a single query
+8. **Focus on the specific entity** in each query's WHERE clause
+9. **ENSURE EQUAL TREATMENT**: Each entity must receive the same depth of analysis (supplier + overall)
+10. **NO EXCEPTIONS**: This applies to ALL analysis types (supplier, role seniority, temporal, etc.)
 
 This ensures users receive balanced, comparable analysis for each entity they're interested in, with equal supplier intelligence for all entities in the comparison.
 
@@ -599,6 +659,8 @@ Focus on queries that directly address what the user is asking for with aggregat
 CRITICAL: If the user mentions specific entities (roles, specializations, job types), ALL queries must filter to include ONLY those specific entities. Do NOT generate broad queries that return unrelated roles.
 
 COMPOUND ENTITY FILTERING: For compound requests like "SAP Developer", "Java Consultant", or "Senior Manager", filter by BOTH parts - the specialization AND the role type. Never filter only by specialization and return all roles within that category.
+
+SINGLE DIMENSION RULE: Keep queries simple with ONE dimension per query (e.g., GROUP BY supplier OR GROUP BY role_seniority, never GROUP BY supplier, role_seniority). This provides clearer insights than complex multi-dimensional breakdowns.
 
 **DIMENSION DIVERSITY REQUIREMENT**: If previous questions covered specific dimensions, generate queries for DIFFERENT dimensions:
 - If previous: supplier analysis → Generate: geographic, temporal, or role seniority analysis

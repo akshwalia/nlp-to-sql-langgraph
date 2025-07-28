@@ -230,44 +230,4 @@ class MemoryManager:
         except Exception as e:
             print(f"Error storing text in memory: {e}")
     
-    def prepare_memory_for_query(self, question: str, session_context: dict = None) -> str:
-        """Prepare memory context for query generation"""
-        if not self.use_memory:
-            return ""
-            
-        try:
-            # Get basic memory context
-            memory_context = self.get_memory_context(question)
-            
-            # Add session context if available
-            if session_context:
-                session_parts = []
-                
-                # Add user info
-                user_info = session_context.get("user_info", {})
-                if user_info:
-                    session_parts.append(f"User Info: {user_info}")
-                
-                # Add important values from recent queries
-                important_values = session_context.get("important_values", {})
-                if important_values:
-                    session_parts.append(f"Important Values: {important_values}")
-                
-                # Add recent query results for context
-                last_query_result = session_context.get("last_query_result")
-                if last_query_result:
-                    session_parts.append(f"Last Query Result: {last_query_result}")
-                
-                # Add entity mentions for reference
-                entity_mentions = session_context.get("entity_mentions", {})
-                if entity_mentions:
-                    session_parts.append(f"Entity Mentions: {entity_mentions}")
-                
-                if session_parts:
-                    session_memory = "\n".join(session_parts)
-                    memory_context = f"{memory_context}\n\n### SESSION CONTEXT:\n{session_memory}" if memory_context else f"### SESSION CONTEXT:\n{session_memory}"
-            
-            return memory_context
-        except Exception as e:
-            print(f"Error preparing memory for query: {e}")
-            return "" 
+ 

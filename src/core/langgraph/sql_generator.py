@@ -1,26 +1,17 @@
 import os
-import uuid
 import logging
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, List, Optional, Any
 from dotenv import load_dotenv
-import openai
 from langchain_openai import AzureChatOpenAI
 from pydantic import SecretStr
-import asyncio
-import traceback
 
 from src.core.database import get_database_analyzer
-from src.observability.langfuse_config import (
-    langfuse_manager, 
-    create_langfuse_trace, 
-    observe_function
-)
+from src.observability.langfuse_config import observe_function
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
 # Import all the modular components
-from .state import SQLGeneratorState
 from .prompts import PromptsManager
 from .memory import MemoryManager
 from .cache import CacheManager
@@ -29,29 +20,6 @@ from .sql_generation import SQLGenerationManager
 from .execution import ExecutionManager
 from .analytical_manager import AnalyticalManager
 from .graph import GraphManager
-
-# MODULARIZATION COMPLETE ✅
-# =========================
-# This file was successfully modularized from a monolithic 4045-line file
-# into 8 focused modules while maintaining 100% backward compatibility.
-# All original functionality, prompts, and logic have been preserved.
-# 
-# Original: src/core/langgraph/sql_generator.py (4045 lines)
-# Current modules:
-#   - state.py (SQLGeneratorState)
-#   - prompts.py (PromptsManager)
-#   - memory.py (MemoryManager)
-#   - cache.py (CacheManager)
-#   - session_context.py (SessionContextManager)
-#   - sql_generation.py (SQLGenerationManager)
-#   - execution.py (ExecutionManager)
-#   - analytical_manager.py (AnalyticalManager)
-#   - graph.py (GraphManager)
-# 
-# Integration tested and validated: ✅ All 6 tests passed
-# Backward compatibility maintained: ✅ SQLGenerator alias available
-# =========================
-
 
 class SmartSQLGenerator:
     """
@@ -103,18 +71,9 @@ class SmartSQLGenerator:
             self.db_analyzer, self.session_context_manager
         )
         
-        # Initialize analytical manager with new structure
-        # Create a mock workspace manager for backward compatibility
-        from ..database.connection.workspace_manager import WorkspaceManager
-        from ..database.connection.pool_manager import ConnectionPoolManager
-        
-        # Initialize mock workspace manager
-        self.mock_pool_manager = ConnectionPoolManager()
-        self.mock_workspace_manager = WorkspaceManager(self.mock_pool_manager)
-        
         # Initialize analytical manager
         self.analytical_manager = AnalyticalManager(
-            self.mock_workspace_manager, self.memory_manager, self.prompts_manager
+            self.memory_manager, self.prompts_manager
         )
         
         # Set the LLM and managers for the analytical manager
@@ -168,10 +127,6 @@ class SmartSQLGenerator:
         """Generate SQL query from natural language question"""
         return await self.sql_generation_manager.generate_sql(question, self.db_analyzer)
     
-    
-    
-
-    
     @observe_function("sql_query_execution")
     async def execute_query(self, question: str, auto_fix: bool = True, max_attempts: int = 2) -> Dict[str, Any]:
         """Execute SQL query with error handling"""
@@ -212,61 +167,7 @@ class SmartSQLGenerator:
         """Process a unified query with full functionality"""
         try:
             # All questions route to analytical workflow
-            analysis = {
-                "question": question,
-                "is_conversational": False,
-                "requires_analysis": True,
-                "intent": "analytical",
-                "complexity": "analytical"
-            }
-            
-            # Handle conversational questions
-            if analysis["is_conversational"]:
-                return await self._handle_conversational_query(question, analysis)
-            
-            # Handle analysis questions - route to analytical workflow
-            if analysis["requires_analysis"]:
-                return await self._process_analytical_workflow(question)
-            
-            # Fallback to regular query processing (shouldn't happen with current logic)
-            result = await self.execute_query(question)
-            
-            if result["success"]:
-                # Text response not needed in analytical approach
-                
-
-                
-                # Return response with correct field names expected by the API
-                final_response = {
-                    "success": True,
-                    "question": question,
-                    "sql": result["sql"],
-                    "results": result["results"],
-                    "text": "",
-                    "visualization_recommendations": {"is_visualizable": False, "recommended_charts": []},
-                    "execution_time": result["execution_time"],
-                    "row_count": result["row_count"],
-                    "query_type": analysis.get("intent", "retrieve"),
-                    "is_conversational": False,
-                    "source": "ai",
-                    "confidence": 90
-                }
-                
-                return final_response
-            else:
-                return {
-                    "success": False,
-                    "question": question,
-                    "error": result["error"],
-                    "text": "",
-                    "execution_time": result.get("execution_time", 0),
-                    "sql": result.get("sql", ""),
-                    "results": [],
-                    "query_type": analysis.get("intent", "retrieve"),
-                    "is_conversational": False,
-                    "source": "ai",
-                    "confidence": 0
-                }
+            return await self._process_analytical_workflow(question)
                 
         except Exception as e:
             return {
@@ -283,77 +184,22 @@ class SmartSQLGenerator:
                 "confidence": 0
             }
     
-    async def _handle_conversational_query(self, question: str, analysis: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle conversational queries with simple responses"""
-        try:
-            # For now, provide a simple response for conversational queries
-            # In the future, this could be enhanced with a conversational AI model
-            
-            response_text = "I'm here to help you analyze your data. Please ask me a question about your database, and I'll generate the appropriate SQL query and analysis for you."
-            
-            return {
-                "success": True,
-                "question": question,
-                "text": response_text,
-                "sql": "",
-                "results": [],
-                "execution_time": 0,
-                "row_count": 0,
-                "query_type": "conversational",
-                "is_conversational": True,
-                "source": "ai",
-                "confidence": 100,
-                "visualization_recommendations": {"is_visualizable": False, "recommended_charts": []}
-            }
-        except Exception as e:
-            return {
-                "success": False,
-                "question": question,
-                "error": f"Error handling conversational query: {str(e)}",
-                "text": "",
-                "sql": "",
-                "results": [],
-                "execution_time": 0,
-                "row_count": 0,
-                "query_type": "conversational",
-                "is_conversational": True,
-                "source": "ai",
-                "confidence": 0,
-                "visualization_recommendations": {"is_visualizable": False, "recommended_charts": []}
-            }
-
     async def _process_analytical_workflow(self, question: str) -> Dict[str, Any]:
         """Process query using comprehensive analytical workflow"""
-        logger.info(f"🔍 Starting analytical workflow for question: '{question}'")
-        print(f"🔍 DEBUG: Starting analytical workflow for question: '{question}'")
+        logger.info(f"Starting analytical workflow for question: '{question}'")
         
         try:
             # Check if schema_context is available
             if not self.sql_generation_manager.schema_context:
                 error_msg = "Schema context not available for analytical workflow"
-                logger.error(f"❌ {error_msg}")
-                print(f"🔍 DEBUG: {error_msg}")
+                logger.error(error_msg)
                 
-                return {
-                    "success": False,
-                    "question": question,
-                    "error": error_msg,
-                    "text": "",
-                    "execution_time": 0,
-                    "sql": "",
-                    "results": [],
-                    "query_type": "analytical",
-                    "is_conversational": False,
-                    "source": "ai",
-                    "confidence": 0
-                }
+                return self._create_error_response(question, error_msg)
             
-            logger.info(f"✅ Schema context available: {len(self.sql_generation_manager.schema_context)} characters")
-            print(f"🔍 DEBUG: Schema context available: {len(self.sql_generation_manager.schema_context)} characters")
+            logger.info(f"Schema context available: {len(self.sql_generation_manager.schema_context)} characters")
             
             # Generate analytical questions
-            logger.info("📝 Generating analytical questions...")
-            print(f"🔍 DEBUG: Generating analytical questions...")
+            logger.info("Generating analytical questions...")
             
             questions_result = await self.analytical_manager.generate_analytical_questions(
                 question, 
@@ -362,30 +208,15 @@ class SmartSQLGenerator:
             
             if not questions_result["success"]:
                 error_msg = questions_result.get("error", "Failed to generate analytical questions")
-                logger.error(f"❌ Failed to generate analytical questions: {error_msg}")
-                print(f"🔍 DEBUG: Failed to generate analytical questions: {error_msg}")
+                logger.error(f"Failed to generate analytical questions: {error_msg}")
                 
-                return {
-                    "success": False,
-                    "question": question,
-                    "error": error_msg,
-                    "text": "",
-                    "execution_time": 0,
-                    "sql": "",
-                    "results": [],
-                    "query_type": "analytical",
-                    "is_conversational": False,
-                    "source": "ai",
-                    "confidence": 0
-                }
+                return self._create_error_response(question, error_msg)
             
             total_questions = len(questions_result["questions"])
-            logger.info(f"✅ Generated {total_questions} analytical questions")
-            print(f"🔍 DEBUG: Generated {total_questions} analytical questions")
+            logger.info(f"Generated {total_questions} analytical questions")
             
             # Execute analytical workflow
-            logger.info("🚀 Executing analytical workflow...")
-            print(f"🔍 DEBUG: Executing analytical workflow...")
+            logger.info("Executing analytical workflow...")
             
             workflow_result = await self.analytical_manager.execute_analytical_workflow(
                 question,
@@ -395,33 +226,18 @@ class SmartSQLGenerator:
             
             if not workflow_result["success"]:
                 error_msg = workflow_result.get("error", "Failed to execute analytical workflow")
-                logger.error(f"❌ Failed to execute analytical workflow: {error_msg}")
-                print(f"🔍 DEBUG: Failed to execute analytical workflow: {error_msg}")
+                logger.error(f"Failed to execute analytical workflow: {error_msg}")
                 
-                return {
-                    "success": False,
-                    "question": question,
-                    "error": error_msg,
-                    "text": "",
-                    "execution_time": 0,
-                    "sql": "",
-                    "results": [],
-                    "query_type": "analytical",
-                    "is_conversational": False,
-                    "source": "ai",
-                    "confidence": 0
-                }
+                return self._create_error_response(question, error_msg)
             
             successful_executions = workflow_result.get("successful_executions", 0)
             failed_executions = workflow_result.get("failed_executions", 0)
             total_execution_time = workflow_result.get("total_execution_time", 0)
             
-            logger.info(f"✅ Workflow executed: {successful_executions} successful, {failed_executions} failed, {total_execution_time:.2f}s total")
-            print(f"🔍 DEBUG: Workflow executed: {successful_executions} successful, {failed_executions} failed, {total_execution_time:.2f}s total")
+            logger.info(f"Workflow executed: {successful_executions} successful, {failed_executions} failed, {total_execution_time:.2f}s total")
             
             # Generate comprehensive analysis
-            logger.info("📊 Generating comprehensive analysis...")
-            print(f"🔍 DEBUG: Generating comprehensive analysis...")
+            logger.info("Generating comprehensive analysis...")
             
             analysis_result = await self.analytical_manager.generate_comprehensive_analysis(
                 question,
@@ -431,11 +247,10 @@ class SmartSQLGenerator:
             
             if analysis_result["success"]:
                 analysis_length = len(analysis_result["analysis"])
-                logger.info(f"✅ Comprehensive analysis generated: {analysis_length} characters")
-                print(f"🔍 DEBUG: Comprehensive analysis generated: {analysis_length} characters")
+                logger.info(f"Comprehensive analysis generated: {analysis_length} characters")
                 
                 # Log final statistics
-                logger.info(f"🎯 Analytical workflow completed successfully:")
+                logger.info(f"Analytical workflow completed successfully:")
                 logger.info(f"   - Questions generated: {total_questions}")
                 logger.info(f"   - Successful executions: {successful_executions}")
                 logger.info(f"   - Failed executions: {failed_executions}")
@@ -456,55 +271,38 @@ class SmartSQLGenerator:
                     "confidence": 95,
                     "visualization_recommendations": {"is_visualizable": False, "recommended_charts": []},
                     "analytical_questions": questions_result["questions"],
-                        "analytical_results": workflow_result["analytical_results"]
+                    "analytical_results": workflow_result["analytical_results"]
                 }
             else:
                 error_msg = analysis_result.get("error", "Failed to generate comprehensive analysis")
-                logger.error(f"❌ Failed to generate comprehensive analysis: {error_msg}")
-                print(f"🔍 DEBUG: Failed to generate comprehensive analysis: {error_msg}")
+                logger.error(f"Failed to generate comprehensive analysis: {error_msg}")
                 
-                return {
-                    "success": False,
-                    "question": question,
-                    "error": error_msg,
-                    "text": "",
-                    "execution_time": 0,
-                    "sql": "",
-                    "results": [],
-                    "query_type": "analytical",
-                    "is_conversational": False,
-                    "source": "ai",
-                    "confidence": 0
-                }
+                return self._create_error_response(question, error_msg)
                 
         except Exception as e:
-            logger.error(f"❌ Error processing analytical workflow: {str(e)}")
-            logger.error(f"Full traceback: {traceback.format_exc()}")
+            logger.error(f"Error processing analytical workflow: {str(e)}")
             
-            print(f"🔍 DEBUG: Error processing analytical workflow: {str(e)}")
-            print(f"🔍 DEBUG: Full traceback:\n{traceback.format_exc()}")
-            
-            return {
-                "success": False,
-                "question": question,
-                "error": f"Error processing analytical workflow: {str(e)}",
-                "text": "",
-                "execution_time": 0,
-                "sql": "",
-                "results": [],
-                "query_type": "analytical",
-                "is_conversational": False,
-                "source": "ai",
-                "confidence": 0
-            }
+            return self._create_error_response(question, f"Error processing analytical workflow: {str(e)}")
+    
+    def _create_error_response(self, question: str, error_msg: str) -> Dict[str, Any]:
+        """Create a standardized error response"""
+        return {
+            "success": False,
+            "question": question,
+            "error": error_msg,
+            "text": "",
+            "execution_time": 0,
+            "sql": "",
+            "results": [],
+            "query_type": "analytical",
+            "is_conversational": False,
+            "source": "ai",
+            "confidence": 0
+        }
     
     def get_paginated_results(self, table_id: str, page: int = 1, page_size: int = 10) -> Dict[str, Any]:
         """Get paginated results"""
         return self.session_context_manager.get_paginated_results(table_id, page, page_size)
-    
-
-    
-
     
     def clear_cache(self) -> None:
         """Clear the query cache"""
@@ -521,46 +319,3 @@ class SmartSQLGenerator:
 
 # For backward compatibility, create aliases to the old class name
 SQLGenerator = SmartSQLGenerator
-
-
-async def main():
-    """Main function to demonstrate usage"""
-    # Example usage
-    from dotenv import load_dotenv
-    
-    load_dotenv()
-    
-    print("Initializing SQL Generator with hardcoded PBTest database and IT_Professional_Services...")
-    
-    # Initialize SQL generator (no longer needs database parameters)
-    sql_generator = SmartSQLGenerator(
-        use_memory=True,
-        memory_persist_dir="./memory_store"
-    )
-    
-    print("SQL Generator initialized successfully!")
-    print(f"Connected to: PBTest database, analyzing IT_Professional_Services")
-    
-    # Test with a sample question
-    question = "Show me all data from the table"
-    print(f"\nTesting with question: {question}")
-    
-    result = await sql_generator.execute_query(question)
-    
-    if result["success"]:
-        print(f"✅ Query executed successfully!")
-        print(f"SQL: {result['sql']}")
-        print(f"Results: {len(result['results'])} rows")
-        
-        # Display first few results
-        if result["results"]:
-            import pandas as pd
-            df = pd.DataFrame(result["results"])
-            print("\nSample results:")
-            print(df.head())
-    else:
-        print(f"❌ Query failed: {result['error']}")
-
-
-if __name__ == "__main__":
-    asyncio.run(main())

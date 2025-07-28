@@ -1,9 +1,7 @@
 """
-Query execution and transaction management modules
+Query package - No longer used in the analytical approach
+The simplified system uses direct SQL execution without complex query management
 """
 
-from .executor import QueryExecutor
-from .transaction_manager import TransactionManager
-from .schema_updater import SchemaUpdater
-
-__all__ = ['QueryExecutor', 'TransactionManager', 'SchemaUpdater'] 
+# No exports - all query management components have been removed
+__all__ = [] 

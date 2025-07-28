@@ -24,10 +24,6 @@ class GraphManager:
         
         # Add nodes
         graph.add_node("route_query", self._route_query_node)
-        graph.add_node("handle_conversational", self._handle_conversational_node)
-        graph.add_node("generate_sql", self._generate_sql_node)
-
-        graph.add_node("generate_response", self._generate_response_node)
         graph.add_node("handle_error", self._handle_error_node)
         
         # Add analytical nodes
@@ -41,15 +37,12 @@ class GraphManager:
             "route_query",
             self._route_decision,
             {
-                "conversational": "handle_conversational",
                 "analytical": "generate_analytical_questions",
-                "standard": "generate_sql",
                 "error": "handle_error"
             }
         )
         
-        # Standard workflow edges
-        graph.add_edge("generate_sql", "generate_response")
+
         
         # Analytical workflow edges
         graph.add_conditional_edges(
@@ -70,49 +63,12 @@ class GraphManager:
         )
         
         # End nodes
-        graph.add_edge("handle_conversational", END)
-        graph.add_edge("generate_response", END)
         graph.add_edge("generate_comprehensive_analysis", END)
         graph.add_edge("handle_error", END)
         
         return graph.compile(checkpointer=self.checkpointer)
     
-    async def _generate_sql_node(self, state: SQLGeneratorState, config: RunnableConfig) -> SQLGeneratorState:
-        """Generate SQL from the question"""
-        return {
-            **state,
-            "error": "SQL generation failed",
-            "workflow_type": "analytical"
-        }
-    
 
-    
-    async def _generate_response_node(self, state: SQLGeneratorState, config: RunnableConfig) -> SQLGeneratorState:
-        """Generate final response based on SQL and results"""
-        try:
-            # Execute SQL if no error
-            if not state.get("error"):
-                # This would typically execute the SQL and get results
-                # For now, we'll just format the response
-                results = state.get("results", [])
-                
-                response_text = ""
-                
-                return {
-                    **state,
-                    "response": response_text
-                }
-            else:
-                return {
-                    **state,
-                    "response": f"Error: {state['error']}"
-                }
-        except Exception as e:
-            return {
-                **state,
-                "error": str(e),
-                "response": f"Error generating response: {str(e)}"
-            }
     
     async def _handle_error_node(self, state: SQLGeneratorState, config: RunnableConfig) -> SQLGeneratorState:
         """Handle errors in the SQL generation process"""
@@ -158,33 +114,13 @@ class GraphManager:
     
     # Analytical workflow nodes
     async def _route_query_node(self, state: SQLGeneratorState, config: RunnableConfig) -> SQLGeneratorState:
-        """Route query to appropriate workflow based on type"""
+        """Route query to analytical workflow"""
         try:
-            # All questions route to analytical workflow
-            analysis = {
-                "question": state["question"],
-                "is_conversational": False,
-                "requires_analysis": True,
-                "intent": "analytical",
-                "complexity": "analytical"
-            }
-            
-            # Determine workflow type based on simple classification
-            is_conversational = analysis["is_conversational"]
-            requires_analysis = analysis["requires_analysis"]
-            
-            if is_conversational:
-                workflow_type = "conversational"
-            elif requires_analysis:
-                workflow_type = "analytical"
-            else:
-                workflow_type = "standard"
-            
             return {
                 **state,
-                "is_conversational": is_conversational,
-                "requires_analysis": requires_analysis,
-                "workflow_type": workflow_type,
+                "is_conversational": False,
+                "requires_analysis": True,
+                "workflow_type": "analytical",
                 "analytical_questions": [],
                 "analytical_results": [],
                 "comprehensive_analysis": ""
@@ -196,20 +132,7 @@ class GraphManager:
                 "workflow_type": "error"
             }
     
-    async def _handle_conversational_node(self, state: SQLGeneratorState, config: RunnableConfig) -> SQLGeneratorState:
-        """Handle conversational queries by generating a response directly"""
-        try:
-            # For now, we'll just return a placeholder response
-            response_text = "I'm sorry, but I don't have a direct response for that conversational query yet."
-            return {
-                **state,
-                "response": response_text
-            }
-        except Exception as e:
-            return {
-                **state,
-                "error": f"Error handling conversational query: {str(e)}"
-            }
+
     
     async def _generate_analytical_questions_node(self, state: SQLGeneratorState, config: RunnableConfig) -> SQLGeneratorState:
         """Generate analytical questions for comprehensive analysis"""
@@ -298,15 +221,11 @@ class GraphManager:
     
     # Routing decision functions
     def _route_decision(self, state: SQLGeneratorState) -> str:
-        """Determine which workflow to use"""
+        """Determine which workflow to use - always analytical unless error"""
         if state.get("error"):
             return "error"
-        elif state.get("is_conversational", False):
-            return "conversational"
-        elif state.get("requires_analysis", False):
-            return "analytical"
         else:
-            return "standard"
+            return "analytical"
     
     def _analytical_questions_result(self, state: SQLGeneratorState) -> str:
         """Determine the result of analytical questions generation"""
