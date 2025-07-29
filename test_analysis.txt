@@ -6,7 +6,7 @@ DATABASE TABLE ANALYSIS: IT_Professional_Services
 BASIC INFORMATION:
 - Database Path: ./data/PBTest.db
 - Table: IT_Professional_Services
-- Analysis Date: 2025-07-29T17:16:56.893472
+- Analysis Date: 2025-07-29T17:11:27.677074
 
 TABLE STRUCTURE:
 - Total Columns: 26
@@ -118,7 +118,7 @@ DETAILED ANALYSIS (JSON):
 {
   "table_name": "IT_Professional_Services",
   "schema_name": null,
-  "analysis_timestamp": "2025-07-29T17:16:56.893472",
+  "analysis_timestamp": "2025-07-29T17:11:27.677074",
   "database_info": {
     "database_path": "./data/PBTest.db",
     "connection_string": "sqlite:///./data/PBTest.db"
@@ -1898,7 +1898,7 @@ DETAILED ANALYSIS (JSON):
     "count": 10
   },
   "statistics": {
-    "generated_at": "2025-07-29T17:17:00.531873",
+    "generated_at": "2025-07-29T17:11:34.200319",
     "summary": {}
   },
   "recommendations": [],

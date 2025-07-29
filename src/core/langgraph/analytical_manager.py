@@ -1054,28 +1054,28 @@ class AnalyticalManager:
         # Generate appropriate SQL based on column references
         if "country" in lower_question and "rate" in lower_question and ("highest" in lower_question or "top" in lower_question):
             return """SELECT country_of_work, ROUND(AVG(hourly_rate_in_usd),2) as avg_rate 
-                     FROM public."IT_Professional_Services"
+                     FROM "IT_Professional_Services"
                      WHERE hourly_rate_in_usd > 0 AND service_type = 'Consulting'
                      GROUP BY country_of_work 
                      ORDER BY avg_rate DESC 
                      LIMIT 10"""
         elif "country" in lower_question and "rate" in lower_question and ("lowest" in lower_question or "bottom" in lower_question):
             return """SELECT country_of_work, ROUND(AVG(hourly_rate_in_usd),2) as avg_rate 
-                     FROM public."IT_Professional_Services"
+                     FROM "IT_Professional_Services"
                      WHERE hourly_rate_in_usd > 0 AND service_type = 'Consulting'
                      GROUP BY country_of_work 
                      ORDER BY avg_rate ASC 
                      LIMIT 10"""
         elif "role" in lower_question and "rate" in lower_question:
             return """SELECT normalized_role_title, ROUND(AVG(hourly_rate_in_usd),2) as avg_rate 
-                     FROM public."IT_Professional_Services"
+                     FROM "IT_Professional_Services"
                      WHERE hourly_rate_in_usd > 0 AND service_type = 'Consulting'
                      GROUP BY normalized_role_title 
                      ORDER BY avg_rate DESC 
                      LIMIT 10"""
         elif "supplier" in lower_question and "rate" in lower_question:
             return """SELECT supplier_company, ROUND(AVG(hourly_rate_in_usd),2) as avg_rate 
-                     FROM public."IT_Professional_Services"
+                     FROM "IT_Professional_Services"
                      WHERE hourly_rate_in_usd > 0 AND service_type = 'Consulting'
                      GROUP BY supplier_company 
                      ORDER BY avg_rate DESC 
@@ -1084,7 +1084,7 @@ class AnalyticalManager:
             # Generic fallback
             columns = ", ".join(potential_columns) if potential_columns else "country_of_work, normalized_role_title, ROUND(AVG(hourly_rate_in_usd),2) as avg_rate"
             return f"""SELECT {columns}
-                     FROM public."IT_Professional_Services"
+                     FROM "IT_Professional_Services"
                      WHERE service_type = 'Consulting'
                      GROUP BY country_of_work, normalized_role_title
                      ORDER BY avg_rate DESC

@@ -405,7 +405,7 @@ Results: [Result 1: IND-only data with Q1=25, Q3=35], [Result 2: USA-only data w
 
 ### QUERY TYPES TO PREFER:
 - **RANGE ANALYSIS (PRIMARY)**: Range (Q1-Q3) and Median Range (45th-55th percentile) calculations for ALL rate-related queries
-- Comparisons between categories using quartiles (GROUP BY with PERCENTILE_CONT functions)
+- Comparisons between categories using statistical aggregations (GROUP BY with MIN/AVG/MAX functions)
 - Rankings or top/bottom N results
 - **SUPPLIER/VENDOR ANALYSIS**: Comparative analysis across suppliers/vendors/partners using quartiles (high priority)
 - **YEARWISE TRENDS**: Year-over-year quartile analysis for the past 2-3 years (2022-2024) where applicable
@@ -432,7 +432,7 @@ Results: [Result 1: IND-only data with Q1=25, Q3=35], [Result 2: USA-only data w
 5. **OVERALL RANGE QUERY**: For ALL rate-related questions, you may include one query that calculates the overall rate range without any groupings (no GROUP BY clause). This shows the total market range for the requested entity.
 
 **COMPOUND ENTITY RULE**: For requests like "SAP Developer", "Java Consultant", or "Senior Manager", filter by BOTH the specialization (e.g., role_specialization = 'SAP') AND the role type (e.g., role_title LIKE '%Developer%'). Do NOT filter only by specialization and return all roles within that category.
-5. **MANDATORY QUARTILE USAGE FOR ALL RATE QUERIES**: When users ask for "rates", "pricing", or "costs", you MUST generate quartile queries instead of simple averages. NEVER generate basic AVG(), MIN(), or MAX() functions for rate analysis. Use PERCENTILE_CONT(0.25), PERCENTILE_CONT(0.50), and PERCENTILE_CONT(0.75) functions for ALL rate-related queries to provide distribution insights.
+5. **MANDATORY QUARTILE USAGE FOR ALL RATE QUERIES**: When users ask for "rates", "pricing", or "costs", you MUST generate quartile queries instead of simple averages. NEVER generate basic AVG(), MIN(), or MAX() functions for rate analysis. Use SQLite-compatible percentile calculations with subqueries and ROW_NUMBER() window functions for ALL rate-related queries to provide distribution insights.
 6. Generate different query types (averages, counts, comparisons, grouping, quartiles) BUT avoid frequency distributions
 7. **CRITICAL - TABLE NAMING**: Always use quoted table names like `"TableName"` for consistency. SQLite doesn't use schemas like PostgreSQL.
 8. Use proper SQLite syntax with correct table references
@@ -504,10 +504,11 @@ Query 1: Developer supplier analysis for India
 ```sql
 SELECT 
   supplier,
-  PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
-  PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
-  PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
-FROM public."IT_Professional_Services" 
+  MIN(hourly_rate_in_usd) as Min_Rate,
+  AVG(hourly_rate_in_usd) as Avg_Rate,
+  MAX(hourly_rate_in_usd) as Max_Rate,
+  COUNT(*) as Count
+FROM "IT_Professional_Services" 
 WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work = 'IND'
 GROUP BY supplier
 ```
@@ -516,10 +517,11 @@ Query 2: Developer supplier analysis for USA
 ```sql
 SELECT 
   supplier,
-  PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
-  PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
-  PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
-FROM public."IT_Professional_Services" 
+  MIN(hourly_rate_in_usd) as Min_Rate,
+  AVG(hourly_rate_in_usd) as Avg_Rate,
+  MAX(hourly_rate_in_usd) as Max_Rate,
+  COUNT(*) as Count
+FROM "IT_Professional_Services" 
 WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work = 'USA'
 GROUP BY supplier
 ```
@@ -527,20 +529,22 @@ GROUP BY supplier
 Query 3: Overall Developer rates for India
 ```sql
 SELECT 
-  PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
-  PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
-  PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
-FROM public."IT_Professional_Services" 
+  MIN(hourly_rate_in_usd) as Min_Rate,
+  AVG(hourly_rate_in_usd) as Avg_Rate,
+  MAX(hourly_rate_in_usd) as Max_Rate,
+  COUNT(*) as Count
+FROM "IT_Professional_Services" 
 WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work = 'IND'
 ```
 
 Query 4: Overall Developer rates for USA
 ```sql
 SELECT 
-  PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
-  PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
-  PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
-FROM public."IT_Professional_Services" 
+  MIN(hourly_rate_in_usd) as Min_Rate,
+  AVG(hourly_rate_in_usd) as Avg_Rate,
+  MAX(hourly_rate_in_usd) as Max_Rate,
+  COUNT(*) as Count
+FROM "IT_Professional_Services" 
 WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work = 'USA'
 ```
 
@@ -548,10 +552,11 @@ Query 5: Role seniority analysis for India (if needed)
 ```sql
 SELECT 
   role_seniority,
-  PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
-  PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
-  PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
-FROM public."IT_Professional_Services" 
+  MIN(hourly_rate_in_usd) as Min_Rate,
+  AVG(hourly_rate_in_usd) as Avg_Rate,
+  MAX(hourly_rate_in_usd) as Max_Rate,
+  COUNT(*) as Count
+FROM "IT_Professional_Services" 
 WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work = 'IND'
 GROUP BY role_seniority
 ```
@@ -560,10 +565,11 @@ Query 6: Role seniority analysis for USA (if needed)
 ```sql
 SELECT 
   role_seniority,
-  PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
-  PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
-  PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
-FROM public."IT_Professional_Services" 
+  MIN(hourly_rate_in_usd) as Min_Rate,
+  AVG(hourly_rate_in_usd) as Avg_Rate,
+  MAX(hourly_rate_in_usd) as Max_Rate,
+  COUNT(*) as Count
+FROM "IT_Professional_Services" 
 WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work = 'USA'
 GROUP BY role_seniority
 ```
@@ -572,17 +578,18 @@ GROUP BY role_seniority
 ```sql
 SELECT 
   country_of_work,
-  PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1,
-  PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median,
-  PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3
-FROM public."IT_Professional_Services" 
+  MIN(hourly_rate_in_usd) as Min_Rate,
+  AVG(hourly_rate_in_usd) as Avg_Rate,
+  MAX(hourly_rate_in_usd) as Max_Rate,
+  COUNT(*) as Count
+FROM "IT_Professional_Services" 
 WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work IN ('IND', 'USA')
 GROUP BY country_of_work
 ```
 
 ❌ WRONG (Combined role seniority analysis):
 ```sql
-SELECT role_seniority, PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1, PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median, PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3 FROM public."IT_Professional_Services" WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work IN ('IND', 'USA') GROUP BY role_seniority
+SELECT role_seniority, MIN(hourly_rate_in_usd) as Min_Rate, AVG(hourly_rate_in_usd) as Avg_Rate, MAX(hourly_rate_in_usd) as Max_Rate, COUNT(*) as Count FROM "IT_Professional_Services" WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work IN ('IND', 'USA') GROUP BY role_seniority
 ```
 This combines both countries and loses entity-specific insights. Users cannot see how role seniority differs between India and USA separately.
 
@@ -591,7 +598,7 @@ ANY query that uses `WHERE entity_column IN (entity1, entity2)` for entity compa
 
 ❌ WRONG (Multi-dimensional grouping):
 ```sql
-SELECT role_seniority, supplier, PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q1, PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q2_Median, PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY hourly_rate_in_usd) as Q3 FROM public."IT_Professional_Services" WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work = 'USA' GROUP BY role_seniority, supplier
+SELECT role_seniority, supplier, MIN(hourly_rate_in_usd) as Min_Rate, AVG(hourly_rate_in_usd) as Avg_Rate, MAX(hourly_rate_in_usd) as Max_Rate, COUNT(*) as Count FROM "IT_Professional_Services" WHERE normalized_role_title = 'Developer/Programmer' AND country_of_work = 'USA' GROUP BY role_seniority, supplier
 ```
 This combines two dimensions and creates overly complex results. Keep dimensions separate for clarity.
 
@@ -632,9 +639,9 @@ This ensures users receive balanced, comparable analysis for each entity they're
 ### OUTPUT FORMAT:
 Return a valid JSON object with a queries array. Each query should have sql, description, and type fields.
 Example:
-{{"queries": [{{"sql": "SELECT AVG(hourly_rate_in_usd) FROM public.\\"IT_Professional_Services\\" WHERE country_of_work = 'IND'", "description": "Average hourly rate for India", "type": "average"}}]}}
+{{"queries": [{{"sql": "SELECT AVG(hourly_rate_in_usd) FROM \\"IT_Professional_Services\\" WHERE country_of_work = 'IND'", "description": "Average hourly rate for India", "type": "average"}}]}}
 
-**CRITICAL**: Ensure NO queries use MIN() or MAX() functions for rate analysis. Replace with quartile queries using PERCENTILE_CONT functions.
+**CRITICAL**: Ensure queries use comprehensive statistical analysis including MIN(), AVG(), and MAX() functions for rate analysis to provide distribution insights.
 
 Do not include any explanatory text, markdown formatting, or code blocks outside the JSON."""),
             ("human", """USER QUESTION: {question}
@@ -650,7 +657,7 @@ INSTRUCTIONS: Generate 1-5 contextually relevant SQL queries that will help answ
 
 DO NOT generate queries that overlap with ANY of the previous questions or query descriptions. If previous questions covered supplier analysis, focus on COMPLETELY DIFFERENT dimensions like geographic, temporal, or role seniority analysis.
 
-**CRITICAL RATE QUERY INSTRUCTION**: When the user asks for "rates", "pricing", or "costs", you MUST generate quartile queries using PERCENTILE_CONT functions instead of simple AVG() queries. This provides much better distribution insights than basic averages.
+**CRITICAL RATE QUERY INSTRUCTION**: When the user asks for "rates", "pricing", or "costs", you MUST generate comprehensive statistical queries using MIN(), AVG(), and MAX() functions instead of simple queries. This provides much better distribution insights than basic single-value results.
 
 **CRITICAL ENUM VALUE INSTRUCTION**: Since column enum values are provided in the schema, you MUST use exact equality (=) operators, NOT LIKE patterns. Use the exact enum values provided without pattern matching.
 

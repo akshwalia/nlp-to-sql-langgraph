@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-"""
-Simplified database analysis package focused on single table analysis
-"""
-=======
 import os
 import pandas as pd
 from sqlalchemy import create_engine, inspect, MetaData, text
@@ -11,14 +6,9 @@ from typing import Dict, List, Any, Tuple, Optional
 import sqlite3
 import warnings
 import logging
->>>>>>> c5063088d3be74295c4fd89780135628a9cb5739
 
 from .single_table_analyzer import SingleTableAnalyzer
 
-<<<<<<< HEAD
-# Export only the components used in the analytical approach
-__all__ = ['SingleTableAnalyzer'] 
-=======
 # Suppress SQLAlchemy warnings for unrecognized column types
 warnings.filterwarnings("ignore", "Did not recognize type", module="sqlalchemy")
 
@@ -79,16 +69,8 @@ class DatabaseAnalyzer:
         self.connection_manager = connection_manager
         self.workspace_id = workspace_id
         
-        # Initialize component analyzers
-        self.schema_analyzer = SchemaAnalyzer(self.engine, self.inspector)
         self.schema_analyzer.set_db_name(db_name)
-        self.table_analyzer = TableAnalyzer(self.engine, self.inspector)
-        self.relationship_analyzer = RelationshipAnalyzer(self.inspector)
         
-        # Initialize query components
-        self.query_executor = QueryExecutor(self.engine, connection_manager, workspace_id)
-        self.transaction_manager = TransactionManager(self.engine, connection_manager, workspace_id)
-        self.schema_updater = SchemaUpdater(self.engine, self.inspector, self.table_analyzer, self.relationship_analyzer)
         
     def get_connection(self):
         """Get a database connection, either from pool or direct"""
@@ -293,19 +275,21 @@ if __name__ == "__main__":
     # Print schema summary
     print(analyzer.get_rich_schema_context())
     
-    # Example query
+    # Example query for SQLite
     with analyzer.engine.connect() as connection:
-        result = connection.execute(text("SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT IN ('information_schema', 'pg_catalog')"))
-        schema_names = [row[0] for row in result]
-        print("\nAvailable schemas:")
-        for schema_name in schema_names:
-            print(f"- {schema_name}")
+        # SQLite doesn't use schemas like PostgreSQL
+        print("\nAvailable tables in SQLite database:")
+        result = connection.execute(text("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"))
+        for row in result:
+            print(f"- {row[0]}")
         
-        print("\nTables in database:")
-        for schema_name in schema_names:
-            result = connection.execute(text(f"SELECT table_name FROM information_schema.tables WHERE table_schema = '{schema_name}'"))
+        # Show table info for IT_Professional_Services if it exists
+        result = connection.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='IT_Professional_Services'"))
+        if result.fetchone():
+            print(f"\nTable structure for IT_Professional_Services:")
+            result = connection.execute(text("PRAGMA table_info(IT_Professional_Services)"))
             for row in result:
-                print(f"- {schema_name}.{row[0]}")
+                print(f"  - {row[1]} ({row[2]})")  # column name and type
 
     # Example of SingleTableAnalyzer usage
     print("\n" + "="*80)
@@ -336,4 +320,3 @@ if __name__ == "__main__":
 
 # Export both analyzers
 __all__ = ['DatabaseAnalyzer', 'SingleTableAnalyzer'] 
->>>>>>> c5063088d3be74295c4fd89780135628a9cb5739

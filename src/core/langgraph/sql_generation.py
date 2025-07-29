@@ -29,7 +29,7 @@ class SQLGenerationManager:
 
     def _is_numeric_column(self, column_name: str) -> bool:
         """
-        Check if a column is numeric by querying the database information schema
+        Check if a column is numeric by querying the SQLite database using PRAGMA table_info
         
         Args:
             column_name: Name of the column to check
@@ -43,31 +43,26 @@ class SQLGenerationManager:
         try:
             engine = self.db_analyzer.analyzer.engine
             table_name = self.db_analyzer.analyzer.table_name
-            schema_name = self.db_analyzer.analyzer.schema_name
             
             with engine.connect() as connection:
                 from sqlalchemy import text
                 
-                # Query information schema to get column data type
-                query = text(f"""
-                    SELECT data_type 
-                    FROM information_schema.columns 
-                    WHERE table_schema = '{schema_name}' 
-                    AND table_name = '{table_name}' 
-                    AND column_name = '{column_name}'
-                """)
+                # Use SQLite's PRAGMA table_info to get column data type
+                query = text(f'PRAGMA table_info("{table_name}")')
                 
                 result = connection.execute(query)
-                row = result.fetchone()
+                columns = result.fetchall()
                 
-                if row:
-                    data_type = row[0].upper()
-                    numeric_types = [
-                        'INTEGER', 'INT', 'BIGINT', 'SMALLINT', 'SERIAL', 'BIGSERIAL',
-                        'FLOAT', 'DOUBLE', 'REAL', 'NUMERIC', 'DECIMAL', 'MONEY',
-                        'DOUBLE PRECISION', 'FLOAT8', 'FLOAT4', 'INT2', 'INT4', 'INT8'
-                    ]
-                    return any(numeric_type in data_type for numeric_type in numeric_types)
+                for column in columns:
+                    # SQLite PRAGMA table_info returns: (cid, name, type, notnull, dflt_value, pk)
+                    if column[1] == column_name:  # column[1] is the name
+                        data_type = column[2].upper()  # column[2] is the type
+                        # SQLite numeric types
+                        sqlite_numeric_types = [
+                            'INTEGER', 'INT', 'REAL', 'FLOAT', 'DOUBLE', 'NUMERIC', 'DECIMAL',
+                            'BIGINT', 'SMALLINT', 'TINYINT', 'MEDIUMINT'
+                        ]
+                        return any(numeric_type in data_type for numeric_type in sqlite_numeric_types)
                 
         except Exception as e:
             logger.error(f"Error checking if column {column_name} is numeric: {e}")
@@ -116,15 +111,14 @@ class SQLGenerationManager:
             # Use the database analyzer's engine to get distinct values
             engine = self.db_analyzer.analyzer.engine
             table_name = self.db_analyzer.analyzer.table_name
-            schema_name = self.db_analyzer.analyzer.schema_name
             
             with engine.connect() as connection:
                 from sqlalchemy import text
                 
-                # Get distinct values with count
+                # Get distinct values with count (SQLite doesn't use schema prefixes)
                 query = text(f"""
                     SELECT DISTINCT "{column_name}", COUNT(*) as frequency
-                    FROM "{schema_name}"."{table_name}"
+                    FROM "{table_name}"
                     WHERE "{column_name}" IS NOT NULL
                     GROUP BY "{column_name}"
                     ORDER BY frequency DESC, "{column_name}"
@@ -144,10 +138,10 @@ class SQLGenerationManager:
                     })
                     total_count += frequency
                 
-                # Get total distinct count
+                # Get total distinct count (SQLite doesn't use schema prefixes)
                 total_distinct_query = text(f"""
                     SELECT COUNT(DISTINCT "{column_name}") as total_distinct
-                    FROM "{schema_name}"."{table_name}"
+                    FROM "{table_name}"
                     WHERE "{column_name}" IS NOT NULL
                 """)
                 

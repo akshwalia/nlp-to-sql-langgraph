@@ -314,8 +314,7 @@ class SingleTableAnalyzer:
                             SELECT 
                                 MIN("{col_name}") as min_val,
                                 MAX("{col_name}") as max_val,
-                                AVG("{col_name}") as avg_val,
-                                STDDEV("{col_name}") as stddev_val
+                                AVG("{col_name}") as avg_val
                             FROM "{self.table_name}"
                             WHERE "{col_name}" IS NOT NULL
                         """))
@@ -324,9 +323,9 @@ class SingleTableAnalyzer:
                             stats.update({
                                 "min_value": row[0],
                                 "max_value": row[1],
-                                "average": row[2],
-                                "standard_deviation": row[3]
+                                "average": row[2]
                             })
+                            # Note: SQLite doesn't have STDDEV function, so standard_deviation is not calculated
                     except Exception as e:
                         logger.warning(f"Could not get numeric statistics for {col_name}: {e}")
                 
@@ -518,27 +517,25 @@ class SingleTableAnalyzer:
                 except Exception as e:
                     logger.warning(f"Could not analyze completeness for {col_name}: {e}")
             
-            # Check for potential duplicate rows
+            # Check for potential duplicate rows using SQLite-compatible approach
             try:
-                # First get all column names for the table
-                columns_result = connection.execute(text(f"""
-                    SELECT column_name 
-                    FROM sqlite_master 
-                    WHERE type='table' AND name='{self.table_name}'
-                    ORDER BY cid
-                """))
-                columns = [row[0] for row in columns_result.fetchall()]
+                # Get column names using SQLite's PRAGMA table_info
+                pragma_result = connection.execute(text(f'PRAGMA table_info("{self.table_name}")'))
+                columns = [row[1] for row in pragma_result.fetchall()]  # row[1] is the column name
                 
-                if columns:
-                    # Create a query to check for duplicates by comparing total rows vs distinct rows
-                    # We'll use a hash of all columns to detect duplicates
-                    columns_concat = ", ".join([f'COALESCE(CAST("{col}" AS TEXT), \'\')' for col in columns])
+                if columns and len(columns) > 0:
+                    # For SQLite, we'll do a simple duplicate check by selecting distinct rows
+                    # and comparing total count vs distinct count
+                    columns_list = ', '.join([f'"{col}"' for col in columns])
                     
                     result = connection.execute(text(f"""
                         SELECT 
-                            COUNT(*) as total_rows,
-                            COUNT(DISTINCT MD5(CONCAT({columns_concat}))) as distinct_rows
-                        FROM "{self.table_name}"
+                            (SELECT COUNT(*) FROM "{self.table_name}") as total_rows,
+                            COUNT(*) as distinct_rows
+                        FROM (
+                            SELECT DISTINCT {columns_list}
+                            FROM "{self.table_name}"
+                        )
                     """))
                     row = result.first()
                     if row and row[0] != row[1]:
@@ -546,32 +543,15 @@ class SingleTableAnalyzer:
                             "type": "duplicate_rows",
                             "description": f"Table has {row[0]} total rows but only {row[1]} distinct rows"
                         })
+                        logger.info(f"Duplicate rows detected: {row[0]} total vs {row[1]} distinct")
+                    else:
+                        logger.info(f"No duplicate rows found: {row[0] if row else 'unknown'} total rows")
                 else:
                     logger.warning("No columns found for duplicate row check")
                     
             except Exception as e:
                 logger.warning(f"Could not check for duplicate rows: {e}")
-                # Fallback: simpler approach without MD5 hash
-                try:
-                    result = connection.execute(text(f"""
-                        WITH duplicate_check AS (
-                            SELECT *, ROW_NUMBER() OVER (PARTITION BY * ORDER BY (SELECT NULL)) as rn
-                            FROM "{self.table_name}"
-                        )
-                        SELECT 
-                            (SELECT COUNT(*) FROM "{self.table_name}") as total_rows,
-                            COUNT(*) as distinct_rows
-                        FROM duplicate_check
-                        WHERE rn = 1
-                    """))
-                    row = result.first()
-                    if row and row[0] != row[1]:
-                        quality_analysis["potential_issues"].append({
-                            "type": "duplicate_rows",
-                            "description": f"Table has {row[0]} total rows but only {row[1]} distinct rows"
-                        })
-                except Exception as e2:
-                    logger.warning(f"Fallback duplicate check also failed: {e2}")
+                # Note: Simplified approach - we skip duplicate checking if it fails
             
         except Exception as e:
             logger.error(f"Error analyzing data quality: {e}")
